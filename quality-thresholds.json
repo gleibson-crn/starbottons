@@ -1,0 +1,8 @@
+{
+  "max_lines_per_file": 400,
+  "max_lines_per_function": 40,
+  "max_cyclomatic_complexity": 10,
+  "max_cognitive_complexity": 15,
+  "max_classes_per_file": 1,
+  "mutation_score_threshold": 70
+}
