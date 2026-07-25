@@ -1,0 +1,41 @@
+.sizes {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.sizes__legend {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  padding-inline: var(--sp-1);
+}
+
+.sizes__row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.sizes__check {
+  inline-size: 20px;
+  block-size: 20px;
+}
+
+.sizes__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  min-block-size: var(--tap-min);
+}
+
+.sizes__reason {
+  grid-column: 1 / -1;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}

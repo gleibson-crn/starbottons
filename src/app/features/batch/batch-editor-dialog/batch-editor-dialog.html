@@ -1,0 +1,34 @@
+<div class="overlay">
+  <div
+    class="dialog card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="batch-edit-title"
+  >
+    <h2 id="batch-edit-title" class="dialog__title">
+      Ajustar “{{ item().name }}”
+    </h2>
+    <p class="dialog__hint">
+      O ajuste vale para todos os tamanhos selecionados desta imagem.
+    </p>
+
+    <div class="dialog__stage">
+      <app-canvas-editor
+        [image]="image()"
+        [spec]="spec()"
+        [(transform)]="transform"
+      />
+    </div>
+
+    <app-resolution-badge [dpi]="dpi()" [dense]="true" />
+
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--ghost" (click)="onClose()">
+        Cancelar
+      </button>
+      <button type="button" class="btn btn--primary" (click)="onSave()">
+        Salvar ajuste
+      </button>
+    </div>
+  </div>
+</div>

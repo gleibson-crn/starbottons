@@ -7,3 +7,19 @@ export { ResolutionBadge } from './resolution-badge/resolution-badge';
 export { OptionCard } from './option-card/option-card';
 export { DownloadButton } from './download-button/download-button';
 export { FileDropzone } from './file-dropzone/file-dropzone';
+export type { RejectedFile } from './file-dropzone/file-dropzone';
+export { CanvasEditor } from './canvas-editor/canvas-editor';
+export {
+  SCALE_MIN,
+  SCALE_MAX,
+  ROT_MIN,
+  ROT_MAX,
+  clamp,
+  withOffset,
+  withZoom,
+  withScale,
+  withRotation,
+  withRotationDelta,
+  withBackground,
+  resetTransform,
+} from './canvas-editor/editor-transform';

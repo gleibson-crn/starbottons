@@ -1,5 +1,5 @@
-import type { EditorTransform, PrintSpec } from '../../shared/types';
-import { artDiameterMm, safeDiameterMm } from '../../shared/utils';
+import type { EditorTransform, PrintSpec } from '../types';
+import { artDiameterMm, safeDiameterMm } from './resolution';
 
 /** Fração do viewport ocupada pelo diâmetro da arte (margem p/ rótulos). */
 const ART_FILL_RATIO = 0.82;

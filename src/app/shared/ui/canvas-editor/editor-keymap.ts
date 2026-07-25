@@ -1,4 +1,4 @@
-import type { EditorTransform } from '../../shared/types';
+import type { EditorTransform } from '../../types';
 import {
   resetTransform,
   withOffset,

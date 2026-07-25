@@ -4,12 +4,14 @@ import { AuthService } from './auth.service';
 
 /**
  * Guard funcional que protege rotas autenticadas.
- * Redireciona para `/auth` quando não há sessão ativa.
+ * Aguarda a reidratação da sessão (evita deslogar em reload/acesso direto) e
+ * redireciona para `/auth` quando não há sessão ativa.
  */
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
+  await auth.ensureHydrated();
   if (auth.isAuthenticated()) {
     return true;
   }

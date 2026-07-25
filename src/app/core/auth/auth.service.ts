@@ -19,11 +19,23 @@ export class AuthService {
   /** Usuário atual derivado da sessão, ou `null`. */
   readonly user = signal<User | null>(null);
 
+  /** Resolve quando a sessão inicial foi lida do storage (evita corrida do guard). */
+  private readonly hydrated: Promise<void>;
+
   constructor() {
-    void this.hydrate();
+    this.hydrated = this.hydrate();
     this.supabase.auth.onAuthStateChange((_event, session) => {
       this.applySession(session);
     });
+  }
+
+  /**
+   * Aguarda a reidratação inicial da sessão. O guard deve `await` isto antes de
+   * decidir: num reload/acesso direto a uma rota protegida, `getSession()` é
+   * assíncrono e a sessão do storage ainda não estaria aplicada.
+   */
+  async ensureHydrated(): Promise<void> {
+    await this.hydrated;
   }
 
   /** Retorna `true` se há uma sessão ativa. */

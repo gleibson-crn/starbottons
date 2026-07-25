@@ -10,7 +10,7 @@ import {
   withRotation,
   withScale,
   withZoom,
-} from './editor-transform';
+} from '../../shared/ui';
 
 /**
  * EditorControls — controles equivalentes aos gestos (WCAG 2.1.1): sliders de

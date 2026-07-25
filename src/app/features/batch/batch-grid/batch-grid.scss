@@ -1,0 +1,80 @@
+.batch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.batch__toolbar {
+  display: grid;
+  gap: var(--sp-4);
+  align-items: center;
+}
+
+@media (min-width: 720px) {
+  .batch__toolbar {
+    grid-template-columns: 1fr auto auto;
+  }
+}
+
+.batch__heading h1 {
+  margin: 0;
+}
+
+.batch__sub {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.batch__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.batch__blocked {
+  margin: 0;
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid var(--warning-500);
+  color: var(--color-text);
+  font-size: var(--fs-sm);
+}
+
+.batch__drop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.batch__drop--compact {
+  padding: var(--sp-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.batch__drop-label {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+
+.batch__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .batch__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.batch__empty {
+  color: var(--color-text-muted);
+}

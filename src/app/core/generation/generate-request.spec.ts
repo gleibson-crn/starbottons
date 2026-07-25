@@ -7,7 +7,7 @@
  * mm↔px compartilhada, então esta conversão precisa estar exata.
  */
 import type { EditorTransform, PrintSpec } from '../../shared/types';
-import { computeLayout } from '../editor/editor-geometry';
+import { computeLayout } from '../../shared/utils';
 import { buildGenerateRequest } from './generate-request';
 
 const SPEC_32: PrintSpec = {

@@ -25,6 +25,12 @@
   background: var(--color-surface);
 }
 
+.shell__batch-label {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 .shell__main {
   flex: 1;
   inline-size: min(100%, 1080px);

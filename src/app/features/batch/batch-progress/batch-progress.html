@@ -1,0 +1,12 @@
+<div class="bprog" [class]="'bprog--' + variant()">
+  <app-progress-indicator [value]="percent()" [label]="label()" />
+  <ul class="bprog__counts">
+    <li class="bprog__count">✔ {{ ready() }} prontas</li>
+    @if (generating() > 0) {
+      <li class="bprog__count">⏳ {{ generating() }} gerando</li>
+    }
+    @if (failed() > 0) {
+      <li class="bprog__count bprog__count--fail">✖ {{ failed() }} falhas</li>
+    }
+  </ul>
+</div>

@@ -1,5 +1,5 @@
 import type { EditorTransform, GenerateOptionsBody, PrintSpec } from '../../shared/types';
-import { computeLayout } from '../editor/editor-geometry';
+import { computeLayout } from '../../shared/utils';
 
 /**
  * Monta o corpo de `generate-art`. O offset do editor está em px de tela; aqui

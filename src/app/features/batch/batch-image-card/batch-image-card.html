@@ -1,0 +1,113 @@
+<article class="bcard card" [class]="'bcard--' + status()">
+  <div class="bcard__head">
+    <img
+      class="bcard__thumb"
+      [src]="item().previewUrl"
+      [alt]="'Pré-visualização de ' + item().fileName"
+    />
+    <div class="bcard__meta">
+      <div class="field">
+        <label class="field__label" [for]="'name-' + item().id">Nome</label>
+        <input
+          type="text"
+          class="field__control"
+          [id]="'name-' + item().id"
+          [value]="item().name"
+          [attr.aria-invalid]="nameInvalid()"
+          [attr.aria-describedby]="nameInvalid() ? 'name-err-' + item().id : null"
+          placeholder="Nome da arte"
+          required
+          (input)="onName($event)"
+        />
+        @if (nameInvalid()) {
+          <p class="field__error" [id]="'name-err-' + item().id" role="status">
+            Dê um nome para gerar e baixar esta imagem.
+          </p>
+        }
+      </div>
+      <p class="bcard__dims">
+        @if (item().upload) {
+          {{ item().width }} × {{ item().height }} px
+        } @else if (item().uploadError) {
+          Falha no envio: {{ item().uploadError }}
+        } @else {
+          Enviando…
+        }
+      </p>
+    </div>
+    <button
+      type="button"
+      class="btn btn--ghost bcard__remove"
+      [disabled]="busy()"
+      (click)="removed.emit()"
+    >
+      Remover
+    </button>
+  </div>
+
+  @if (item().upload) {
+    @if (badgeDpi(); as dpi) {
+      <app-resolution-badge [dpi]="dpi" [dense]="true" />
+    }
+
+    <app-size-multi-select
+      [item]="item()"
+      [capped]="capped()"
+      (sizeToggle)="sizeToggled.emit($event)"
+    />
+
+    @if (!hasSelection()) {
+      <p class="bcard__warn" role="status">Selecione ao menos 1 tamanho.</p>
+    }
+
+    <div class="bcard__actions">
+      <button
+        type="button"
+        class="btn btn--ghost"
+        [disabled]="!canAdjust() || busy()"
+        (click)="editing.set(true)"
+      >
+        Ajustar
+      </button>
+      @if (showRetry()) {
+        <button
+          type="button"
+          class="btn btn--ghost"
+          [disabled]="busy()"
+          (click)="retried.emit()"
+        >
+          Tentar novamente
+        </button>
+      }
+    </div>
+
+    @if (downloads().length > 0) {
+      <ul class="bcard__downloads" aria-label="Artes prontas para download">
+        @for (dl of downloads(); track dl.size) {
+          <li class="bcard__dl">
+            <span class="bcard__dl-size">{{ dl.size }} mm</span>
+            <app-download-button
+              label="PNG"
+              [url]="dl.pngUrl"
+              [filename]="dl.pngName"
+            />
+            <app-download-button
+              label="PDF"
+              icon="📄"
+              [url]="dl.pdfUrl"
+              [filename]="dl.pdfName"
+            />
+          </li>
+        }
+      </ul>
+    }
+  }
+</article>
+
+@if (editing()) {
+  <app-batch-editor-dialog
+    [item]="item()"
+    (saved)="onSaved($event)"
+    (closed)="editing.set(false)"
+  />
+}

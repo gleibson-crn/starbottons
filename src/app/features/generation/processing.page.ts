@@ -7,8 +7,7 @@ import {
 import { Router } from '@angular/router';
 import { WorkflowStore } from '../../core/workflow';
 import { ProgressIndicator, ToastService } from '../../shared/ui';
-import { buildGenerateRequest } from './generate-request';
-import { GenerationService } from './generation.service';
+import { buildGenerateRequest, GenerationService } from '../../core/generation';
 
 /**
  * ProcessingPage — passo intermediário. Dispara `generate-art`, mostra barra

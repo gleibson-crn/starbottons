@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { APP_CONFIG } from '../../core/config/app-config';
-import { SupabaseClientService } from '../../core/supabase';
+import { APP_CONFIG } from '../config/app-config';
+import { SupabaseClientService } from '../supabase';
 import type {
   AssetRecord,
   GatewayResponse,
@@ -57,6 +57,33 @@ export class GenerationGateway {
       throw err;
     } finally {
       clearTimeout(timer);
+    }
+  }
+
+  /**
+   * Pré-insere o job com `status='queued'` e o `batch_id` do lote ANTES de
+   * chamar a Edge. A Edge faz UPSERT por `id` (preservando `batch_id`), então
+   * carimbamos o lote sem tocar na função. Idempotente por `id`.
+   */
+  async insertQueuedJob(input: {
+    jobId: string;
+    uploadId: string;
+    shape?: string;
+    sizeMm: number;
+    batchId: string | null;
+    params: unknown;
+  }): Promise<void> {
+    const { error } = await this.supabase.from('generation_jobs').insert({
+      id: input.jobId,
+      upload_id: input.uploadId,
+      shape: input.shape ?? 'round',
+      size_mm: input.sizeMm,
+      status: 'queued',
+      batch_id: input.batchId,
+      params: input.params ?? {},
+    });
+    if (error) {
+      throw new Error(`Falha ao registrar job do lote: ${error.message}`);
     }
   }
 

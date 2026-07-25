@@ -7,6 +7,16 @@
     (fileRejected)="onRejected($event)"
   />
 
+  <div class="upload__batch card">
+    <div>
+      <p class="upload__batch-title">Precisa de várias artes?</p>
+      <p class="upload__batch-desc">
+        Envie até 25 imagens e gere vários tamanhos de uma vez.
+      </p>
+    </div>
+    <a class="btn btn--ghost" routerLink="/app/batch">Enviar em lote</a>
+  </div>
+
   @if (probe(); as p) {
     <div class="upload__preview card">
       <img class="upload__thumb" [src]="p.previewUrl" alt="Pré-visualização da imagem enviada" />

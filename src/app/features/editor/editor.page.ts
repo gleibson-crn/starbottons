@@ -8,10 +8,9 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { WorkflowStore } from '../../core/workflow';
-import { ResolutionBadge } from '../../shared/ui';
+import { CanvasEditor, ResolutionBadge } from '../../shared/ui';
 import type { EditorTransform } from '../../shared/types';
 import { canGenerateAtDpi, effectiveDpi, loadImage } from '../../shared/utils';
-import { CanvasEditor } from './canvas-editor';
 import { EditorControls } from './editor-controls';
 
 /**

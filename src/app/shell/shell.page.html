@@ -5,7 +5,11 @@
   </header>
 
   <div class="shell__stepper">
-    <app-stepper [current]="step()" />
+    @if (batchMode()) {
+      <p class="shell__batch-label">Processamento em lote</p>
+    } @else {
+      <app-stepper [current]="step()" />
+    }
   </div>
 
   <main class="shell__main" id="conteudo">

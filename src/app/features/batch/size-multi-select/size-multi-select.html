@@ -1,0 +1,24 @@
+<fieldset class="sizes">
+  <legend class="sizes__legend">Tamanhos (mm)</legend>
+  @for (size of sizes; track size) {
+    <div class="sizes__row">
+      <input
+        type="checkbox"
+        class="sizes__check"
+        [id]="checkboxId(size)"
+        [checked]="isChecked(size)"
+        [disabled]="isDisabled(size)"
+        [attr.aria-describedby]="reason(size) ? reasonId(size) : null"
+        (change)="onToggle(size)"
+      />
+      <label class="sizes__label" [for]="checkboxId(size)">
+        <span class="sizes__dot" aria-hidden="true">{{ icon(size) }}</span>
+        <span>{{ size }} mm</span>
+        <span class="sr-only">— {{ tierLabel(size) }}</span>
+      </label>
+      @if (reason(size)) {
+        <span class="sizes__reason" [id]="reasonId(size)">{{ reason(size) }}</span>
+      }
+    </div>
+  }
+</fieldset>

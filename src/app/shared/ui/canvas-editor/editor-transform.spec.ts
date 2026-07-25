@@ -1,4 +1,4 @@
-import { DEFAULT_TRANSFORM } from '../../shared/types';
+import { DEFAULT_TRANSFORM } from '../../types';
 import {
   SCALE_MAX,
   SCALE_MIN,

@@ -39,6 +39,11 @@ export const routes: Routes = [
         loadChildren: () => import('./features/generation/generation.routes'),
       },
       {
+        path: 'batch',
+        data: { batch: true },
+        loadChildren: () => import('./features/batch/batch.routes'),
+      },
+      {
         path: 'result',
         data: { step: 3 },
         loadChildren: () => import('./features/result/result.routes'),

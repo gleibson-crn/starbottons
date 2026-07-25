@@ -5,11 +5,11 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { WorkflowStore } from '../../core/workflow';
 import { FileDropzone, ToastService } from '../../shared/ui';
-import type { ImageProbe } from './upload.service';
-import { UploadService } from './upload.service';
+import type { ImageProbe } from '../../core/upload';
+import { UploadService } from '../../core/upload';
 
 /** Abaixo disto a imagem tende a ficar sem nitidez mesmo no menor botton. */
 const LOW_RES_THRESHOLD = 700;
@@ -21,7 +21,7 @@ const LOW_RES_THRESHOLD = 700;
 @Component({
   selector: 'app-upload-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FileDropzone],
+  imports: [FileDropzone, RouterLink],
   templateUrl: './upload.page.html',
   styleUrl: './upload.page.scss',
 })

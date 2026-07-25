@@ -140,6 +140,17 @@ describe('GenerationService', () => {
     expect(fake.invokeCalls).toBe(1);
   });
 
+  it('usa o job_id externo (options.jobId) quando fornecido — idempotência do lote', async () => {
+    const fake = new FakeGateway();
+    fake.invoke = () => Promise.resolve({ status: 200, body: { assets: [] } });
+    const svc = setup(fake);
+
+    await svc.generate(REQUEST, { ...NO_SLEEP, jobId: 'batch-job-123' });
+
+    const body = fake.lastBody as { job_id?: string };
+    expect(body.job_id).toBe('batch-job-123');
+  });
+
   it('retenta a chamada até 3× em erro transitório', async () => {
     const fake = new FakeGateway();
     let calls = 0;

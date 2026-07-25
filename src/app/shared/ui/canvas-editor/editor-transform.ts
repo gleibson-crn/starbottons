@@ -1,5 +1,5 @@
-import type { EditorTransform } from '../../shared/types';
-import { DEFAULT_TRANSFORM } from '../../shared/types';
+import type { EditorTransform } from '../../types';
+import { DEFAULT_TRANSFORM } from '../../types';
 
 export const SCALE_MIN = 0.2;
 export const SCALE_MAX = 8;

@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { AuthService } from '../../core/auth';
-import { SupabaseClientService } from '../../core/supabase';
+import { AuthService } from '../auth';
+import { SupabaseClientService } from '../supabase';
 import type { UploadRecord } from '../../shared/types';
 import { loadImage, safeFileName } from '../../shared/utils';
 

@@ -27,6 +27,8 @@ const TIER_VIEW: Record<ResolutionTier, TierView> = {
 })
 export class ResolutionBadge {
   readonly dpi = input.required<number>();
+  /** Modo compacto: oculta a linha de meta (DPI + dica), mantendo o título. */
+  readonly dense = input<boolean>(false);
   readonly tier = computed<ResolutionTier>(() => resolutionTier(this.dpi()));
   readonly view = computed<TierView>(() => TIER_VIEW[this.tier()]);
   readonly roundedDpi = computed(() => Math.round(this.dpi()));

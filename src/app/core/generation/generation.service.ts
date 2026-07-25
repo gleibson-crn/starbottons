@@ -19,6 +19,12 @@ export interface GenerateOptions {
   onProgress?: (pct: number | null) => void;
   sleep?: (ms: number) => Promise<void>;
   signal?: AbortSignal;
+  /**
+   * `job_id` externo (idempotente). Se ausente, um UUID é gerado — o fluxo
+   * single não muda. O LOTE gera o id, pré-insere o job com `batch_id` e passa
+   * o mesmo id aqui, de modo que retry reenvie o mesmo job (UPSERT no backend).
+   */
+  jobId?: string;
 }
 
 interface ResolvedOptions {
@@ -54,7 +60,7 @@ export class GenerationService {
     options: GenerateOptions = {},
   ): Promise<GenerationResult> {
     const cfg = { ...DEFAULTS, ...options };
-    const jobId = crypto.randomUUID();
+    const jobId = options.jobId ?? crypto.randomUUID();
     const body = { ...request, job_id: jobId };
     let lastError: unknown;
     for (let attempt = 1; attempt <= cfg.maxRetries; attempt++) {

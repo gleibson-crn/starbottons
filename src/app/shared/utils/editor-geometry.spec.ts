@@ -1,4 +1,4 @@
-import { DEFAULT_TRANSFORM, type PrintSpec } from '../../shared/types';
+import { DEFAULT_TRANSFORM, type PrintSpec } from '../types';
 import { computeLayout, imageDrawSize, isBleedCovered } from './editor-geometry';
 
 const SPEC: PrintSpec = {

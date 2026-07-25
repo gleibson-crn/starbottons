@@ -1,5 +1,5 @@
 import type { EditorTransform, PrintSpec } from '../../shared/types';
-import { computeLayout, imageDrawSize } from './editor-geometry';
+import { computeLayout, imageDrawSize } from '../../shared/utils';
 
 /** Parâmetros para compor o mockup (face visível) de um botton. */
 export interface MockupParams {

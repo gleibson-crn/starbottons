@@ -11,8 +11,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import type { EditorTransform, PrintSpec } from '../../shared/types';
-import { computeLayout, imageDrawSize, isBleedCovered } from './editor-geometry';
+import type { EditorTransform, PrintSpec } from '../../types';
+import { computeLayout, imageDrawSize, isBleedCovered } from '../../utils';
 import { applyKey } from './editor-keymap';
 import { drawScene } from './editor-render';
 import { withOffset, withZoom } from './editor-transform';

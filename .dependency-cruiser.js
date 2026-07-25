@@ -2,9 +2,17 @@
  * dependency-cruiser — regras de arquitetura em camadas do Star Bottons.
  *
  * Camadas (src/app):
- *   core/     infraestrutura (supabase, auth, guards, config)
+ *   core/     infraestrutura (supabase, auth, guards, config, generation)
  *   shared/   utilitários puros, tipos e UI reutilizável (sem dependências de app)
  *   features/ telas/fluxos (auth, upload, editor, generation, result)
+ *
+ * O MOTOR de geração (service, gateway, errors, buildGenerateRequest) vive em
+ * `core/generation` — é infraestrutura sem UI, reusável por qualquer feature
+ * (ex.: o fluxo single em features/generation e o fluxo em lote em
+ * features/batch). O `UploadService` (envio ao bucket) vive em `core/upload`;
+ * a matemática pura de layout em `shared/utils/editor-geometry`; e o CanvasEditor
+ * reutilizável em `shared/ui/canvas-editor`. Assim nenhuma feature precisa
+ * importar outra: a regra `features-nao-se-importam` abaixo vale sem exceções.
  *
  * Direção de dependência permitida:
  *   features -> core, shared

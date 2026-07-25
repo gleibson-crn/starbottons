@@ -18,3 +18,7 @@ export { loadImage, safeFileName } from './image';
 export { rovingNext } from './radiogroup';
 export { sniffImageMime } from './magic-bytes';
 export { withConfiguredHost } from './signed-url';
+export { computeLayout, imageDrawSize, isBleedCovered } from './editor-geometry';
+export type { EditorLayout } from './editor-geometry';
+export { runPool, PoolAbortedError } from './concurrency-pool';
+export type { RunPoolOptions } from './concurrency-pool';

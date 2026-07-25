@@ -1,0 +1,86 @@
+<section class="batch" aria-labelledby="batch-title">
+  <header class="batch__toolbar">
+    <div class="batch__heading">
+      <h1 id="batch-title">Processamento em lote</h1>
+      <p class="batch__sub">
+        Até 25 imagens · {{ remaining() }} de 75 artes disponíveis
+      </p>
+    </div>
+
+    @if (hasItems()) {
+      <app-batch-progress
+        [total]="totalArtes()"
+        [ready]="artesProntas()"
+        [generating]="artesGerando()"
+        [failed]="artesFalhas()"
+      />
+
+      <div class="batch__actions">
+        @if (generating()) {
+          <button type="button" class="btn btn--ghost" (click)="cancel()">
+            Cancelar
+          </button>
+        }
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!podeGerar()"
+          (click)="generate()"
+        >
+          {{ generating() ? 'Gerando…' : 'Gerar tudo' }}
+        </button>
+        <button
+          type="button"
+          class="btn btn--ghost"
+          [disabled]="!hasReady() || zipping()"
+          (click)="downloadZip()"
+        >
+          {{ zipping() ? 'Compactando…' : 'Baixar tudo (ZIP)' }}
+        </button>
+      </div>
+    }
+  </header>
+
+  @if (nameMissing()) {
+    <p class="batch__blocked" role="status">
+      Há imagens sem nome. Dê um nome a cada imagem para gerar as artes.
+    </p>
+  }
+
+  <p class="sr-only" role="status" aria-live="polite">{{ liveStatus() }}</p>
+
+  <div class="batch__drop" [class.batch__drop--compact]="hasItems()">
+    <p class="batch__drop-label">
+      {{ hasItems() ? 'Adicionar mais imagens' : 'Envie suas imagens (PNG ou JPEG, até 25 MB cada)' }}
+    </p>
+    <app-file-dropzone
+      [multiple]="true"
+      (filesAccepted)="onFilesAccepted($event)"
+      (filesRejected)="onFilesRejected($event)"
+    />
+  </div>
+
+  @if (hasItems()) {
+    <ul class="batch__grid">
+      @for (item of items(); track item.id) {
+        <li class="batch__cell">
+          <app-batch-image-card
+            [item]="item"
+            [capped]="capped()"
+            [busy]="generating()"
+            (sizeToggled)="onToggle(item.id, $event)"
+            (removed)="onRemove(item.id)"
+            (nameChanged)="onName(item.id, $event)"
+            (transformChanged)="onTransform(item.id, $event)"
+            (retried)="onRetry(item.id)"
+          />
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="batch__empty">
+      Nenhuma imagem ainda. Você também pode
+      <a routerLink="/app/upload">enviar uma única imagem</a>.
+    </p>
+  }
+</section>

@@ -1,5 +1,5 @@
-import type { EditorTransform } from '../../shared/types';
-import type { EditorLayout } from './editor-geometry';
+import type { EditorTransform } from '../../types';
+import type { EditorLayout } from '../../utils';
 
 /** Parâmetros de uma cena completa do editor. */
 export interface SceneParams {
