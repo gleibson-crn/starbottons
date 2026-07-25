@@ -222,9 +222,14 @@ web3 = 30
 # secret = ""
 
 [auth.email]
-# Allow/disallow new user signups via email to your project.
-# SECURITY F-001 (AUDIT-2026-07-25): desligado — sem auto-registro por e-mail.
-enable_signup = false
+# Provider e-mail/senha LIGADO para LOGIN dos usuários internos.
+# NOTA CLI (F-001): [auth.email].enable_signup mapeia para
+# GOTRUE_EXTERNAL_EMAIL_ENABLED — o provider INTEIRO. Desligá-lo derruba o
+# LOGIN, não só o cadastro. Por isso fica `true` aqui. O bloqueio de
+# auto-cadastro (F-001) é garantido por [auth].enable_signup = false acima
+# (GOTRUE_DISABLE_SIGNUP=true), que barra QUALQUER signup mesmo com o provider
+# de login ligado.
+enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
@@ -392,7 +397,7 @@ deno_version = 2
 # secret_key = "env(SECRET_VALUE)"
 
 [analytics]
-enabled = true
+enabled = false
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
