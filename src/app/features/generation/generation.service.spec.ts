@@ -47,6 +47,10 @@ class FakeGateway {
   signRender(path: string): Promise<string | null> {
     return Promise.resolve(`signed:${path}`);
   }
+
+  toConfiguredHost(url: string | null): string | null {
+    return url;
+  }
 }
 
 function setup(fake: FakeGateway): GenerationService {

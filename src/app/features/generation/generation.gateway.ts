@@ -6,11 +6,13 @@ import type {
   GatewayResponse,
   GenerationJob,
 } from '../../shared/types';
+import { withConfiguredHost } from '../../shared/utils';
 import { GenerationTimeoutError } from './generation-timeout.error';
 
 /** Bucket privado de saída da geração. */
 const RENDERS_BUCKET = 'renders';
-const TTL_SECONDS = 3600;
+// Alinhado ao TTL da Edge (F-008, AUDIT-2026-07-25): 10min.
+const TTL_SECONDS = 600;
 
 interface JobRow {
   id: string;
@@ -87,10 +89,19 @@ export class GenerationGateway {
       const { data, error } = await this.supabase.storage
         .from(RENDERS_BUCKET)
         .createSignedUrl(storagePath, TTL_SECONDS);
-      return error ? null : (data?.signedUrl ?? null);
+      return error ? null : this.toConfiguredHost(data?.signedUrl ?? null);
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Reescreve o host de uma signed URL para o supabaseUrl configurado. A Edge
+   * assina com o host interno dela (ex.: kong:8000 no local), que o browser não
+   * alcança; em produção os hosts coincidem e isto é no-op.
+   */
+  toConfiguredHost(url: string | null): string | null {
+    return withConfiguredHost(url, this.config.supabaseUrl);
   }
 
   private async headers(): Promise<HeadersInit> {

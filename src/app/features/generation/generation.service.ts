@@ -126,7 +126,9 @@ export class GenerationService {
   private fromEdge(body: unknown, jobId: string): GenerationResult {
     const b = (body ?? {}) as { job_id?: string; assets?: EdgeAsset[] };
     const url = (kind: AssetKind): string | null =>
-      b.assets?.find((a) => a.kind === kind)?.signed_url ?? null;
+      this.gateway.toConfiguredHost(
+        b.assets?.find((a) => a.kind === kind)?.signed_url ?? null,
+      );
     return {
       jobId: b.job_id ?? jobId,
       printPngUrl: url('print_png'),

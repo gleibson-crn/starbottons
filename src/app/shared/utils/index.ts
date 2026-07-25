@@ -17,3 +17,4 @@ export {
 export { loadImage, safeFileName } from './image';
 export { rovingNext } from './radiogroup';
 export { sniffImageMime } from './magic-bytes';
+export { withConfiguredHost } from './signed-url';
