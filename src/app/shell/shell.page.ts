@@ -52,7 +52,7 @@ export class ShellPage {
     while (child?.firstChild) {
       child = child.firstChild;
     }
-    const step = child?.snapshot.data['step'];
+    const step = child?.snapshot?.data?.['step'];
     this.step.set(typeof step === 'number' ? step : 0);
   }
 }
