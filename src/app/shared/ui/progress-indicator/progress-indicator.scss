@@ -1,0 +1,36 @@
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.progress__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.progress__track {
+  block-size: 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  overflow: hidden;
+}
+
+.progress__bar {
+  block-size: 100%;
+  background: var(--primary-600);
+  border-radius: var(--radius-full);
+  transition: width var(--motion-base) var(--ease);
+}
+
+.progress__bar--indeterminate {
+  inline-size: 40%;
+  animation: indeterminate 1.2s var(--ease) infinite;
+}
+
+@keyframes indeterminate {
+  0% { margin-inline-start: -40%; }
+  100% { margin-inline-start: 100%; }
+}

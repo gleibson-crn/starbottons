@@ -1,0 +1,16 @@
+.sel__legend {
+  font-size: var(--fs-md);
+  margin-block: var(--sp-6) var(--sp-3);
+}
+
+.sel__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--sp-3);
+}
+
+.sel__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: var(--sp-8);
+}

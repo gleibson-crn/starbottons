@@ -1,0 +1,21 @@
+<div
+  class="dropzone"
+  [class.is-dragging]="dragging()"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave()"
+  (drop)="onDrop($event)"
+>
+  <span class="dropzone__icon" aria-hidden="true">🖼️</span>
+  <p class="dropzone__title">Arraste uma imagem aqui</p>
+  <p class="dropzone__hint">PNG ou JPEG · até {{ maxMb() }} MB</p>
+
+  <label class="dropzone__browse">
+    <span>Procurar arquivo</span>
+    <input
+      type="file"
+      class="sr-only"
+      [accept]="acceptAttr"
+      (change)="onInputChange($event)"
+    />
+  </label>
+</div>

@@ -1,0 +1,18 @@
+<canvas
+  #canvas
+  class="canvas"
+  tabindex="0"
+  role="application"
+  aria-label="Editor de enquadramento. Use as setas para mover, mais e menos para zoom, colchetes para girar, R para redefinir."
+  aria-describedby="canvas-help"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerUp()"
+  (pointercancel)="onPointerUp()"
+  (wheel)="onWheel($event)"
+  (keydown)="onKeydown($event)"
+></canvas>
+<p id="canvas-help" class="sr-only">
+  Arraste para reposicionar. Setas movem a imagem; teclas + e - dão zoom;
+  colchetes esquerdo e direito giram; tecla R redefine o ajuste.
+</p>

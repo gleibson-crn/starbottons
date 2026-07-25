@@ -1,0 +1,45 @@
+<div class="controls">
+  <div class="controls__row">
+    <label class="field__label" for="zoom">Zoom</label>
+    <div class="controls__zoom">
+      <button type="button" class="btn btn--ghost" (click)="zoomOut()" aria-label="Diminuir zoom">−</button>
+      <input
+        id="zoom"
+        type="range"
+        [min]="scaleMin"
+        [max]="scaleMax"
+        step="0.05"
+        [value]="transform().scale"
+        (input)="onScale($any($event.target).value)"
+      />
+      <button type="button" class="btn btn--ghost" (click)="zoomIn()" aria-label="Aumentar zoom">+</button>
+    </div>
+  </div>
+
+  <div class="controls__row">
+    <label class="field__label" for="rotation">
+      Rotação ({{ transform().rotation }}°)
+    </label>
+    <input
+      id="rotation"
+      type="range"
+      [min]="rotMin"
+      [max]="rotMax"
+      step="1"
+      [value]="transform().rotation"
+      (input)="onRotation($any($event.target).value)"
+    />
+  </div>
+
+  <div class="controls__row controls__row--inline">
+    <label class="field__label" for="bg">Cor de fundo</label>
+    <input
+      id="bg"
+      type="color"
+      class="controls__color"
+      [value]="transform().background"
+      (input)="onBackground($any($event.target).value)"
+    />
+    <button type="button" class="btn btn--ghost" (click)="reset()">Redefinir</button>
+  </div>
+</div>

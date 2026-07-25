@@ -1,0 +1,53 @@
+<section aria-labelledby="sel-title">
+  <h1 id="sel-title">Escolha modelo e tamanho</h1>
+
+  <h2 class="sel__legend" id="model-label">Modelo</h2>
+  <div
+    class="sel__grid"
+    role="radiogroup"
+    aria-labelledby="model-label"
+  >
+    @for (m of models; track m.key; let i = $index) {
+      <app-option-card
+        [id]="m.key"
+        [label]="m.label"
+        [badge]="m.available ? '' : 'em breve'"
+        [selected]="model() === m.key"
+        [disabled]="!m.available"
+        [tabbable]="model() === m.key"
+        (activated)="selectModel(m.key, m.available)"
+        (keydown)="onModelKeydown($event, i)"
+      />
+    }
+  </div>
+
+  <h2 class="sel__legend" id="size-label">Tamanho</h2>
+  <div
+    class="sel__grid"
+    role="radiogroup"
+    aria-labelledby="size-label"
+  >
+    @for (s of sizes; track s.sizeMm; let i = $index) {
+      <app-option-card
+        [id]="'size-' + s.sizeMm"
+        [label]="s.label"
+        [description]="'Face ≈ ' + facePx(s.sizeMm) + ' px @300 DPI'"
+        [selected]="size() === s.sizeMm"
+        [tabbable]="size() !== null ? size() === s.sizeMm : i === 0"
+        (activated)="selectSize(s.sizeMm)"
+        (keydown)="onSizeKeydown($event, i)"
+      />
+    }
+  </div>
+
+  <div class="sel__actions">
+    <button
+      class="btn btn--primary"
+      type="button"
+      (click)="continue()"
+      [disabled]="size() === null || loading()"
+    >
+      {{ loading() ? 'Carregando…' : 'Continuar' }}
+    </button>
+  </div>
+</section>

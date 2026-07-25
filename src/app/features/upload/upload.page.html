@@ -1,0 +1,30 @@
+<section aria-labelledby="upload-title">
+  <h1 id="upload-title">Envie sua imagem</h1>
+  <p class="upload__lead">Formatos PNG ou JPEG, até 25 MB.</p>
+
+  <app-file-dropzone
+    (fileAccepted)="onAccepted($event)"
+    (fileRejected)="onRejected($event)"
+  />
+
+  @if (probe(); as p) {
+    <div class="upload__preview card">
+      <img class="upload__thumb" [src]="p.previewUrl" alt="Pré-visualização da imagem enviada" />
+      <div class="upload__meta">
+        <p class="upload__name">{{ file()?.name }}</p>
+        <p class="upload__dims">{{ p.width }} × {{ p.height }} px</p>
+        @if (lowRes()) {
+          <p class="upload__warn" role="status">
+            ⚠️ Resolução baixa — a arte pode perder nitidez. Você ainda pode continuar.
+          </p>
+        }
+      </div>
+    </div>
+
+    <div class="upload__actions">
+      <button class="btn btn--primary" type="button" (click)="continue()" [disabled]="uploading()">
+        {{ uploading() ? 'Enviando…' : 'Continuar' }}
+      </button>
+    </div>
+  }
+</section>

@@ -1,0 +1,15 @@
+<section class="processing" aria-labelledby="proc-title">
+  <div class="processing__card card">
+    <h1 id="proc-title">Gerando sua arte…</h1>
+    <p class="processing__lead">Isso costuma levar poucos segundos.</p>
+
+    <app-progress-indicator [value]="progress()" label="Progresso da geração" />
+
+    <div class="processing__actions">
+      @if (failed()) {
+        <button type="button" class="btn btn--primary" (click)="retry()">Tentar novamente</button>
+      }
+      <button type="button" class="btn btn--ghost" (click)="cancel()">Cancelar</button>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,7 @@
+<div class="badge" [class]="'badge--' + tier()" aria-live="polite">
+  <span class="badge__icon" aria-hidden="true">{{ view().icon }}</span>
+  <span class="badge__body">
+    <span class="badge__title">{{ view().title }}</span>
+    <span class="badge__meta">{{ roundedDpi() }} DPI · {{ view().hint }}</span>
+  </span>
+</div>

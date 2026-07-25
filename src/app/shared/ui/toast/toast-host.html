@@ -1,0 +1,16 @@
+<div class="toast-region" role="status" aria-live="polite" aria-atomic="false">
+  @for (t of toasts(); track t.id) {
+    <div class="toast" [class]="'toast--' + t.kind">
+      <span class="toast__icon" aria-hidden="true">{{ icon[t.kind] }}</span>
+      <span class="toast__text">{{ t.text }}</span>
+      <button
+        type="button"
+        class="toast__close"
+        (click)="dismiss(t.id)"
+        aria-label="Fechar notificação"
+      >
+        ✕
+      </button>
+    </div>
+  }
+</div>

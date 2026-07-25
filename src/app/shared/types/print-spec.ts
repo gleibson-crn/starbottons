@@ -15,8 +15,13 @@ export interface PrintSpec {
   readonly bleedMm: number;
   /** Área segura em milímetros. */
   readonly safeMm: number;
-  /** Diâmetro visível em milímetros. */
+  /** Diâmetro visível (face / linha de corte) em milímetros. */
   readonly visibleMm: number;
+  /**
+   * Diâmetro TOTAL da arte com sangria, em mm (coluna `art_diameter_mm`).
+   * Fonte da verdade do backend — usar direto (não derivar de visible+bleed).
+   */
+  readonly artDiameterMm: number;
   /** DPI alvo da arte (ver ADR-004, 300 no MVP). */
   readonly dpiTarget: number;
 }

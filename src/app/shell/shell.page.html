@@ -1,0 +1,14 @@
+<div class="shell">
+  <header class="shell__header">
+    <span class="shell__brand">★ Star Bottons</span>
+    <button type="button" class="btn btn--ghost" (click)="logout()">Sair</button>
+  </header>
+
+  <div class="shell__stepper">
+    <app-stepper [current]="step()" />
+  </div>
+
+  <main class="shell__main" id="conteudo">
+    <router-outlet />
+  </main>
+</div>

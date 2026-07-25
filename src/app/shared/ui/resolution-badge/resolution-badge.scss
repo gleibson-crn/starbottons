@@ -1,0 +1,32 @@
+.badge {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+}
+
+.badge--ok { border-color: var(--success-500); }
+.badge--warn { border-color: var(--warning-500); }
+.badge--blocked { border-color: var(--error-500); }
+
+.badge__icon {
+  font-size: var(--fs-lg);
+}
+
+.badge__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.badge__title {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+
+.badge__meta {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}

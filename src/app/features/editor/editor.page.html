@@ -1,0 +1,50 @@
+<section aria-labelledby="editor-title">
+  <h1 id="editor-title">Ajuste o enquadramento</h1>
+
+  @if (spec(); as s) {
+    <div class="editor">
+      <div class="editor__stage">
+        <app-canvas-editor
+          [image]="image()"
+          [spec]="s"
+          [(transform)]="transform"
+          (coverageChange)="onCoverage($event)"
+        />
+        <ul class="editor__legend" aria-label="Legenda das guias">
+          <li><span class="dot dot--cut"></span> Linha de corte (face)</li>
+          <li><span class="dot dot--bleed"></span> Limite de sangria (arte)</li>
+          <li><span class="dot dot--safe"></span> Zona de segurança</li>
+        </ul>
+      </div>
+
+      <aside class="editor__panel">
+        <app-resolution-badge [dpi]="dpi()" />
+
+        @if (!bleedCovered() && image()) {
+          <p class="editor__warn" role="status">
+            ⚠️ A sangria não está totalmente coberta — pode sobrar fundo nas bordas.
+          </p>
+        }
+
+        <app-editor-controls [(transform)]="transform" />
+
+        <div class="editor__actions">
+          <button type="button" class="btn btn--ghost" (click)="back()">Voltar</button>
+          <button
+            type="button"
+            class="btn btn--primary"
+            (click)="generate()"
+            [disabled]="!canGenerate()"
+          >
+            Gerar arte
+          </button>
+        </div>
+        @if (!canGenerate()) {
+          <p class="editor__blocked" role="status">
+            Resolução insuficiente para gerar. Reduza o zoom ou use uma imagem maior.
+          </p>
+        }
+      </aside>
+    </div>
+  }
+</section>

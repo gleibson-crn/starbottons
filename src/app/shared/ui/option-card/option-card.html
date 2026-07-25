@@ -1,0 +1,10 @@
+<div class="option__check" aria-hidden="true"></div>
+<div class="option__body">
+  <span class="option__label">{{ label() }}</span>
+  @if (description()) {
+    <span class="option__desc">{{ description() }}</span>
+  }
+</div>
+@if (badge()) {
+  <span class="option__badge">{{ badge() }}</span>
+}

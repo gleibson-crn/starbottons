@@ -1,0 +1,44 @@
+<section aria-labelledby="result-title">
+  <h1 id="result-title">Sua arte está pronta! 🎉</h1>
+
+  <div class="result">
+    <figure class="result__preview">
+      @if (mockupUrl(); as url) {
+        <img class="result__mockup" [src]="url" alt="Prévia do botton finalizado" />
+      } @else {
+        <div class="result__placeholder" role="status">Gerando prévia…</div>
+      }
+      <figcaption>Prévia do botton</figcaption>
+    </figure>
+
+    <div class="result__downloads">
+      <h2 class="result__subtitle">Downloads</h2>
+      <app-download-button
+        label="Arte (PNG)"
+        description="Imagem em alta resolução para impressão"
+        icon="🖼️"
+        filename="star-botton-arte.png"
+        [url]="artPngUrl()"
+      />
+      <app-download-button
+        label="Arte (PDF)"
+        description="Pronta para gráfica"
+        icon="📄"
+        filename="star-botton-arte.pdf"
+        [url]="artPdfUrl()"
+      />
+      <app-download-button
+        label="Mockup (PNG)"
+        description="Prévia para redes sociais"
+        icon="✨"
+        filename="star-botton-mockup.png"
+        [url]="mockupUrl()"
+      />
+    </div>
+  </div>
+
+  <div class="result__actions">
+    <button type="button" class="btn btn--ghost" (click)="adjustAgain()">Ajustar novamente</button>
+    <button type="button" class="btn btn--primary" (click)="newBotton()">Novo botton</button>
+  </div>
+</section>

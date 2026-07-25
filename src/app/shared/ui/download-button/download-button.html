@@ -1,0 +1,24 @@
+@if (ready) {
+  <a
+    class="dl"
+    [href]="url()"
+    [attr.download]="filename()"
+    rel="noopener"
+  >
+    <span class="dl__icon" aria-hidden="true">{{ icon() }}</span>
+    <span class="dl__body">
+      <span class="dl__label">{{ label() }}</span>
+      @if (description()) {
+        <span class="dl__desc">{{ description() }}</span>
+      }
+    </span>
+  </a>
+} @else {
+  <span class="dl dl--disabled" aria-disabled="true">
+    <span class="dl__icon" aria-hidden="true">⏳</span>
+    <span class="dl__body">
+      <span class="dl__label">{{ label() }}</span>
+      <span class="dl__desc">Preparando arquivo…</span>
+    </span>
+  </span>
+}
