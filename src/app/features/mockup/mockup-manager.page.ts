@@ -9,8 +9,8 @@ import { ToastService } from '../../shared/ui';
 import {
   ContextualTemplateService,
   type SceneTemplate,
-} from '../contextual-mockup/contextual-template.service';
-import { TemplateGrid } from '../contextual-mockup/template-grid/template-grid';
+} from './contextual-template.service';
+import { TemplateGrid } from './template-grid/template-grid';
 import { MockupEditor, type MockupDraft } from './mockup-editor/mockup-editor';
 
 type ManagerMode = 'list' | 'editor';

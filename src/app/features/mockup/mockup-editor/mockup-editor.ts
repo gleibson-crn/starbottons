@@ -11,14 +11,14 @@ import {
 import { DEFAULT_TRANSFORM, type EditorTransform } from '../../../shared/types';
 import { FileDropzone, ToastService } from '../../../shared/ui';
 import { loadImage } from '../../../shared/utils';
-import type { SceneTemplate } from '../../contextual-mockup/contextual-template.service';
-import { SaveTemplateDialog } from '../../contextual-mockup/save-template-dialog/save-template-dialog';
-import { SceneControls } from '../../contextual-mockup/scene-controls/scene-controls';
-import { ScenePreview } from '../../contextual-mockup/scene-preview/scene-preview';
+import type { SceneTemplate } from '../contextual-template.service';
+import { SaveTemplateDialog } from '../save-template-dialog/save-template-dialog';
+import { SceneControls } from '../scene-controls/scene-controls';
+import { ScenePreview } from '../scene-preview/scene-preview';
 import {
   DEFAULT_SCENE_TARGET,
   type SceneTarget,
-} from '../../contextual-mockup/scene-target';
+} from '../scene-target';
 
 /** Payload de salvamento emitido pelo editor de curadoria. */
 export interface MockupDraft {

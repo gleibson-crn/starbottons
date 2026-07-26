@@ -52,13 +52,13 @@ export const routes: Routes = [
         path: 'mockup',
         data: { contextual: true },
         loadChildren: () =>
-          import('./features/contextual-mockup/contextual-mockup.routes'),
+          import('./features/mockup/contextual-mockup.routes'),
       },
       {
         path: 'mockups',
         data: { manage: true },
         loadChildren: () =>
-          import('./features/mockup-manager/mockup-manager.routes'),
+          import('./features/mockup/mockup-manager.routes'),
       },
       { path: '', pathMatch: 'full', redirectTo: 'upload' },
     ],
