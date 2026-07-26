@@ -1,0 +1,20 @@
+<canvas
+  #canvas
+  class="scene"
+  tabindex="0"
+  role="application"
+  aria-label="Posicionador do botton sobre a foto. Setas movem o alvo, mais e menos ajustam o tamanho, colchetes giram, R redefine."
+  aria-describedby="scene-help"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerUp()"
+  (pointercancel)="onPointerUp()"
+  (wheel)="onWheel($event)"
+  (keydown)="onKeydown($event)"
+></canvas>
+<p id="scene-help" class="sr-only">
+  Arraste para mover o alvo circular sobre a foto. Setas movem o alvo; teclas
+  mais e menos mudam o tamanho; colchetes esquerdo e direito giram; a tecla R
+  redefine. Os mesmos ajustes estão disponíveis nos controles de tamanho e
+  rotação ao lado.
+</p>

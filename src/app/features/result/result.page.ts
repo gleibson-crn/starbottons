@@ -7,9 +7,8 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { WorkflowStore } from '../../core/workflow';
-import { DownloadButton } from '../../shared/ui';
+import { DownloadButton, mockupToBlob, renderMockup } from '../../shared/ui';
 import { loadImage } from '../../shared/utils';
-import { mockupToBlob, renderMockup } from '../editor/mockup-render';
 
 /**
  * ResultPage — passo 4. Dois downloads (PNG/PDF de impressão) vêm da Edge via
@@ -41,6 +40,10 @@ export class ResultPage {
 
   async adjustAgain(): Promise<void> {
     await this.router.navigate(['/app/editor']);
+  }
+
+  async applyInScene(): Promise<void> {
+    await this.router.navigate(['/app/mockup']);
   }
 
   async newBotton(): Promise<void> {

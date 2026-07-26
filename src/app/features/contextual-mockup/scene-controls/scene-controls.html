@@ -1,0 +1,37 @@
+<div class="controls">
+  <div class="controls__row">
+    <label class="field__label" for="scene-size">Tamanho</label>
+    <div class="controls__size">
+      <button type="button" class="btn btn--ghost" (click)="smaller()" aria-label="Diminuir o botton">−</button>
+      <input
+        id="scene-size"
+        type="range"
+        [min]="scaleMin"
+        [max]="scaleMax"
+        step="0.05"
+        [value]="transform().scale"
+        (input)="onSize($any($event.target).value)"
+      />
+      <button type="button" class="btn btn--ghost" (click)="larger()" aria-label="Aumentar o botton">+</button>
+    </div>
+  </div>
+
+  <div class="controls__row">
+    <label class="field__label" for="scene-rotation">
+      Rotação ({{ transform().rotation }}°)
+    </label>
+    <input
+      id="scene-rotation"
+      type="range"
+      [min]="rotMin"
+      [max]="rotMax"
+      step="1"
+      [value]="transform().rotation"
+      (input)="onRotation($any($event.target).value)"
+    />
+  </div>
+
+  <div class="controls__row controls__row--inline">
+    <button type="button" class="btn btn--ghost" (click)="reset()">Redefinir alvo</button>
+  </div>
+</div>

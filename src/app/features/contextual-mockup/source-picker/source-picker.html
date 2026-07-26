@@ -1,0 +1,46 @@
+<div class="picker">
+  <div class="picker__tabs" role="tablist" aria-label="Origem da cena">
+    <button
+      type="button"
+      role="tab"
+      id="tab-upload"
+      class="picker__tab"
+      aria-controls="panel-upload"
+      [attr.aria-selected]="tab() === 'upload'"
+      [tabindex]="tab() === 'upload' ? 0 : -1"
+      [class.picker__tab--active]="tab() === 'upload'"
+      (click)="select('upload')"
+      (keydown)="onTablistKeydown($event)"
+    >
+      Enviar foto
+    </button>
+    <button
+      type="button"
+      role="tab"
+      id="tab-library"
+      class="picker__tab"
+      aria-controls="panel-library"
+      [attr.aria-selected]="tab() === 'library'"
+      [tabindex]="tab() === 'library' ? 0 : -1"
+      [class.picker__tab--active]="tab() === 'library'"
+      (click)="select('library')"
+      (keydown)="onTablistKeydown($event)"
+    >
+      Biblioteca
+    </button>
+  </div>
+
+  @if (tab() === 'upload') {
+    <div id="panel-upload" role="tabpanel" aria-labelledby="tab-upload" class="picker__panel">
+      <app-file-dropzone
+        [accept]="accept"
+        (fileAccepted)="onAccepted($event)"
+        (fileRejected)="onRejected($event)"
+      />
+    </div>
+  } @else {
+    <div id="panel-library" role="tabpanel" aria-labelledby="tab-library" class="picker__panel">
+      <app-template-grid (use)="onTemplate($event)" />
+    </div>
+  }
+</div>

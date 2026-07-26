@@ -23,3 +23,19 @@ export {
   withBackground,
   resetTransform,
 } from './canvas-editor/editor-transform';
+export { applyKey } from './canvas-editor/editor-keymap';
+export {
+  renderMockup,
+  mockupToBlob,
+  renderMockupSprite,
+  renderContextualMockup,
+  spriteSide,
+} from './canvas-editor/mockup-render';
+export type {
+  MockupParams,
+  MockupSprite,
+  SpriteParams,
+  SceneTargetPx,
+  ContextualParams,
+} from './canvas-editor/mockup-render';
+export type { EditorTransform } from '../types';

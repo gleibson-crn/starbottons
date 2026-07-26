@@ -1,0 +1,59 @@
+.tpl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-2);
+}
+
+.tpl__thumb {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  display: grid;
+  place-items: center;
+}
+
+.tpl__img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.tpl__marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 2px solid hsl(0 0% 100% / 92%);
+  outline: 2px solid var(--primary-500);
+  border-radius: var(--radius-full);
+  pointer-events: none;
+}
+
+.tpl__error {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.tpl__name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tpl__actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.tpl__actions .btn {
+  flex: 1;
+  padding-inline: var(--sp-3);
+}

@@ -1,0 +1,56 @@
+<div class="overlay">
+  <div
+    #dialog
+    class="dialog card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="save-tpl-title"
+    aria-describedby="save-tpl-desc"
+  >
+    <h2 id="save-tpl-title" class="dialog__title">Salvar cena como template</h2>
+    <p id="save-tpl-desc" class="dialog__hint">
+      O template fica disponível na Biblioteca para reaplicar o botton depois.
+    </p>
+
+    <div class="field">
+      <label class="field__label" for="tpl-name">Nome do template</label>
+      <input
+        #nameInput
+        id="tpl-name"
+        class="field__control"
+        type="text"
+        [value]="name()"
+        (input)="onName($any($event.target).value)"
+        aria-required="true"
+        [attr.aria-invalid]="touched() && name().trim().length === 0"
+        aria-describedby="tpl-name-error"
+      />
+      @if (touched() && name().trim().length === 0) {
+        <p id="tpl-name-error" class="field__error" role="alert">
+          Informe um nome para o template.
+        </p>
+      }
+    </div>
+
+    <label class="dialog__rights">
+      <input
+        type="checkbox"
+        [checked]="rightsConfirmed()"
+        (change)="onRights($any($event.target).checked)"
+      />
+      <span>
+        Confirmo que tenho direito de uso desta imagem. Fotos podem conter
+        pessoas ou dados de localização — use apenas imagens autorizadas.
+      </span>
+    </label>
+
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--ghost" (click)="close()" [disabled]="busy()">
+        Cancelar
+      </button>
+      <button type="button" class="btn btn--primary" (click)="submit()" [disabled]="!canSave">
+        {{ busy() ? 'Salvando…' : 'Salvar template' }}
+      </button>
+    </div>
+  </div>
+</div>

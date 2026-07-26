@@ -1,0 +1,36 @@
+<figure class="tpl">
+  <div class="tpl__thumb">
+    @if (!failed() && template().thumbUrl) {
+      <img
+        class="tpl__img"
+        [src]="template().thumbUrl"
+        [alt]="'Cena do template ' + template().name"
+        (error)="onError()"
+      />
+      <span
+        class="tpl__marker"
+        aria-hidden="true"
+        [style.left]="marker().left"
+        [style.top]="marker().top"
+        [style.width]="marker().width"
+        [style.height]="marker().height"
+      ></span>
+    } @else {
+      <p class="tpl__error" role="status">Prévia indisponível</p>
+    }
+  </div>
+
+  <figcaption class="tpl__name">{{ template().name }}</figcaption>
+
+  <div class="tpl__actions">
+    <button type="button" class="btn btn--primary" (click)="onUse()">Usar</button>
+    <button
+      type="button"
+      class="btn btn--ghost"
+      (click)="onRemove()"
+      [attr.aria-label]="'Excluir template ' + template().name"
+    >
+      Excluir
+    </button>
+  </div>
+</figure>

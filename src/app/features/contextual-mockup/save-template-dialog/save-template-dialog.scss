@@ -1,0 +1,49 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: var(--color-overlay);
+}
+
+.dialog {
+  width: min(480px, 100%);
+  max-block-size: 90vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.dialog__title {
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+.dialog__hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.dialog__rights {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.dialog__rights input {
+  margin-block-start: 0.2rem;
+  inline-size: 20px;
+  block-size: 20px;
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+}

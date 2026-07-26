@@ -1,0 +1,30 @@
+@switch (phase()) {
+  @case ('loading') {
+    <p class="grid__status" role="status">Carregando biblioteca…</p>
+  }
+  @case ('error') {
+    <div class="grid__status" role="status">
+      <p>Não foi possível carregar a biblioteca.</p>
+      <button type="button" class="btn btn--ghost" (click)="reload()">Tentar novamente</button>
+    </div>
+  }
+  @default {
+    @if (templates().length === 0) {
+      <p class="grid__status" role="status">
+        Nenhum template ainda. Envie uma foto e salve a cena para reutilizar.
+      </p>
+    } @else {
+      <ul class="grid" aria-label="Templates de cenário">
+        @for (t of templates(); track t.id) {
+          <li>
+            <app-template-card
+              [template]="t"
+              (use)="onUse($event)"
+              (remove)="onRemove($event)"
+            />
+          </li>
+        }
+      </ul>
+    }
+  }
+}

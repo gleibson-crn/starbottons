@@ -36,6 +36,8 @@ export class ShellPage {
   readonly step = signal(0);
   /** `true` quando a rota ativa é o fluxo de lote (esconde o Stepper). */
   readonly batchMode = signal(false);
+  /** `true` na rota do mockup contextual (fora do fluxo linear do Stepper). */
+  readonly contextualMode = signal(false);
 
   constructor() {
     this.syncStep();
@@ -58,5 +60,6 @@ export class ShellPage {
     const step = data?.['step'];
     this.step.set(typeof step === 'number' ? step : 0);
     this.batchMode.set(data?.['batch'] === true);
+    this.contextualMode.set(data?.['contextual'] === true);
   }
 }

@@ -1,0 +1,67 @@
+<section aria-labelledby="mockup-title">
+  <h1 id="mockup-title">Aplicar em cenário</h1>
+  <p class="mockup__intro">
+    Aplique seu botton sobre uma foto de cenário. Envie uma imagem ou escolha da
+    biblioteca, posicione o alvo circular e exporte o mockup.
+  </p>
+
+  @if (!hasScene()) {
+    <app-source-picker
+      (sceneFile)="onSceneFile($event)"
+      (templateUse)="onTemplateUse($event)"
+    />
+  } @else {
+    <div class="mockup">
+      <div class="mockup__stage">
+        <app-scene-preview
+          [scene]="scene()"
+          [sprite]="sprite()"
+          [seedTarget]="seed()"
+          [(transform)]="transform"
+          (targetChange)="onTarget($event)"
+        />
+      </div>
+
+      <aside class="mockup__panel">
+        <app-scene-controls [(transform)]="transform" />
+
+        <div class="mockup__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            (click)="exportPng()"
+            [disabled]="exporting()"
+          >
+            {{ exporting() ? 'Exportando…' : 'Exportar PNG' }}
+          </button>
+          <button type="button" class="btn btn--ghost" (click)="openSave()">
+            Salvar template
+          </button>
+          <button type="button" class="btn btn--ghost" (click)="changeScene()">
+            Trocar cena
+          </button>
+        </div>
+
+        @if (resultUrl(); as url) {
+          <app-download-button
+            label="Mockup em cenário (PNG)"
+            description="Botton aplicado sobre a foto"
+            icon="🖼️"
+            filename="star-botton-cenario.png"
+            [url]="url"
+          />
+        }
+
+        <button type="button" class="btn btn--ghost" (click)="back()">Voltar ao resultado</button>
+      </aside>
+    </div>
+  }
+</section>
+
+@if (showSave()) {
+  <app-save-template-dialog
+    [busy]="saving()"
+    (saved)="saveTemplate($event)"
+    (closed)="closeSave()"
+  />
+}
