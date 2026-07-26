@@ -1,4 +1,5 @@
-import type { EditorTransform } from '../../types';
+import type { EditorTransform, ImageFilters } from '../../types';
+import { filterString } from '../../types';
 import type { EditorLayout } from '../../utils';
 
 /** Parâmetros de uma cena completa do editor. */
@@ -10,6 +11,8 @@ export interface SceneParams {
   readonly transform: EditorTransform;
   readonly drawW: number;
   readonly drawH: number;
+  /** Filtros aplicados APENAS à imagem (opcional; ausência = sem filtro). */
+  readonly filters?: ImageFilters;
 }
 
 /** Desenha a cena inteira: fundo, imagem, escurecimento e guias. */
@@ -26,12 +29,21 @@ function drawImageLayer(p: SceneParams): void {
   ctx.save();
   circlePath(ctx, layout.center, layout.bleedR);
   ctx.clip();
+  // O fundo neutro (modo quieto) NÃO recebe filtro.
   ctx.fillStyle = transform.background;
   ctx.fillRect(0, 0, p.side, p.side);
   if (image) {
     ctx.translate(layout.center + transform.offset.x, layout.center + transform.offset.y);
     ctx.rotate((transform.rotation * Math.PI) / 180);
+    const css = p.filters ? filterString(p.filters) : '';
+    if (css) {
+      ctx.filter = css;
+    }
     ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
+    // Restaura ANTES de guias/sangria/escurecimento (que nunca são filtrados).
+    if (css) {
+      ctx.filter = 'none';
+    }
   }
   ctx.restore();
 }

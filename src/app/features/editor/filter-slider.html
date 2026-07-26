@@ -1,0 +1,15 @@
+<div class="field">
+  <label class="field__label" [for]="controlId()">
+    {{ label() }} <span class="filter-slider__value">{{ percent() }}%</span>
+  </label>
+  <input
+    [id]="controlId()"
+    type="range"
+    [min]="min"
+    [max]="max"
+    [step]="step"
+    [value]="value()"
+    [attr.aria-valuetext]="valueText()"
+    (input)="onInput($any($event.target).value)"
+  />
+</div>

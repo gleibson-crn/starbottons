@@ -11,7 +11,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import type { EditorTransform, PrintSpec } from '../../types';
+import type { EditorTransform, ImageFilters, PrintSpec } from '../../types';
 import { computeLayout, imageDrawSize, isBleedCovered } from '../../utils';
 import { applyKey } from './editor-keymap';
 import { drawScene } from './editor-render';
@@ -37,6 +37,8 @@ export class CanvasEditor implements AfterViewInit {
   readonly image = input<HTMLImageElement | null>(null);
   readonly spec = input.required<PrintSpec>();
   readonly transform = model.required<EditorTransform>();
+  /** Filtros aplicados só à imagem no preview (paralelo ao transform). */
+  readonly filters = input<ImageFilters | null>(null);
   readonly coverageChange = output<boolean>();
 
   private readonly canvasRef =
@@ -105,7 +107,15 @@ export class CanvasEditor implements AfterViewInit {
     const t = this.transform();
     const img = this.image();
     const size = this.drawSize(img, layout.bleedR * 2, t.scale);
-    drawScene({ ctx, side, layout, image: img, transform: t, ...size });
+    drawScene({
+      ctx,
+      side,
+      layout,
+      image: img,
+      transform: t,
+      filters: this.filters() ?? undefined,
+      ...size,
+    });
     this.coverageChange.emit(
       img ? isBleedCovered({ transform: t, ...size, bleedR: layout.bleedR }) : false,
     );

@@ -1,0 +1,51 @@
+.treat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.treat__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-block-size: var(--tap-min);
+  padding-inline: var(--sp-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--motion-fast) var(--ease),
+    background var(--motion-fast) var(--ease),
+    box-shadow var(--motion-fast) var(--ease);
+}
+
+.chip:hover:not(.chip--active) {
+  border-color: var(--primary-500);
+}
+
+/* Estado ativo sinalizado por borda espessa + fundo + ✓ (não só cor). */
+.chip--active {
+  border-color: var(--primary-600);
+  border-width: 2px;
+  background: var(--primary-100);
+  color: var(--primary-900);
+}
+
+.chip__check {
+  font-weight: 700;
+}
+
+.treat__caption {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}

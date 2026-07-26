@@ -69,14 +69,16 @@ export class ProcessingPage {
   }
 
   private buildRequest() {
-    const upload = this.store.upload();
+    const uploadId = this.store.generationUploadId();
     const spec = this.store.spec();
     const sizeMm = this.store.sizeMm();
-    if (!upload || !spec || sizeMm === null) {
+    if (!uploadId || !spec || sizeMm === null) {
       return null;
     }
+    // Abordagem A: `uploadId` é o do upload TRATADO (se houver filtros) ou o do
+    // original. A Edge e o contrato de `generate-art` permanecem inalterados.
     return buildGenerateRequest({
-      uploadId: upload.id,
+      uploadId,
       sizeMm,
       spec,
       transform: this.store.transform(),

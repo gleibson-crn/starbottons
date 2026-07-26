@@ -1,0 +1,52 @@
+<div class="treat">
+  <div class="field">
+    <span class="field__label" id="preset-label">Filtro</span>
+    <div class="treat__presets" role="group" aria-labelledby="preset-label">
+      @for (preset of presets; track preset.id) {
+        <button
+          type="button"
+          class="chip"
+          [class.chip--active]="isActive(preset.id)"
+          [attr.aria-pressed]="isActive(preset.id)"
+          (click)="selectPreset(preset.id)"
+        >
+          @if (isActive(preset.id)) {
+            <span class="chip__check" aria-hidden="true">✓</span>
+          }
+          {{ preset.label }}
+        </button>
+      }
+    </div>
+    @if (isCustom()) {
+      <p class="treat__caption" role="status">Personalizado</p>
+    }
+  </div>
+
+  <app-filter-slider
+    controlId="filter-brightness"
+    label="Brilho"
+    [value]="filters().brightness"
+    (valueChange)="onBrightness($event)"
+  />
+  <app-filter-slider
+    controlId="filter-contrast"
+    label="Contraste"
+    [value]="filters().contrast"
+    (valueChange)="onContrast($event)"
+  />
+  <app-filter-slider
+    controlId="filter-saturate"
+    label="Saturação"
+    [value]="filters().saturate"
+    (valueChange)="onSaturate($event)"
+  />
+
+  <button
+    type="button"
+    class="btn btn--ghost"
+    (click)="reset()"
+    [disabled]="isNeutral()"
+  >
+    Redefinir filtros
+  </button>
+</div>

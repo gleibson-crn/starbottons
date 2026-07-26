@@ -1,0 +1,10 @@
+.filter-slider__value {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+input[type='range'] {
+  inline-size: 100%;
+  block-size: var(--tap-min);
+  accent-color: var(--primary-600);
+}

@@ -1,5 +1,5 @@
 <section aria-labelledby="editor-title">
-  <h1 id="editor-title">Ajuste o enquadramento</h1>
+  <h1 id="editor-title">Ajuste e trate a imagem</h1>
 
   @if (spec(); as s) {
     <div class="editor">
@@ -7,6 +7,7 @@
         <app-canvas-editor
           [image]="image()"
           [spec]="s"
+          [filters]="filters()"
           [(transform)]="transform"
           (coverageChange)="onCoverage($event)"
         />
@@ -26,7 +27,46 @@
           </p>
         }
 
-        <app-editor-controls [(transform)]="transform" />
+        <div class="editor__tabs" role="tablist" aria-label="Modo de edição">
+          @for (t of tabs; track t.id) {
+            <button
+              #tabBtn
+              type="button"
+              role="tab"
+              class="tab"
+              [id]="'tab-' + t.id"
+              [class.tab--active]="activeTab() === t.id"
+              [attr.aria-selected]="activeTab() === t.id"
+              [attr.aria-controls]="'panel-' + t.id"
+              [tabindex]="activeTab() === t.id ? 0 : -1"
+              (click)="selectTab(t.id)"
+              (keydown)="onTabKeydown($event)"
+            >
+              {{ t.label }}
+            </button>
+          }
+        </div>
+
+        @if (activeTab() === 'adjust') {
+          <div
+            role="tabpanel"
+            id="panel-adjust"
+            aria-labelledby="tab-adjust"
+            tabindex="0"
+          >
+            <app-editor-controls [(transform)]="transform" />
+          </div>
+        }
+        @if (activeTab() === 'treat') {
+          <div
+            role="tabpanel"
+            id="panel-treat"
+            aria-labelledby="tab-treat"
+            tabindex="0"
+          >
+            <app-treat-panel [(filters)]="filters" />
+          </div>
+        }
 
         <div class="editor__actions">
           <button type="button" class="btn btn--ghost" (click)="back()">Voltar</button>
@@ -34,11 +74,17 @@
             type="button"
             class="btn btn--primary"
             (click)="generate()"
-            [disabled]="!canGenerate()"
+            [disabled]="!canGenerate() || generating()"
+            [attr.aria-busy]="generating()"
           >
-            Gerar arte
+            {{ generating() ? 'Gerando…' : 'Gerar arte' }}
           </button>
         </div>
+        @if (generating()) {
+          <p class="editor__status" role="status">
+            Aplicando filtros e gerando arte…
+          </p>
+        }
         @if (!canGenerate()) {
           <p class="editor__blocked" role="status">
             Resolução insuficiente para gerar. Reduza o zoom ou use uma imagem maior.

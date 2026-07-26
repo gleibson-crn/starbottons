@@ -1,6 +1,17 @@
 export type { PrintSpec } from './print-spec';
-export type { EditorTransform, ResolutionTier } from './editor';
-export { DEFAULT_TRANSFORM } from './editor';
+export type {
+  EditorTransform,
+  ResolutionTier,
+  ImageFilters,
+  ImageEffect,
+} from './editor';
+export {
+  DEFAULT_TRANSFORM,
+  DEFAULT_FILTERS,
+  filterString,
+  filtersEqual,
+  isDefaultFilters,
+} from './editor';
 export type { ModelOption, SizeOption } from './catalog';
 export type { UploadRecord } from './upload';
 export type {

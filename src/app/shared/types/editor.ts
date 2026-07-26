@@ -24,3 +24,72 @@ export const DEFAULT_TRANSFORM: EditorTransform = {
 
 /** Faixa de gating de resolução do editor (semáforo). */
 export type ResolutionTier = 'ok' | 'warn' | 'blocked';
+
+/** Efeito de "look" mutuamente exclusivo aplicado sobre a imagem. */
+export type ImageEffect = 'none' | 'grayscale' | 'sepia';
+
+/**
+ * Tratamento/filtros de imagem aplicados no editor. Independente do
+ * enquadramento (`EditorTransform`): `brightness`/`contrast`/`saturate` são
+ * fatores multiplicativos (1 = neutro) e `effect` é um look exclusivo. O MESMO
+ * objeto alimenta o preview (canvas) e o processamento full-res na geração.
+ */
+export interface ImageFilters {
+  /** Brilho (0.5–1.5; 1 = neutro). */
+  readonly brightness: number;
+  /** Contraste (0.5–1.5; 1 = neutro). */
+  readonly contrast: number;
+  /** Saturação (0.5–1.5; 1 = neutro). */
+  readonly saturate: number;
+  /** Look exclusivo aplicado por cima dos ajustes. */
+  readonly effect: ImageEffect;
+}
+
+/** Estado neutro (nenhum filtro): render idêntico ao original. */
+export const DEFAULT_FILTERS: ImageFilters = {
+  brightness: 1,
+  contrast: 1,
+  saturate: 1,
+  effect: 'none',
+};
+
+/** `true` quando dois conjuntos de filtros são equivalentes. */
+export function filtersEqual(a: ImageFilters, b: ImageFilters): boolean {
+  return (
+    a.brightness === b.brightness &&
+    a.contrast === b.contrast &&
+    a.saturate === b.saturate &&
+    a.effect === b.effect
+  );
+}
+
+/** `true` quando os filtros estão no estado neutro (nenhum tratamento). */
+export function isDefaultFilters(f: ImageFilters): boolean {
+  return filtersEqual(f, DEFAULT_FILTERS);
+}
+
+/** Sufixo CSS do efeito exclusivo (vazio para `none`). */
+function effectSuffix(effect: ImageEffect): string {
+  if (effect === 'grayscale') {
+    return ' grayscale(1)';
+  }
+  if (effect === 'sepia') {
+    return ' sepia(1)';
+  }
+  return '';
+}
+
+/**
+ * Monta a string CSS `filter` numa ORDEM ESTÁVEL (a mesma no preview e no
+ * full-res): `brightness() contrast() saturate()` + efeito. Retorna string
+ * vazia quando `f` é o estado neutro — nesse caso nenhum filtro é aplicado.
+ */
+export function filterString(f: ImageFilters): string {
+  if (isDefaultFilters(f)) {
+    return '';
+  }
+  return (
+    `brightness(${f.brightness}) contrast(${f.contrast}) saturate(${f.saturate})` +
+    effectSuffix(f.effect)
+  );
+}
