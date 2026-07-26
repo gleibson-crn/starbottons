@@ -23,7 +23,14 @@
   <figcaption class="tpl__name">{{ template().name }}</figcaption>
 
   <div class="tpl__actions">
-    <button type="button" class="btn btn--primary" (click)="onUse()">Usar</button>
+    <button
+      type="button"
+      class="btn btn--primary"
+      (click)="onUse()"
+      [attr.aria-label]="actionLabel() + ' template ' + template().name"
+    >
+      {{ actionLabel() }}
+    </button>
     <button
       type="button"
       class="btn btn--ghost"

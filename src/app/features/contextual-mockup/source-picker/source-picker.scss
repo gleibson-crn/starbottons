@@ -30,3 +30,9 @@
 .picker__panel {
   min-block-size: 120px;
 }
+
+.picker__manage {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-end: var(--sp-3);
+}

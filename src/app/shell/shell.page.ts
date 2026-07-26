@@ -38,6 +38,8 @@ export class ShellPage {
   readonly batchMode = signal(false);
   /** `true` na rota do mockup contextual (fora do fluxo linear do Stepper). */
   readonly contextualMode = signal(false);
+  /** `true` na área curadora de mockups (fora do fluxo linear do Stepper). */
+  readonly manageMode = signal(false);
 
   constructor() {
     this.syncStep();
@@ -61,5 +63,6 @@ export class ShellPage {
     this.step.set(typeof step === 'number' ? step : 0);
     this.batchMode.set(data?.['batch'] === true);
     this.contextualMode.set(data?.['contextual'] === true);
+    this.manageMode.set(data?.['manage'] === true);
   }
 }

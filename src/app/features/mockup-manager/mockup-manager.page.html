@@ -1,0 +1,36 @@
+<section aria-labelledby="manager-title">
+  <div class="manager__head">
+    <div>
+      <h1 id="manager-title">Curadoria de mockups</h1>
+      <p class="manager__intro">
+        Cadastre cenários e já deixe pré-definida a área onde a arte será aplicada
+        — sem precisar de um botton pronto. Reaproveite os mockups depois em
+        "Aplicar em cenário".
+      </p>
+    </div>
+  </div>
+
+  @if (mode() === 'list') {
+    <div class="manager__toolbar">
+      <button type="button" class="btn btn--primary" (click)="newMockup()">
+        Novo mockup
+      </button>
+      <button type="button" class="btn btn--ghost" (click)="backToMockup()">
+        Ir para Aplicar em cenário
+      </button>
+    </div>
+
+    <app-template-grid
+      actionLabel="Editar"
+      [confirmRemove]="true"
+      (use)="onEdit($event)"
+    />
+  } @else {
+    <app-mockup-editor
+      [template]="editing()"
+      [busy]="saving()"
+      (saved)="onSave($event)"
+      (canceled)="onCancel()"
+    />
+  }
+</section>

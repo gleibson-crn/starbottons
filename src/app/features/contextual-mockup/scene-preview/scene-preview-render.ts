@@ -17,7 +17,26 @@ export function drawScenePreview(f: ScenePreviewFrame): void {
   drawBackground(f);
   drawScrim(f);
   drawSprite(f);
+  if (!f.sprite) {
+    drawPlaceholderDisc(f);
+  }
   drawTargetRing(ctx, f.target);
+}
+
+/**
+ * Disco translúcido dentro do alvo — SÓ no modo curadoria (sprite === null),
+ * quando ainda não há botton para colar. Dá noção de preenchimento/escala do
+ * alvo enquanto o usuário posiciona/dimensiona. Não afeta o modo aplicar
+ * (sprite != null), onde este ramo nunca roda (o botton preenche o alvo).
+ */
+function drawPlaceholderDisc(f: ScenePreviewFrame): void {
+  const { ctx, target } = f;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(target.cx, target.cy, target.r, 0, Math.PI * 2);
+  ctx.fillStyle = 'hsl(245 72% 58% / 26%)';
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawBackground(f: ScenePreviewFrame): void {

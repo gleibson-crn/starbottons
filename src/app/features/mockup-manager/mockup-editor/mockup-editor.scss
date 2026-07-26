@@ -1,0 +1,43 @@
+.editor {
+  display: grid;
+  grid-template-columns: minmax(280px, 560px) 1fr;
+  gap: var(--sp-8);
+  align-items: start;
+}
+
+@media (max-width: 820px) {
+  .editor {
+    grid-template-columns: 1fr;
+  }
+}
+
+.editor__stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.editor__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.editor__pick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-inline-size: 60ch;
+}
+
+.editor__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  max-inline-size: 60ch;
+}

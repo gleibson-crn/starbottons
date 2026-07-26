@@ -40,6 +40,11 @@
     </div>
   } @else {
     <div id="panel-library" role="tabpanel" aria-labelledby="tab-library" class="picker__panel">
+      <div class="picker__manage">
+        <button type="button" class="btn btn--ghost" (click)="manage()">
+          Gerenciar mockups
+        </button>
+      </div>
       <app-template-grid (use)="onTemplate($event)" />
     </div>
   }

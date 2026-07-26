@@ -30,6 +30,8 @@ interface MarkerStyle {
 })
 export class TemplateCard {
   readonly template = input.required<SceneTemplate>();
+  /** Rótulo da ação primária (default "Usar"; a curadoria usa "Editar"). */
+  readonly actionLabel = input('Usar');
   readonly use = output<SceneTemplate>();
   readonly remove = output<SceneTemplate>();
 

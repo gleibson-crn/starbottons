@@ -1,0 +1,73 @@
+@if (showDropzone()) {
+  <div class="editor__pick">
+    <p class="editor__hint">
+      Envie a foto do cenário (PNG ou JPEG). Ela será recodificada sem metadados
+      de localização antes de salvar.
+    </p>
+    <app-file-dropzone
+      [accept]="accept"
+      (fileAccepted)="onSceneFile($event)"
+      (fileRejected)="onRejected($event)"
+    />
+    @if (swapping()) {
+      <button type="button" class="btn btn--ghost" (click)="cancelSwap()">
+        Manter foto atual
+      </button>
+    }
+  </div>
+} @else if (hasScene()) {
+  <div class="editor">
+    <div class="editor__stage">
+      <app-scene-preview
+        [scene]="scene()"
+        [sprite]="null"
+        [seedTarget]="seed()"
+        [(transform)]="transform"
+        (targetChange)="onTarget($event)"
+      />
+      <p class="editor__hint">
+        Arraste o alvo para posicionar; use as setas do teclado ou os controles ao
+        lado para mover, dimensionar e rotacionar a área da arte.
+      </p>
+    </div>
+
+    <aside class="editor__panel">
+      <app-scene-controls [(transform)]="transform" />
+
+      <div class="editor__actions">
+        <button
+          type="button"
+          class="btn btn--primary"
+          (click)="onSaveClick()"
+          [disabled]="busy()"
+        >
+          @if (busy()) {
+            Salvando…
+          } @else if (isEdit()) {
+            Salvar alterações
+          } @else {
+            Salvar mockup
+          }
+        </button>
+        @if (isEdit()) {
+          <button type="button" class="btn btn--ghost" (click)="startSwap()">
+            Trocar cena
+          </button>
+        }
+        <button type="button" class="btn btn--ghost" (click)="onCancel()">
+          Cancelar
+        </button>
+      </div>
+    </aside>
+  </div>
+} @else {
+  <p class="editor__hint" role="status">Carregando cena…</p>
+}
+
+@if (showSave()) {
+  <app-save-template-dialog
+    [busy]="busy()"
+    (saved)="onDialogSaved($event)"
+    (closed)="closeSave()"
+  />
+}

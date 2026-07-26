@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   inject,
+  input,
   OnInit,
   output,
   signal,
@@ -31,6 +32,10 @@ export class TemplateGrid implements OnInit {
   private readonly service = inject(ContextualTemplateService);
   private readonly toast = inject(ToastService);
 
+  /** Rótulo da ação primária de cada card (default "Usar"). */
+  readonly actionLabel = input('Usar');
+  /** Quando `true`, pede confirmação nativa antes de excluir (curadoria). */
+  readonly confirmRemove = input(false);
   readonly use = output<SceneTemplate>();
 
   readonly templates = signal<SceneTemplate[]>([]);
@@ -45,6 +50,9 @@ export class TemplateGrid implements OnInit {
   }
 
   async onRemove(template: SceneTemplate): Promise<void> {
+    if (this.confirmRemove() && !this.confirmDelete(template.name)) {
+      return;
+    }
     try {
       await this.service.remove(template);
       this.templates.update((list) => list.filter((t) => t.id !== template.id));
@@ -57,6 +65,11 @@ export class TemplateGrid implements OnInit {
   async reload(): Promise<void> {
     this.phase.set('loading');
     await this.load();
+  }
+
+  /** Confirmação nativa (bloqueante e acessível) antes de excluir. */
+  private confirmDelete(name: string): boolean {
+    return globalThis.confirm(`Excluir o mockup "${name}"? Esta ação não pode ser desfeita.`);
   }
 
   private async load(): Promise<void> {

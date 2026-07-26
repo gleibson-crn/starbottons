@@ -9,6 +9,8 @@
       <p class="shell__batch-label">Processamento em lote</p>
     } @else if (contextualMode()) {
       <p class="shell__batch-label">Aplicar em cenário</p>
+    } @else if (manageMode()) {
+      <p class="shell__batch-label">Curadoria de mockups</p>
     } @else {
       <app-stepper [current]="step()" />
     }

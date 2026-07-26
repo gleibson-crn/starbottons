@@ -5,6 +5,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { FileDropzone, ToastService } from '../../../shared/ui';
 import type { SceneTemplate } from '../contextual-template.service';
 import { TemplateGrid } from '../template-grid/template-grid';
@@ -26,6 +27,7 @@ type SourceTab = 'upload' | 'library';
 })
 export class SourcePicker {
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
 
   readonly sceneFile = output<File>();
   readonly templateUse = output<SceneTemplate>();
@@ -58,5 +60,9 @@ export class SourcePicker {
 
   onTemplate(template: SceneTemplate): void {
     this.templateUse.emit(template);
+  }
+
+  manage(): void {
+    void this.router.navigate(['/app/mockups']);
   }
 }

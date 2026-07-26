@@ -54,6 +54,12 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/contextual-mockup/contextual-mockup.routes'),
       },
+      {
+        path: 'mockups',
+        data: { manage: true },
+        loadChildren: () =>
+          import('./features/mockup-manager/mockup-manager.routes'),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'upload' },
     ],
   },
