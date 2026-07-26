@@ -53,35 +53,43 @@
 .shell__nav {
   display: flex;
   align-items: center;
-  gap: var(--sp-1);
+  gap: var(--sp-2);
   flex-wrap: wrap;
-  /* Empurra o botão "Sair" para a extremidade oposta. */
-  margin-inline-end: auto;
+  /* Empurra a navegação (e o "Sair", que vem depois) para a direita,
+   * agrupando os três à extremidade oposta do logo. */
+  margin-inline-start: auto;
 }
 
+/* Links do menu em formato de BOTÃO (ênfase), sobre o gradiente do header. */
 .shell__nav-link {
   display: inline-flex;
   align-items: center;
   min-block-size: var(--tap-min);
   padding-inline: var(--sp-3);
   border-radius: var(--radius-md);
-  /* Branco levemente atenuado sobre o gradiente escuro do header (AA). */
-  color: hsl(0 0% 100% / 0.85);
+  border: 1px solid hsl(0 0% 100% / 0.45);
+  background: hsl(0 0% 100% / 0.08);
+  color: #fff;
   font-weight: 600;
   font-size: var(--fs-sm);
   text-decoration: none;
   transition: color var(--motion-fast) var(--ease),
-    background var(--motion-fast) var(--ease);
+    background var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease),
+    box-shadow var(--motion-base) var(--ease);
 }
 
 .shell__nav-link:hover {
-  color: #fff;
-  background: hsl(0 0% 100% / 0.15);
+  background: hsl(0 0% 100% / 0.18);
+  border-color: #fff;
+  box-shadow: var(--glow-hover);
 }
 
+/* Rota ativa em destaque: fundo branco + texto roxo (alto contraste). */
 .shell__nav-link.is-active {
-  color: #fff;
-  background: hsl(0 0% 100% / 0.22);
+  background: #fff;
+  border-color: #fff;
+  color: var(--primary-700);
 }
 
 /* Botão "Sair" (ghost) sobre o header em gradiente: texto/borda claros. */
