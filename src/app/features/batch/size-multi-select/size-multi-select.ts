@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import type { ResolutionTier } from '../../../shared/types';
-import { BOTTON_SIZES, type BatchItem, type BottonSize } from '../batch.types';
+import { BOTTON_SIZES, type BatchItem, type BottonSize } from '../../../core/batch';
 import { TIER_ICON, TIER_LABEL } from '../tier-visuals';
 
 /**

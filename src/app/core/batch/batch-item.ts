@@ -1,6 +1,6 @@
 import { DEFAULT_TRANSFORM } from '../../shared/types';
 import type { EditorTransform, UploadRecord } from '../../shared/types';
-import type { ImageProbe } from '../../core/upload';
+import type { ImageProbe } from '../upload';
 import { BATCH_EDITOR_SIDE } from './batch.constants';
 import {
   computePerSizeDpi,

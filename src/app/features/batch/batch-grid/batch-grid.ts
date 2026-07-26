@@ -7,12 +7,10 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FileDropzone, ToastService, type RejectedFile } from '../../../shared/ui';
-import { BatchStore } from '../batch-store.service';
-import { ZipExportService } from '../zip-export.service';
+import { BatchStore, ZipExportService, type BottonSize } from '../../../core/batch';
 import { BatchProgress } from '../batch-progress/batch-progress';
 import { BatchImageCard } from '../batch-image-card/batch-image-card';
 import type { BatchEditResult } from '../batch-editor-dialog/batch-editor-dialog';
-import type { BottonSize } from '../batch.types';
 
 /**
  * BatchGrid — página do LOTE. Toolbar (progresso + ações), FileDropzone múltiplo

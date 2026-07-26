@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { GenerationGateway, GenerationService } from '../../core/generation';
-import { UploadService, type ImageProbe } from '../../core/upload';
+import { GenerationGateway, GenerationService } from '../generation';
+import { UploadService, type ImageProbe } from '../upload';
 import type { GenerateOptionsBody, GenerationResult, UploadRecord } from '../../shared/types';
 import { BatchStore } from './batch-store.service';
 import { deriveItemStatus } from './batch-gating';

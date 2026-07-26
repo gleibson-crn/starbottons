@@ -3,8 +3,8 @@ import {
   buildGenerateRequest,
   GenerationGateway,
   GenerationService,
-} from '../../core/generation';
-import { UploadService } from '../../core/upload';
+} from '../generation';
+import { UploadService } from '../upload';
 import type { GenerationResult, PrintSpec } from '../../shared/types';
 import { fallbackSpec, runPool } from '../../shared/utils';
 import {

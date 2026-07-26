@@ -7,15 +7,20 @@ import {
   signal,
 } from '@angular/core';
 import { DownloadButton, ResolutionBadge } from '../../../shared/ui';
-import { deriveItemStatus, worstSelectedDpi } from '../batch-gating';
-import { artFileName } from '../batch-naming';
-import { isNameValid } from '../batch-naming';
+import {
+  BOTTON_SIZES,
+  deriveItemStatus,
+  worstSelectedDpi,
+  artFileName,
+  isNameValid,
+  type BatchItem,
+  type BottonSize,
+} from '../../../core/batch';
 import {
   BatchEditorDialog,
   type BatchEditResult,
 } from '../batch-editor-dialog/batch-editor-dialog';
 import { SizeMultiSelect } from '../size-multi-select/size-multi-select';
-import { BOTTON_SIZES, type BatchItem, type BottonSize } from '../batch.types';
 
 /** Uma arte pronta com suas URLs e nomes de arquivo. */
 interface ReadyDownload {

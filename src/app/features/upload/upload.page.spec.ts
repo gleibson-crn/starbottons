@@ -10,7 +10,7 @@ import { Router } from '@angular/router';
 import { WorkflowStore } from '../../core/workflow';
 import { UploadService } from '../../core/upload';
 import { ToastService } from '../../shared/ui';
-import { BatchStore } from '../batch/batch-store.service';
+import { BatchStore } from '../../core/batch';
 import { UploadPage } from './upload.page';
 
 const PROBE = { width: 800, height: 800, previewUrl: 'blob:preview' };

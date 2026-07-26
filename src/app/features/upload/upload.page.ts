@@ -8,7 +8,7 @@ import {
 import { Router } from '@angular/router';
 import { WorkflowStore } from '../../core/workflow';
 import { FileDropzone, ToastService, type RejectedFile } from '../../shared/ui';
-import { BatchStore } from '../batch/batch-store.service';
+import { BatchStore } from '../../core/batch';
 import type { ImageProbe } from '../../core/upload';
 import { UploadService } from '../../core/upload';
 

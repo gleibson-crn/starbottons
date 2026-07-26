@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import JSZip from 'jszip';
-import { GenerationGateway } from '../../core/generation';
+import { GenerationGateway } from '../generation';
 import type { AssetRecord } from '../../shared/types';
 import { runPool } from '../../shared/utils';
 import { POOL_CONCURRENCY } from './batch.constants';

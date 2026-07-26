@@ -12,8 +12,7 @@ import type { EditorTransform, PrintSpec } from '../../../shared/types';
 import { DEFAULT_TRANSFORM } from '../../../shared/types';
 import { CanvasEditor, ResolutionBadge } from '../../../shared/ui';
 import { effectiveDpi, fallbackSpec, loadImage } from '../../../shared/utils';
-import { largestSelectedSize } from '../batch-gating';
-import type { BatchItem } from '../batch.types';
+import { largestSelectedSize, type BatchItem } from '../../../core/batch';
 
 /** Ajuste salvo pelo diálogo (vale p/ todos os tamanhos da imagem). */
 export interface BatchEditResult {

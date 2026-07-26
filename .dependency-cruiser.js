@@ -14,6 +14,13 @@
  * reutilizável em `shared/ui/canvas-editor`. Assim nenhuma feature precisa
  * importar outra: a regra `features-nao-se-importam` abaixo vale sem exceções.
  *
+ * Pelo mesmo motivo, o DOMÍNIO + ESTADO do LOTE (o `BatchStore` por signals,
+ * o modelo `BatchItem`/tamanhos, o gating por resolução, a nomeação de arquivos
+ * e o `ZipExportService`) vive em `core/batch` — infra sem UI reusável (ex.: o
+ * fluxo em lote em features/batch e o `upload.page` que apenas encaminha ao
+ * store). Os COMPONENTES do lote ficam em `features/batch` importando de
+ * `core/batch`.
+ *
  * Direção de dependência permitida:
  *   features -> core, shared
  *   core     -> shared
