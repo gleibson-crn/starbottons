@@ -1,6 +1,22 @@
 <div class="shell">
   <header class="shell__header">
     <span class="shell__brand">★ Star Bottons</span>
+    <nav class="shell__nav" aria-label="Navegação principal">
+      <a
+        class="shell__nav-link"
+        routerLink="/app/upload"
+        routerLinkActive="is-active"
+        #uploadLink="routerLinkActive"
+        [attr.aria-current]="uploadLink.isActive ? 'page' : null"
+      >Novo botton</a>
+      <a
+        class="shell__nav-link"
+        routerLink="/app/mockups"
+        routerLinkActive="is-active"
+        #mockupsLink="routerLinkActive"
+        [attr.aria-current]="mockupsLink.isActive ? 'page' : null"
+      >Curadoria de mockups</a>
+    </nav>
     <button type="button" class="btn btn--ghost" (click)="logout()">Sair</button>
   </header>
 

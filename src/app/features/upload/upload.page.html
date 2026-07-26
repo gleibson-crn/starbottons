@@ -1,32 +1,15 @@
 <section aria-labelledby="upload-title">
   <h1 id="upload-title">Envie sua imagem</h1>
-  <p class="upload__lead">Formatos PNG ou JPEG, até 25 MB.</p>
+  <p class="upload__lead">
+    Uma imagem segue direto para o ajuste; duas ou mais abrem o envio em lote
+    automaticamente. PNG ou JPEG, até 25 MB.
+  </p>
 
   <app-file-dropzone
-    (fileAccepted)="onAccepted($event)"
-    (fileRejected)="onRejected($event)"
+    [multiple]="true"
+    (filesAccepted)="onFilesAccepted($event)"
+    (filesRejected)="onFilesRejected($event)"
   />
-
-  <div class="upload__batch card">
-    <div>
-      <p class="upload__batch-title">Precisa de várias artes?</p>
-      <p class="upload__batch-desc">
-        Envie até 25 imagens e gere vários tamanhos de uma vez.
-      </p>
-    </div>
-    <a class="btn btn--ghost" routerLink="/app/batch">Enviar em lote</a>
-  </div>
-
-  <div class="upload__batch card">
-    <div>
-      <p class="upload__batch-title">Registrar cenários</p>
-      <p class="upload__batch-desc">
-        Suba fotos de cenário e já deixe pré-definida a área da arte, sem precisar
-        de um botton pronto.
-      </p>
-    </div>
-    <a class="btn btn--ghost" routerLink="/app/mockups">Registrar mockups</a>
-  </div>
 
   @if (probe(); as p) {
     <div class="upload__preview card">

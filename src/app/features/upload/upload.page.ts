@@ -5,9 +5,10 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { WorkflowStore } from '../../core/workflow';
-import { FileDropzone, ToastService } from '../../shared/ui';
+import { FileDropzone, ToastService, type RejectedFile } from '../../shared/ui';
+import { BatchStore } from '../batch/batch-store.service';
 import type { ImageProbe } from '../../core/upload';
 import { UploadService } from '../../core/upload';
 
@@ -15,19 +16,22 @@ import { UploadService } from '../../core/upload';
 const LOW_RES_THRESHOLD = 700;
 
 /**
- * UploadPage — passo 1. Valida e envia a imagem (via FileDropzone), mostra
+ * UploadPage — passo 1. Dropzone ÚNICO que reconhece a quantidade: uma imagem
+ * segue o fluxo single (probe/preview + Continuar → /app/selection); duas ou
+ * mais acumulam no BatchStore e abrem o envio em lote (→ /app/batch). Mostra
  * thumb + nome + dimensões e um heads-up (não bloqueante) de baixa resolução.
  */
 @Component({
   selector: 'app-upload-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FileDropzone, RouterLink],
+  imports: [FileDropzone],
   templateUrl: './upload.page.html',
   styleUrl: './upload.page.scss',
 })
 export class UploadPage {
   private readonly service = inject(UploadService);
   private readonly store = inject(WorkflowStore);
+  private readonly batch = inject(BatchStore);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -40,18 +44,20 @@ export class UploadPage {
     return p !== null && Math.min(p.width, p.height) < LOW_RES_THRESHOLD;
   });
 
-  async onAccepted(file: File): Promise<void> {
-    this.clearPreview();
-    this.file.set(file);
-    try {
-      this.probe.set(await this.service.probe(file));
-    } catch {
-      this.toast.error('Não foi possível ler a imagem.');
+  /** 1 arquivo → fluxo single; 2+ → acumula no lote e navega para /app/batch. */
+  async onFilesAccepted(files: File[]): Promise<void> {
+    if (files.length === 1) {
+      await this.probeSingle(files[0]);
+      return;
     }
+    this.sendToBatch(files);
+    await this.router.navigate(['/app/batch']);
   }
 
-  onRejected(message: string): void {
-    this.toast.error(message);
+  onFilesRejected(list: RejectedFile[]): void {
+    for (const item of list) {
+      this.toast.error(`${item.name}: ${item.reason}`);
+    }
   }
 
   async continue(): Promise<void> {
@@ -69,6 +75,22 @@ export class UploadPage {
       this.toast.error((err as Error).message);
     } finally {
       this.uploading.set(false);
+    }
+  }
+
+  private sendToBatch(files: File[]): void {
+    for (const reason of this.batch.addFiles(files)) {
+      this.toast.warning(reason);
+    }
+  }
+
+  private async probeSingle(file: File): Promise<void> {
+    this.clearPreview();
+    this.file.set(file);
+    try {
+      this.probe.set(await this.service.probe(file));
+    } catch {
+      this.toast.error('Não foi possível ler a imagem.');
     }
   }
 

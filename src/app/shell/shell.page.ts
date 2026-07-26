@@ -8,6 +8,8 @@ import {
   ActivatedRoute,
   NavigationEnd,
   Router,
+  RouterLink,
+  RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
 import { filter } from 'rxjs';
@@ -15,16 +17,19 @@ import { AuthService } from '../core/auth';
 import { Stepper } from '../shared/ui';
 
 /**
- * ShellPage — moldura das telas internas: cabeçalho com logout e o Stepper
+ * ShellPage — moldura das telas internas: cabeçalho com o menu global de
+ * navegação (Novo botton / Curadoria de mockups) + logout, e o Stepper
  * persistente (Upload › Modelo & Tamanho › Ajuste › Resultado).
  *
  * O índice do passo vem de `route.data.step` da rota ativa, atualizado a cada
  * navegação — mantém o Stepper sincronizado sem cada página reimplementá-lo.
+ * O menu superior é independente do `syncStep()`: apenas oferece navegação
+ * global e destaca a rota ativa via `routerLinkActive`/`aria-current`.
  */
 @Component({
   selector: 'app-shell-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, Stepper],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Stepper],
   templateUrl: './shell.page.html',
   styleUrl: './shell.page.scss',
 })

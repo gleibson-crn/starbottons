@@ -46,23 +46,3 @@
   justify-content: flex-end;
   margin-block-start: var(--sp-6);
 }
-
-.upload__batch {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  flex-wrap: wrap;
-  margin-block-start: var(--sp-6);
-}
-
-.upload__batch-title {
-  margin: 0;
-  font-weight: 600;
-}
-
-.upload__batch-desc {
-  margin: var(--sp-1) 0 0;
-  font-size: var(--fs-sm);
-  color: var(--color-text-muted);
-}
