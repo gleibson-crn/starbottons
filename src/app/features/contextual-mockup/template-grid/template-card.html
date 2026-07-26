@@ -1,20 +1,22 @@
 <figure class="tpl">
   <div class="tpl__thumb">
     @if (!failed() && template().thumbUrl) {
-      <img
-        class="tpl__img"
-        [src]="template().thumbUrl"
-        [alt]="'Cena do template ' + template().name"
-        (error)="onError()"
-      />
-      <span
-        class="tpl__marker"
-        aria-hidden="true"
-        [style.left]="marker().left"
-        [style.top]="marker().top"
-        [style.width]="marker().width"
-        [style.height]="marker().height"
-      ></span>
+      <div class="tpl__frame" [style.aspect-ratio]="frameRatio()">
+        <img
+          class="tpl__img"
+          [src]="template().thumbUrl"
+          [alt]="'Cena do template ' + template().name"
+          (error)="onError()"
+        />
+        <span
+          class="tpl__marker"
+          aria-hidden="true"
+          [style.left]="marker().left"
+          [style.top]="marker().top"
+          [style.width]="marker().width"
+          [style.height]="marker().height"
+        ></span>
+      </div>
     } @else {
       <p class="tpl__error" role="status">Prévia indisponível</p>
     }

@@ -19,9 +19,19 @@
   place-items: center;
 }
 
+// Quadro com o aspect-ratio real da cena (via style inline), centralizado e
+// limitado ao container. Faz imagem e marcador compartilharem o referencial.
+.tpl__frame {
+  position: relative;
+  max-inline-size: 100%;
+  max-block-size: 100%;
+}
+
 .tpl__img {
+  display: block;
   inline-size: 100%;
   block-size: 100%;
+  // O quadro já tem o aspect da cena, então não há distorção nem corte.
   object-fit: cover;
 }
 

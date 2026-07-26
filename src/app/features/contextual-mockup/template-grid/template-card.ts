@@ -39,6 +39,19 @@ export class TemplateCard {
 
   readonly marker = computed<MarkerStyle>(() => this.markerStyle());
 
+  /**
+   * Aspect-ratio real da cena, aplicado a um quadro interno para que a imagem
+   * e o marcador compartilhem o mesmo referencial. Sem isso, o `object-fit:
+   * cover` do container (4/3) corta a cena e o marcador (posicionado em % do
+   * container) desalinha em cenas paisagem/retrato.
+   */
+  readonly frameRatio = computed(() => {
+    const t = this.template();
+    return t.sceneWidth > 0 && t.sceneHeight > 0
+      ? `${t.sceneWidth} / ${t.sceneHeight}`
+      : '4 / 3';
+  });
+
   onError(): void {
     this.failed.set(true);
   }
