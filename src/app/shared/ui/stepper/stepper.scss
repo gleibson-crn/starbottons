@@ -37,9 +37,11 @@
 }
 
 .stepper__item.is-current {
-  color: var(--color-text);
+  // Roxo escuro sobre o fundo lilás claro (--primary-100): alto contraste,
+  // legível em dark e light (o branco anterior sumia sobre o lilás).
+  color: var(--primary-800);
   background: var(--primary-100);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .stepper__item.is-current .stepper__marker {
