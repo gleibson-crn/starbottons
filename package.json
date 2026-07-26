@@ -18,6 +18,7 @@
     "@angular/forms": "^22.0.0",
     "@angular/platform-browser": "^22.0.0",
     "@angular/router": "^22.0.0",
+    "@fontsource/fredoka": "^5.3.0",
     "@supabase/supabase-js": "^2.110.8",
     "jszip": "^3.10.1",
     "rxjs": "~7.8.0",

@@ -5,18 +5,49 @@
 }
 
 .shell__header {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--sp-3) var(--sp-4);
   padding: var(--sp-3) var(--sp-6);
-  border-block-end: 1px solid var(--color-border);
-  background: var(--color-surface);
+  border-block-end: 1px solid transparent;
+  background: var(--gradient-header);
+}
+
+/* Motivo de estrelinhas discreto no canto (decorativo, fora da árvore de
+ * acessibilidade por ser pseudo-elemento — não lido por leitor de tela). */
+.shell__header::after {
+  content: '★ ✦ ★';
+  position: absolute;
+  inset-block-start: var(--sp-2);
+  inset-inline-end: var(--sp-6);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.5rem;
+  color: #fff;
+  opacity: 0.15;
+  pointer-events: none;
+  animation: star-twinkle 3.2s var(--ease) infinite;
+}
+
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.18;
+  }
 }
 
 .shell__brand {
   font-weight: 700;
   font-size: var(--fs-lg);
+  font-family: var(--font-display);
+  color: #fff;
+  /* ★ do logo com brilho magenta do tema. */
+  text-shadow: var(--glow-star);
 }
 
 .shell__nav {
@@ -34,7 +65,8 @@
   min-block-size: var(--tap-min);
   padding-inline: var(--sp-3);
   border-radius: var(--radius-md);
-  color: var(--color-text-muted);
+  /* Branco levemente atenuado sobre o gradiente escuro do header (AA). */
+  color: hsl(0 0% 100% / 0.85);
   font-weight: 600;
   font-size: var(--fs-sm);
   text-decoration: none;
@@ -43,13 +75,30 @@
 }
 
 .shell__nav-link:hover {
-  color: var(--color-text);
-  background: var(--color-surface-2);
+  color: #fff;
+  background: hsl(0 0% 100% / 0.15);
 }
 
 .shell__nav-link.is-active {
-  color: var(--primary-600);
-  background: var(--primary-100);
+  color: #fff;
+  background: hsl(0 0% 100% / 0.22);
+}
+
+/* Botão "Sair" (ghost) sobre o header em gradiente: texto/borda claros. */
+.shell__header .btn--ghost {
+  color: #fff;
+  border-color: hsl(0 0% 100% / 0.5);
+}
+
+.shell__header .btn--ghost:hover:not(:disabled) {
+  border-color: #fff;
+  background: hsl(0 0% 100% / 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__header::after {
+    animation: none !important;
+  }
 }
 
 @media (max-width: 30rem) {

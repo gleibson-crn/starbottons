@@ -3,6 +3,8 @@
   inline-size: 100%;
 }
 
+/* Modo quieto: moldura do preview do botton com fundo neutro,
+ * sem gradiente/glow atrás da arte (só sombra sutil para separar). */
 .scene {
   display: block;
   inline-size: 100%;
@@ -10,7 +12,9 @@
   max-inline-size: 560px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-surface-2);
+  background: var(--color-canvas-2);
+  background-image: none;
+  box-shadow: var(--shadow-sm);
   touch-action: none;
   cursor: grab;
 }

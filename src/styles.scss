@@ -1,37 +1,71 @@
 /* ============================================================================
  * Star Bottons — Design System (tokens globais)
- * Paleta HSL, tipografia Inter escala 1.25, spacing 8pt, radius/shadow/motion.
+ * Tema "Roxo/Lilás K-pop divertido": paleta HSL roxa + acento magenta,
+ * gradientes/glow decorativos, tipografia display Fredoka em títulos/brand.
  * Dark mode via prefers-color-scheme + override manual (.theme-dark/.theme-light).
+ * WCAG 2.1 AA como piso (contraste validado na spec).
  * ========================================================================== */
 
-:root {
-  /* Escalas de cor (HSL) — hue/sat fixos, luminância varia -------------- */
-  --primary-h: 245;
-  --primary-s: 72%;
-  --primary-500: hsl(var(--primary-h) var(--primary-s) 58%);
-  --primary-600: hsl(var(--primary-h) var(--primary-s) 50%);
-  --primary-700: hsl(var(--primary-h) var(--primary-s) 42%);
-  --primary-100: hsl(var(--primary-h) var(--primary-s) 94%);
+/* Fonte display self-hosted (empacotada via @fontsource, sem CDN em runtime).
+ * Os arquivos .woff2 latinos são resolvidos e bundlados pelo build do Angular;
+ * cada @font-face já vem com font-display: swap (fallback sem FOIT). */
+@import '@fontsource/fredoka/400.css';
+@import '@fontsource/fredoka/600.css';
 
+:root {
+  /* Escala PRIMÁRIA — roxo real (hue/sat fixos, luminância varia) --------- */
+  --primary-h: 275;
+  --primary-s: 74%;
+  --primary-100: hsl(var(--primary-h) 80% 95%);
+  --primary-200: hsl(var(--primary-h) 78% 88%);
+  --primary-300: hsl(var(--primary-h) 76% 78%);
+  --primary-400: hsl(285 72% 66%); /* lilás */
+  --primary-500: hsl(var(--primary-h) var(--primary-s) 52%);
+  --primary-600: hsl(var(--primary-h) var(--primary-s) 46%);
+  --primary-700: hsl(278 76% 38%);
+  --primary-800: hsl(278 72% 30%);
+  --primary-900: hsl(275 60% 22%);
+
+  /* Acento MAGENTA — só decoração/gradiente, NUNCA funcional -------------- */
+  --accent-h: 325;
+  --accent-s: 75%;
+  --accent-400: hsl(var(--accent-h) 80% 68%);
+  --accent-500: hsl(var(--accent-h) var(--accent-s) 58%);
+  --accent-600: hsl(var(--accent-h) 72% 48%);
+
+  /* Semânticos de status (inalterados) --------------------------------- */
   --success-500: hsl(148 62% 42%);
   --warning-500: hsl(38 92% 48%);
   --error-500: hsl(2 78% 55%);
   --info-500: hsl(205 82% 50%);
 
-  /* Tokens semânticos (light default) ---------------------------------- */
-  --color-bg: hsl(240 20% 99%);
-  --color-surface: hsl(0 0% 100%);
-  --color-surface-2: hsl(240 20% 96%);
-  --color-border: hsl(240 12% 86%);
-  --color-text: hsl(240 24% 14%);
-  --color-text-muted: hsl(240 10% 42%);
-  --color-on-primary: hsl(0 0% 100%);
-  --color-focus: var(--primary-500);
-  --color-overlay: hsl(240 30% 8% / 62%);
+  /* Tokens semânticos (light default, neutros arroxeados) --------------- */
+  --color-bg: hsl(270 40% 99%);
+  --color-surface: hsl(285 50% 99%);
+  --color-surface-2: hsl(270 36% 96%);
+  --color-border: hsl(270 24% 86%);
+  --color-text: hsl(270 30% 15%);
+  --color-text-muted: hsl(270 14% 40%);
+  --color-on-primary: #fff;
+  --color-focus: var(--primary-600);
+  --color-overlay: hsl(275 40% 8% / 62%);
+
+  /* Superfícies "modo quieto" (canvas do editor / moldura do preview) --- */
+  --color-canvas: hsl(255 8% 96%);
+  --color-canvas-2: hsl(255 6% 91%);
+
+  /* Gradientes decorativos + glow -------------------------------------- */
+  --gradient-primary: linear-gradient(135deg, hsl(275 72% 46%) 0%, hsl(285 70% 50%) 100%);
+  --gradient-brand: linear-gradient(120deg, hsl(275 72% 46%) 0%, hsl(285 70% 52%) 55%, hsl(325 75% 52%) 100%);
+  --gradient-header: linear-gradient(90deg, hsl(270 60% 22%) 0%, hsl(285 55% 30%) 55%, hsl(325 55% 34%) 100%);
+  --glow-hover: 0 0 0 1px hsl(285 70% 60% / 35%), 0 6px 20px hsl(285 80% 55% / 28%);
+  --glow-focus: 0 0 0 4px hsl(280 90% 70% / 45%);
+  --glow-star: 0 0 8px hsl(325 90% 70% / 55%);
 
   /* Tipografia (escala modular 1.25) ----------------------------------- */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     Helvetica, Arial, sans-serif;
+  --font-display: 'Fredoka', 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
   --fs-xs: 0.75rem;   /* 12 */
   --fs-sm: 0.875rem;  /* 14 */
   --fs-md: 1rem;      /* 16 */
@@ -57,9 +91,9 @@
   --radius-full: 999px;
 
   /* Shadows ------------------------------------------------------------ */
-  --shadow-sm: 0 1px 2px hsl(240 30% 12% / 8%);
-  --shadow-md: 0 4px 14px hsl(240 30% 12% / 12%);
-  --shadow-lg: 0 12px 34px hsl(240 30% 12% / 18%);
+  --shadow-sm: 0 1px 2px hsl(275 30% 12% / 8%);
+  --shadow-md: 0 4px 14px hsl(275 30% 12% / 12%);
+  --shadow-lg: 0 12px 34px hsl(275 30% 12% / 18%);
 
   /* Motion ------------------------------------------------------------- */
   --motion-fast: 120ms;
@@ -71,28 +105,34 @@
 
 .theme-dark,
 :root.theme-dark {
-  --color-bg: hsl(240 24% 8%);
-  --color-surface: hsl(240 20% 12%);
-  --color-surface-2: hsl(240 18% 16%);
-  --color-border: hsl(240 14% 26%);
-  --color-text: hsl(240 24% 96%);
-  --color-text-muted: hsl(240 12% 68%);
-  --color-overlay: hsl(240 40% 3% / 70%);
-  --primary-500: hsl(var(--primary-h) 78% 68%);
-  --primary-600: hsl(var(--primary-h) 78% 62%);
+  --color-bg: hsl(270 24% 8%);
+  --color-surface: hsl(270 20% 12%);
+  --color-surface-2: hsl(270 18% 16%);
+  --color-border: hsl(270 14% 26%);
+  --color-text: hsl(270 24% 96%);
+  --color-text-muted: hsl(270 12% 70%);
+  --color-overlay: hsl(275 40% 3% / 70%);
+  --color-focus: hsl(280 95% 80%);
+  --color-canvas: hsl(255 8% 14%);
+  --color-canvas-2: hsl(255 6% 18%);
+  --primary-500: hsl(275 78% 72%);
+  --primary-600: hsl(275 78% 64%);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not(.theme-light) {
-    --color-bg: hsl(240 24% 8%);
-    --color-surface: hsl(240 20% 12%);
-    --color-surface-2: hsl(240 18% 16%);
-    --color-border: hsl(240 14% 26%);
-    --color-text: hsl(240 24% 96%);
-    --color-text-muted: hsl(240 12% 68%);
-    --color-overlay: hsl(240 40% 3% / 70%);
-    --primary-500: hsl(var(--primary-h) 78% 68%);
-    --primary-600: hsl(var(--primary-h) 78% 62%);
+    --color-bg: hsl(270 24% 8%);
+    --color-surface: hsl(270 20% 12%);
+    --color-surface-2: hsl(270 18% 16%);
+    --color-border: hsl(270 14% 26%);
+    --color-text: hsl(270 24% 96%);
+    --color-text-muted: hsl(270 12% 70%);
+    --color-overlay: hsl(275 40% 3% / 70%);
+    --color-focus: hsl(280 95% 80%);
+    --color-canvas: hsl(255 8% 14%);
+    --color-canvas-2: hsl(255 6% 18%);
+    --primary-500: hsl(275 78% 72%);
+    --primary-600: hsl(275 78% 64%);
   }
 }
 
@@ -122,10 +162,47 @@ h3 {
   margin: 0 0 var(--sp-4);
 }
 
+/* Tipografia display (títulos de destaque + marca) --------------------- */
+h1,
+h2,
+.brand,
+.hero__title {
+  font-family: var(--font-display);
+}
+
+/* Título de destaque com acento de marca (gradiente roxo→magenta).
+ * Usado sobre superfícies sólidas (card/bg), nunca sobre outro gradiente.
+ * Fallback sólido acessível caso background-clip:text não seja suportado. */
+.hero__title {
+  color: var(--primary-700);
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hero__title {
+    color: transparent;
+  }
+}
+
+.theme-dark .hero__title,
+:root:not(.theme-light) .hero__title {
+  color: var(--primary-300);
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .theme-dark .hero__title,
+  :root:not(.theme-light) .hero__title {
+    color: transparent;
+  }
+}
+
 :focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+  box-shadow: var(--glow-focus);
 }
 
 /* Utilitário para leitores de tela ------------------------------------- */
@@ -147,6 +224,14 @@ h3 {
   *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  /* Desliga glow/pulsação (mantém o outline sólido de foco). */
+  :focus-visible,
+  .btn--primary:hover:not(:disabled),
+  .btn--ghost:hover:not(:disabled) {
+    box-shadow: none !important;
   }
 }
 
@@ -165,7 +250,9 @@ h3 {
   font-weight: 600;
   cursor: pointer;
   transition: background var(--motion-fast) var(--ease),
-    border-color var(--motion-fast) var(--ease);
+    border-color var(--motion-fast) var(--ease),
+    box-shadow var(--motion-fast) var(--ease),
+    filter var(--motion-fast) var(--ease);
 }
 
 .btn:disabled {
@@ -174,12 +261,13 @@ h3 {
 }
 
 .btn--primary {
-  background: var(--primary-600);
+  background: var(--gradient-primary);
   color: var(--color-on-primary);
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--primary-700);
+  filter: brightness(1.06);
+  box-shadow: var(--glow-hover);
 }
 
 .btn--ghost {
@@ -190,6 +278,7 @@ h3 {
 
 .btn--ghost:hover:not(:disabled) {
   border-color: var(--primary-500);
+  box-shadow: var(--glow-hover);
 }
 
 .btn--danger {

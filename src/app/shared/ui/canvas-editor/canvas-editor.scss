@@ -4,12 +4,16 @@
   max-inline-size: 520px;
 }
 
+/* Modo quieto: fundo neutro atrás da arte, sem gradiente/glow —
+ * o acento roxo fica só nos controles, nunca atrás do desenho. */
 .canvas {
   display: block;
   inline-size: 100%;
   aspect-ratio: 1;
   border-radius: var(--radius-lg);
-  background: var(--color-surface-2);
+  background: var(--color-canvas);
+  background-image: none;
+  box-shadow: var(--shadow-sm);
   touch-action: none;
   cursor: grab;
 }
