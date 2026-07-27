@@ -66,6 +66,13 @@
   gap: var(--sp-4);
 }
 
+/* O `display:flex` acima venceria o `[hidden]` (UA `display:none`), deixando
+ * os painéis inativos visíveis (tudo empilhado com rolagem). Esta regra, de
+ * maior especificidade, garante que a aba inativa realmente suma. */
+[role='tabpanel'][hidden] {
+  display: none;
+}
+
 .dialog__stage {
   display: grid;
   place-items: center;
