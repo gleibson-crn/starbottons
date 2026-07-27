@@ -120,3 +120,16 @@ describe('FileDropzone — validação de upload', () => {
     expect(accepted).not.toBeNull();
   });
 });
+
+describe('FileDropzone — rótulo do botão de busca (browseLabel)', () => {
+  it('usa "Procurar arquivo" por padrão (não quebra usos atuais)', () => {
+    expect(createDropzone().browseLabel()).toBe('Procurar arquivo');
+  });
+
+  it('reflete o browseLabel customizado (ex.: "Adicionar arquivo")', () => {
+    TestBed.configureTestingModule({ imports: [FileDropzone] });
+    const fixture = TestBed.createComponent(FileDropzone);
+    fixture.componentRef.setInput('browseLabel', 'Adicionar arquivo');
+    expect(fixture.componentInstance.browseLabel()).toBe('Adicionar arquivo');
+  });
+});

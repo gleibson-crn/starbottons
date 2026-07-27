@@ -1,32 +1,56 @@
 <section aria-labelledby="upload-title">
-  <h1 id="upload-title" class="hero__title">Envie sua imagem</h1>
+  <h1 id="upload-title" class="hero__title">Envie suas imagens</h1>
   <p class="upload__lead">
-    Uma imagem segue direto para o ajuste; duas ou mais abrem o envio em lote
-    automaticamente. PNG ou JPEG, até 25 MB.
+    Adicione uma ou mais imagens. Uma segue direto para o ajuste; duas ou mais
+    abrem o envio em lote. PNG ou JPEG, até 25 MB.
   </p>
 
   <app-file-dropzone
     [multiple]="true"
+    [browseLabel]="browseLabel()"
     (filesAccepted)="onFilesAccepted($event)"
     (filesRejected)="onFilesRejected($event)"
   />
 
-  @if (probe(); as p) {
-    <div class="upload__preview card">
-      <img class="upload__thumb" [src]="p.previewUrl" alt="Pré-visualização da imagem enviada" />
-      <div class="upload__meta">
-        <p class="upload__name">{{ file()?.name }}</p>
-        <p class="upload__dims">{{ p.width }} × {{ p.height }} px</p>
-        @if (lowRes()) {
-          <p class="upload__warn" role="status">
-            ⚠️ Resolução baixa — a arte pode perder nitidez. Você ainda pode continuar.
-          </p>
-        }
-      </div>
-    </div>
+  @if (items().length > 0) {
+    <ul class="upload__list" aria-label="Imagens selecionadas">
+      @for (item of items(); track item.probe.previewUrl; let i = $index) {
+        <li class="upload__item card">
+          <img
+            class="upload__thumb"
+            [src]="item.probe.previewUrl"
+            alt="Pré-visualização de {{ item.file.name }}"
+          />
+          <div class="upload__meta">
+            <p class="upload__name">{{ item.file.name }}</p>
+            <p class="upload__dims">
+              {{ item.probe.width }} × {{ item.probe.height }} px
+            </p>
+            @if (isLowRes(item.probe)) {
+              <p class="upload__warn" role="status">
+                ⚠️ Resolução baixa — a arte pode perder nitidez.
+              </p>
+            }
+          </div>
+          <button
+            class="upload__remove"
+            type="button"
+            [attr.aria-label]="'Remover ' + item.file.name"
+            (click)="remove(i)"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
+        </li>
+      }
+    </ul>
 
     <div class="upload__actions">
-      <button class="btn btn--primary" type="button" (click)="continue()" [disabled]="uploading()">
+      <button
+        class="btn btn--primary"
+        type="button"
+        (click)="continue()"
+        [disabled]="!canContinue() || uploading()"
+      >
         {{ uploading() ? 'Enviando…' : 'Continuar' }}
       </button>
     </div>

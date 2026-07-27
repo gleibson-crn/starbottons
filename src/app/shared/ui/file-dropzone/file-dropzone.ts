@@ -39,6 +39,8 @@ export class FileDropzone {
   readonly maxMb = input<number>(25);
   /** Quando `true`, aceita e valida vários arquivos por vez. */
   readonly multiple = input<boolean>(false);
+  /** Rótulo do botão de busca. Vira "Adicionar arquivo" quando já há itens. */
+  readonly browseLabel = input<string>('Procurar arquivo');
 
   readonly fileAccepted = output<File>();
   readonly fileRejected = output<string>();
