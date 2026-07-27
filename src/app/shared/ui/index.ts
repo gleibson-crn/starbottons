@@ -9,6 +9,7 @@ export { FileDropzone } from './file-dropzone/file-dropzone';
 export type { RejectedFile } from './file-dropzone/file-dropzone';
 export { CanvasEditor } from './canvas-editor/canvas-editor';
 export { TreatPanel } from './treat-panel/treat-panel';
+export { BackgroundPicker, WHITE_BG } from './background-picker/background-picker';
 export { FilterSlider } from './filter-slider/filter-slider';
 export { FILTER_PRESETS, activePresetId } from './treat-panel/filter-presets';
 export type { FilterPreset, PresetId } from './treat-panel/filter-presets';

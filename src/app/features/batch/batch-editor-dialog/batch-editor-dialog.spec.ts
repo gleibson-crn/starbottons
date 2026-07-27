@@ -74,3 +74,30 @@ describe('BatchEditorDialog — filtros', () => {
     expect(cmp.activeTab()).toBe('treat');
   });
 });
+
+describe('BatchEditorDialog — fundo', () => {
+  it('expõe a aba "Fundo"', () => {
+    const cmp = dialogWith(makeItem());
+    cmp.selectTab('background');
+    expect(cmp.activeTab()).toBe('background');
+    expect(cmp.tabs.some((t) => t.id === 'background')).toBe(true);
+  });
+
+  it('onBackground atualiza transform.background', () => {
+    const cmp = dialogWith(makeItem());
+    expect(cmp.transform().background).toBe('#ffffff');
+    cmp.onBackground('#ff8800');
+    expect(cmp.transform().background).toBe('#ff8800');
+  });
+
+  it('a cor de fundo sobrevive ao salvar', () => {
+    const cmp = dialogWith(makeItem());
+    cmp.onBackground('#00aaff');
+
+    let result: BatchEditResult | undefined;
+    cmp.saved.subscribe((r) => (result = r));
+    cmp.onSave();
+
+    expect(result?.transform.background).toBe('#00aaff');
+  });
+});

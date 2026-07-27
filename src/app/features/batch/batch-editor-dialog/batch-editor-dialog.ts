@@ -16,7 +16,12 @@ import type {
   PrintSpec,
 } from '../../../shared/types';
 import { DEFAULT_FILTERS, DEFAULT_TRANSFORM } from '../../../shared/types';
-import { CanvasEditor, ResolutionBadge, TreatPanel } from '../../../shared/ui';
+import {
+  BackgroundPicker,
+  CanvasEditor,
+  ResolutionBadge,
+  TreatPanel,
+} from '../../../shared/ui';
 import { effectiveDpi, fallbackSpec, loadImage, rovingNext } from '../../../shared/utils';
 import { largestSelectedSize, type BatchItem } from '../../../core/batch';
 
@@ -28,7 +33,7 @@ export interface BatchEditResult {
 }
 
 /** Aba do painel do diálogo. */
-type TabId = 'adjust' | 'treat';
+type TabId = 'adjust' | 'treat' | 'background';
 
 interface EditorTab {
   readonly id: TabId;
@@ -38,6 +43,7 @@ interface EditorTab {
 const EDITOR_TABS: readonly EditorTab[] = [
   { id: 'adjust', label: 'Ajustar' },
   { id: 'treat', label: 'Tratar' },
+  { id: 'background', label: 'Fundo' },
 ];
 
 /**
@@ -47,11 +53,13 @@ const EDITOR_TABS: readonly EditorTab[] = [
  * `[filters]` para refletir o tratamento ao vivo. Acessibilidade:
  * `role="dialog"` + `aria-modal`, Esc fecha, `role="tablist"` com navegação
  * ←/→/Home/End; ao confirmar devolve transform + filters (todos os tamanhos).
+ * A aba "Fundo" (BackgroundPicker) edita `transform.background` (cor sólida sob
+ * a imagem), refletida ao vivo pelo canvas.
  */
 @Component({
   selector: 'app-batch-editor-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CanvasEditor, ResolutionBadge, TreatPanel],
+  imports: [CanvasEditor, ResolutionBadge, TreatPanel, BackgroundPicker],
   host: { '(keydown)': 'onKeydown($event)' },
   templateUrl: './batch-editor-dialog.html',
   styleUrl: './batch-editor-dialog.scss',
@@ -101,6 +109,11 @@ export class BatchEditorDialog implements OnInit {
 
   selectTab(id: TabId): void {
     this.activeTab.set(id);
+  }
+
+  /** Troca a cor de fundo (aba "Fundo"); o preview reflete ao vivo. */
+  onBackground(color: string): void {
+    this.transform.update((t) => ({ ...t, background: color }));
   }
 
   /** Navegação ARIA por teclado (←/→/Home/End) com ativação automática. */

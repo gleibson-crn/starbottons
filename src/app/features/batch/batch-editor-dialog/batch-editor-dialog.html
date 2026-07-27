@@ -63,6 +63,19 @@
       <app-treat-panel [(filters)]="filters" />
     </div>
 
+    <div
+      role="tabpanel"
+      id="batch-panel-background"
+      aria-labelledby="batch-tab-background"
+      tabindex="0"
+      [hidden]="activeTab() !== 'background'"
+    >
+      <app-background-picker
+        [color]="transform().background"
+        (colorChange)="onBackground($event)"
+      />
+    </div>
+
     <div class="dialog__actions">
       <button type="button" class="btn btn--ghost" (click)="onClose()">
         Cancelar

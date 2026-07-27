@@ -1,0 +1,47 @@
+<div class="bg">
+  <div class="field">
+    <label class="field__label" for="bg-color">Cor de fundo</label>
+    <p class="bg__hint">
+      Fica sob a imagem — áreas transparentes do PNG mostram esta cor.
+    </p>
+
+    <div class="bg__row">
+      <input
+        id="bg-color"
+        class="bg__input"
+        type="color"
+        [value]="color()"
+        (input)="onColorInput($any($event.target).value)"
+      />
+      <span class="bg__value">
+        <span class="bg__swatch" [style.background]="color()" aria-hidden="true"></span>
+        <span class="bg__hex">{{ color() }}</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="bg__actions">
+    @if (supportsEyeDropper) {
+      <button
+        type="button"
+        class="btn btn--ghost"
+        (click)="pickWithEyeDropper()"
+      >
+        Conta-gotas
+      </button>
+    } @else {
+      <p class="bg__hint" role="note">
+        Conta-gotas indisponível neste navegador.
+      </p>
+    }
+
+    <button
+      type="button"
+      class="btn btn--ghost"
+      (click)="restoreWhite()"
+      [disabled]="isWhite()"
+    >
+      Restaurar branco
+    </button>
+  </div>
+</div>

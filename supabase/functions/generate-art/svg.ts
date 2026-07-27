@@ -2,8 +2,10 @@
  * Monta o SVG de layout da arte de impressão a partir do layout derivado.
  *
  * Camadas (de baixo p/ cima):
- *  1. Fundo cor sólida (options.background) cobrindo toda a área da arte —
- *     preenche o que a imagem não cobrir.
+ *  1. Fundo cor sólida (options.background) cobrindo o QUADRADO INTEIRO da arte
+ *     — inclusive os cantos fora do círculo. Deixa o PNG de saída 100% opaco
+ *     (sem alpha nos cantos, que apareceria como "xadrez" em visualizadores) e
+ *     garante sangria de fundo se o corte físico sair levemente torto.
  *  2. A imagem já composta (PNG base64) ocupando a arte inteira, recortada
  *     pela máscara circular da área VISÍVEL + sangria (círculo da arte).
  *  3. Guias (só referência visual, fora do corte físico): anel de sangria,
@@ -50,9 +52,7 @@ export function buildLayoutSvg(
   const href = `data:image/png;base64,${composedPngBase64}`;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
 <defs><clipPath id="artClip"><circle cx="${c}" cy="${c}" r="${l.artCenter}"/></clipPath></defs>
-<rect width="${size}" height="${size}" fill="${
-    xmlAttr(background)
-  }" clip-path="url(#artClip)"/>
+<rect width="${size}" height="${size}" fill="${xmlAttr(background)}"/>
 <image href="${href}" x="0" y="0" width="${size}" height="${size}" clip-path="url(#artClip)" preserveAspectRatio="xMidYMid slice"/>
 ${withGuides ? guides(l) : ""}
 </svg>`;
