@@ -11,7 +11,7 @@ interface TierView {
 const TIER_VIEW: Record<ResolutionTier, TierView> = {
   ok: { icon: '🟢', title: 'Resolução ótima', hint: 'Pronta para impressão em alta qualidade.' },
   warn: { icon: '🟡', title: 'Resolução baixa', hint: 'Dá para gerar, mas pode perder nitidez.' },
-  blocked: { icon: '🔴', title: 'Resolução insuficiente', hint: 'Aproxime menos ou use uma imagem maior.' },
+  blocked: { icon: '🔴', title: 'Resolução muito baixa', hint: 'Pode sair borrado — gere por sua conta e risco.' },
 };
 
 /**

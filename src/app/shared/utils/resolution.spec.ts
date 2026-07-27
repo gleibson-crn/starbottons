@@ -1,7 +1,6 @@
 import type { PrintSpec } from '../types';
 import {
   artDiameterMm,
-  canGenerateAtDpi,
   effectiveDpi,
   resolutionTier,
   safeDiameterMm,
@@ -65,16 +64,8 @@ describe('resolutionTier (3 faixas)', () => {
     expect(resolutionTier(150)).toBe('warn');
   });
 
-  it('🔴 blocked em <150', () => {
+  it('🔴 muito baixa em <150 (aviso forte, não trava)', () => {
     expect(resolutionTier(149)).toBe('blocked');
     expect(resolutionTier(0)).toBe('blocked');
-  });
-});
-
-describe('canGenerateAtDpi', () => {
-  it('permite gerar em 🟢 e 🟡, bloqueia em 🔴', () => {
-    expect(canGenerateAtDpi(300)).toBe(true);
-    expect(canGenerateAtDpi(200)).toBe(true);
-    expect(canGenerateAtDpi(149)).toBe(false);
   });
 });

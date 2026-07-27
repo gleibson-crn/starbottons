@@ -178,13 +178,17 @@ describe('BatchStore — gating por tamanho', () => {
     expect(item.selectedSizes.has(44)).toBe(true);
   });
 
-  it('toggle não marca tamanho bloqueado', async () => {
+  it('toggle marca tamanho 🔴 (permitido sob aviso forte)', async () => {
     const ctx = setup();
     const item = await addImage(ctx, { width: 400, height: 400 });
 
-    ctx.store.toggleSize(item.id, 58);
-
+    // 58mm é 🔴 e não entra por padrão…
+    expect(item.perSizeTier[58]).toBe('blocked');
     expect(ctx.store.items()[0].selectedSizes.has(58)).toBe(false);
+
+    // …mas agora o usuário PODE marcá-lo deliberadamente.
+    ctx.store.toggleSize(item.id, 58);
+    expect(ctx.store.items()[0].selectedSizes.has(58)).toBe(true);
   });
 
   it('imagem grande: os três tamanhos são geráveis', async () => {
@@ -261,15 +265,21 @@ describe('BatchStore — imagem sem tamanho selecionado', () => {
     expect(ctx.store.podeGerar()).toBe(false);
   });
 
-  it('conta como bloqueado sem saída quando TODOS os tamanhos são 🔴', async () => {
+  it('imagem toda 🔴 nasce sem tamanho, mas PODE ser marcada (aviso forte)', async () => {
     const ctx = setup();
-    await addImage(ctx, { width: 100, height: 100 });
+    const item = await addImage(ctx, { width: 100, height: 100 });
 
-    const item = ctx.store.items()[0];
-    expect(item.selectedSizes.size).toBe(0);
+    // Todos os tamanhos são 🔴 → nenhum entra por padrão.
+    expect(ctx.store.items()[0].perSizeTier[32]).toBe('blocked');
+    expect(ctx.store.items()[0].selectedSizes.size).toBe(0);
     expect(ctx.store.itemsSemTamanho()).toBe(1);
-    expect(ctx.store.itemsBloqueadosSemTamanho()).toBe(1);
     expect(ctx.store.podeGerar()).toBe(false);
+
+    // Política nova: marcar um tamanho 🔴 é permitido (sob responsabilidade).
+    ctx.store.toggleSize(item.id, 32);
+    expect(ctx.store.items()[0].selectedSizes.has(32)).toBe(true);
+    expect(ctx.store.itemsSemTamanho()).toBe(0);
+    expect(ctx.store.podeGerar()).toBe(true);
   });
 });
 

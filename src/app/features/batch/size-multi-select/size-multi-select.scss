@@ -39,3 +39,9 @@
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }
+
+/* Aviso forte de resolução muito baixa (🔴): marcável, mas em cor de alerta. */
+.sizes__reason--risk {
+  color: var(--error-500, #d64545);
+  font-weight: 600;
+}

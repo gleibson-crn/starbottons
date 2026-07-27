@@ -52,30 +52,10 @@
       {{ itemsSemTamanho() }}
       {{ itemsSemTamanho() === 1 ? 'imagem sem tamanho selecionado' : 'imagens sem tamanho selecionado' }}
       — selecione um tamanho ou remova a imagem para poder gerar.
-      @if (itemsBloqueadosSemTamanho() > 0) {
-        <span>
-          Imagens com resolução insuficiente para todos os tamanhos (🔴) não
-          permitem marcar nenhum tamanho: remova-as ou troque por uma de maior
-          resolução.
-        </span>
-      }
     </p>
   }
 
   <p class="sr-only" role="status" aria-live="polite">{{ liveStatus() }}</p>
-
-  @if (!store.started()) {
-    <div class="batch__drop" [class.batch__drop--compact]="hasItems()">
-      <p class="batch__drop-label">
-        {{ hasItems() ? 'Adicionar mais imagens' : 'Envie suas imagens (PNG ou JPEG, até 25 MB cada)' }}
-      </p>
-      <app-file-dropzone
-        [multiple]="true"
-        (filesAccepted)="onFilesAccepted($event)"
-        (filesRejected)="onFilesRejected($event)"
-      />
-    </div>
-  }
 
   @if (hasItems()) {
     <ul class="batch__grid">
@@ -96,8 +76,8 @@
     </ul>
   } @else {
     <p class="batch__empty">
-      Nenhuma imagem ainda. Você também pode
-      <a routerLink="/app/upload">enviar uma única imagem</a>.
+      Nenhuma imagem ainda.
+      <a routerLink="/app/upload">Envie suas imagens</a> para começar.
     </p>
   }
 </section>

@@ -53,8 +53,13 @@ export function effectiveDpi(params: {
 }
 
 /**
- * Classifica o DPI efetivo nas três faixas de gating:
- * 🟢 ≥300 ok · 🟡 150–299 avisa (deixa gerar) · 🔴 <150 bloqueia.
+ * Classifica o DPI efetivo nas três faixas do semáforo:
+ * 🟢 ≥300 ótima · 🟡 150–299 baixa · 🔴 <150 muito baixa.
+ *
+ * NOTA (política de gating): nenhuma faixa BLOQUEIA a geração. O 🔴 é um
+ * aviso forte ("pode sair borrado — sob responsabilidade do usuário"), não uma
+ * trava — o usuário pode marcar o tamanho mesmo assim. O nome interno da faixa
+ * segue 'blocked' por compatibilidade, mas hoje significa apenas "risco alto".
  */
 export function resolutionTier(dpi: number): ResolutionTier {
   if (dpi >= DPI_OK) {
@@ -64,9 +69,4 @@ export function resolutionTier(dpi: number): ResolutionTier {
     return 'warn';
   }
   return 'blocked';
-}
-
-/** `true` quando o DPI permite gerar a arte (🟢 ou 🟡). */
-export function canGenerateAtDpi(dpi: number): boolean {
-  return resolutionTier(dpi) !== 'blocked';
 }

@@ -55,7 +55,6 @@ export {
 export {
   computePerSizeDpi,
   computePerSizeTier,
-  isSizeGenerable,
   defaultSizes,
   largestSelectedSize,
   worstSelectedDpi,

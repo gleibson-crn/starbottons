@@ -17,7 +17,11 @@
         <span class="sr-only">— {{ tierLabel(size) }}</span>
       </label>
       @if (reason(size)) {
-        <span class="sizes__reason" [id]="reasonId(size)">{{ reason(size) }}</span>
+        <span
+          class="sizes__reason"
+          [class.sizes__reason--risk]="isRisk(size)"
+          [id]="reasonId(size)"
+        >{{ reason(size) }}</span>
       }
     </div>
   }

@@ -43,12 +43,11 @@ export function computePerSizeTier(dpi: SizeMap<number>): SizeMap<ResolutionTier
   return out;
 }
 
-/** `true` se o tamanho é gerável (🟢/🟡); 🔴 fica bloqueado. */
-export function isSizeGenerable(item: BatchItem, size: BottonSize): boolean {
-  return item.perSizeTier[size] !== 'blocked';
-}
-
-/** Tamanhos que entram por padrão: todos os geráveis, respeitando o orçamento. */
+/**
+ * Tamanhos que entram por PADRÃO: os de boa resolução (🟢/🟡), respeitando o
+ * orçamento. Tamanhos 🔴 não entram sozinhos — o usuário marca deliberadamente
+ * (sob aviso forte); ver `resolutionTier`.
+ */
 export function defaultSizes(
   tier: SizeMap<ResolutionTier>,
   budget: number,

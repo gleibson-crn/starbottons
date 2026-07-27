@@ -32,7 +32,6 @@ import {
 import { isNameValid } from './batch-naming';
 import type { EditorTransform } from '../../shared/types';
 import {
-  BOTTON_SIZES,
   type ArtStatus,
   type BatchItem,
   type BottonSize,
@@ -91,23 +90,12 @@ export class BatchStore {
     ),
   );
 
-  /** Imagens enviadas que ainda não têm NENHUM tamanho selecionado. */
+  /**
+   * Imagens enviadas que ainda não têm NENHUM tamanho selecionado. Sempre têm
+   * saída: o usuário marca um tamanho (mesmo 🔴, sob aviso) ou remove a imagem.
+   */
   readonly itemsSemTamanho = computed(
     () => this.items().filter((i) => i.upload && i.selectedSizes.size === 0).length,
-  );
-
-  /**
-   * Subconjunto de `itemsSemTamanho` sem saída por seleção: todos os tamanhos
-   * estão bloqueados por resolução (🔴). Só resolve removendo/trocando a imagem.
-   */
-  readonly itemsBloqueadosSemTamanho = computed(
-    () =>
-      this.items().filter(
-        (i) =>
-          i.upload &&
-          i.selectedSizes.size === 0 &&
-          BOTTON_SIZES.every((s) => i.perSizeTier[s] === 'blocked'),
-      ).length,
   );
 
   /** Lote já saiu do estado idle (geração iniciada ou artes resolvidas). */

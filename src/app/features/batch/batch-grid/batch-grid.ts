@@ -6,15 +6,16 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { FileDropzone, ToastService, type RejectedFile } from '../../../shared/ui';
+import { ToastService } from '../../../shared/ui';
 import { BatchStore, ZipExportService, type BottonSize } from '../../../core/batch';
 import { BatchProgress } from '../batch-progress/batch-progress';
 import { BatchImageCard } from '../batch-image-card/batch-image-card';
 import type { BatchEditResult } from '../batch-editor-dialog/batch-editor-dialog';
 
 /**
- * BatchGrid — página do LOTE. Toolbar (progresso + ações), FileDropzone múltiplo
- * e a grade de cartões. Reusa o BatchStore para todo o estado. Uma região
+ * BatchGrid — página do LOTE. Toolbar (progresso + ações) e a grade de cartões.
+ * A entrada de imagens é feita só na tela de upload (fluxo único); aqui não há
+ * mais dropzone. Reusa o BatchStore para todo o estado. Uma região
  * `aria-live=polite` anuncia o progresso agregado a leitores de tela.
  */
 @Component({
@@ -22,7 +23,6 @@ import type { BatchEditResult } from '../batch-editor-dialog/batch-editor-dialog
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
-    FileDropzone,
     BatchProgress,
     BatchImageCard,
   ],
@@ -45,7 +45,6 @@ export class BatchGrid {
   readonly nameMissing = this.store.nameMissing;
   readonly remaining = this.store.remainingArtes;
   readonly itemsSemTamanho = this.store.itemsSemTamanho;
-  readonly itemsBloqueadosSemTamanho = this.store.itemsBloqueadosSemTamanho;
   readonly zipping = signal(false);
 
   readonly hasItems = computed(() => this.items().length > 0);
@@ -53,18 +52,6 @@ export class BatchGrid {
   readonly liveStatus = computed(
     () => `${this.artesProntas()} de ${this.totalArtes()} artes prontas`,
   );
-
-  onFilesAccepted(files: File[]): void {
-    for (const reason of this.store.addFiles(files)) {
-      this.toast.warning(reason);
-    }
-  }
-
-  onFilesRejected(list: RejectedFile[]): void {
-    for (const item of list) {
-      this.toast.error(`${item.name}: ${item.reason}`);
-    }
-  }
 
   generate(): void {
     void this.store.generateAll();

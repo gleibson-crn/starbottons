@@ -7,9 +7,9 @@ import { TIER_ICON, TIER_LABEL } from '../tier-visuals';
  * SizeMultiSelect — fieldset de tamanhos (32/44/58) com semáforo por tamanho.
  *
  * Acessibilidade: `<fieldset>`+`<legend>` agrupam; cada checkbox tem `<label>`
- * associado (id único por item). Tamanhos bloqueados (🔴) ou fora do teto ficam
- * `disabled` e explicados por `aria-describedby`. O tier é ícone+texto (o dot de
- * cor nunca é a única pista).
+ * associado (id único por item). Só o teto do lote deixa um tamanho `disabled`;
+ * o 🔴 (resolução muito baixa) NÃO trava — fica marcável com um aviso forte via
+ * `aria-describedby`. O tier é ícone+texto (o dot de cor nunca é a única pista).
  */
 @Component({
   selector: 'app-size-multi-select',
@@ -50,15 +50,20 @@ export class SizeMultiSelect {
   }
 
   isDisabled(size: BottonSize): boolean {
-    return this.tier(size) === 'blocked' || (this.capped() && !this.isChecked(size));
+    return this.capped() && !this.isChecked(size);
+  }
+
+  /** `true` no tier 🔴: marcável, mas com aviso forte de risco de nitidez. */
+  isRisk(size: BottonSize): boolean {
+    return this.tier(size) === 'blocked';
   }
 
   reason(size: BottonSize): string {
-    if (this.tier(size) === 'blocked') {
-      return 'Resolução insuficiente para este tamanho.';
-    }
     if (this.capped() && !this.isChecked(size)) {
       return 'Limite de artes do lote atingido.';
+    }
+    if (this.isRisk(size)) {
+      return 'Resolução muito baixa — pode sair borrado. Gere por sua conta e risco.';
     }
     return '';
   }

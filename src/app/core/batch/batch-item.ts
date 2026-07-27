@@ -78,7 +78,10 @@ export function withName(item: BatchItem, name: string): BatchItem {
   return { ...item, name };
 }
 
-/** Marca/desmarca um tamanho (respeita bloqueio por tier e teto do lote). */
+/**
+ * Marca/desmarca um tamanho. Só o teto do lote (`capped`) impede marcar; o tier
+ * 🔴 NÃO trava mais (o usuário pode gerar sob aviso forte — ver `resolutionTier`).
+ */
 export function withToggledSize(
   item: BatchItem,
   size: BottonSize,
@@ -87,7 +90,7 @@ export function withToggledSize(
   const next = new Set(item.selectedSizes);
   if (next.has(size)) {
     next.delete(size);
-  } else if (item.perSizeTier[size] !== 'blocked' && !capped) {
+  } else if (!capped) {
     next.add(size);
   }
   return { ...item, selectedSizes: next };
@@ -113,7 +116,11 @@ export function withGenerationUpload(
   return { ...item, generationUpload: upload };
 }
 
-/** Novo enquadramento: recalcula DPI/tier e solta tamanhos que ficaram 🔴. */
+/**
+ * Novo enquadramento: recalcula DPI/tier por tamanho. A seleção é PRESERVADA —
+ * mesmo que um tamanho caia para 🔴 ao ampliar, ele permanece marcado (só passa
+ * a exibir o aviso forte), coerente com a política de "gerar sob responsabilidade".
+ */
 export function withTransform(
   item: BatchItem,
   transform: EditorTransform,
@@ -121,10 +128,7 @@ export function withTransform(
 ): BatchItem {
   const perSizeDpi = computePerSizeDpi(item.width, item.height, transform.scale);
   const perSizeTier = computePerSizeTier(perSizeDpi);
-  const selectedSizes = new Set(
-    [...item.selectedSizes].filter((s) => perSizeTier[s] !== 'blocked'),
-  );
-  return { ...item, transform, editorSide, perSizeDpi, perSizeTier, selectedSizes };
+  return { ...item, transform, editorSide, perSizeDpi, perSizeTier };
 }
 
 /** Patch imutável do estado de UMA arte (tamanho) do item. */

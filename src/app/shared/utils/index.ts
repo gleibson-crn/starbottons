@@ -5,7 +5,6 @@ export {
   sourcePxCoveringArt,
   effectiveDpi,
   resolutionTier,
-  canGenerateAtDpi,
   DPI_OK,
   DPI_MIN,
 } from './resolution';

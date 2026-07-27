@@ -11,5 +11,5 @@ export const TIER_ICON: Record<ResolutionTier, string> = {
 export const TIER_LABEL: Record<ResolutionTier, string> = {
   ok: 'resolução ótima',
   warn: 'resolução baixa',
-  blocked: 'resolução insuficiente',
+  blocked: 'resolução muito baixa',
 };
