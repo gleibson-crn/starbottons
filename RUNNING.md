@@ -70,11 +70,13 @@ npm run db:stop     # para os containers do Supabase (os dados ficam salvos)
 ## Solução de problemas
 
 - **Erro "JWT issued at future" (401) ao logar / enviar imagem** — o relógio do
-  WSL/Docker desincronizou (comum depois que a máquina hiberna). Ressincronize:
+  WSL/Docker desincronizou (comum depois que a máquina hiberna). Rode:
   ```bash
-  wsl -d docker-desktop --exec date -s "@$(date -u +%s)"
+  npm run fix:clock
   ```
-  (ou reinicie o Docker Desktop). Depois recarregue a página.
+  Depois recarregue a página (`Ctrl+Shift+R`). (Se preferir, o equivalente manual
+  é `wsl -d docker-desktop --exec date -s "@$(date -u +%s)"`, ou reiniciar o
+  Docker Desktop.)
 
 - **Edge responde 503 / "Exportar" ou "Gerar" falham** — o `functions serve`
   não está no ar. Rode `npm run edge` (ou `npm run dev`).

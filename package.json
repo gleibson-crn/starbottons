@@ -12,7 +12,8 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "edge": "supabase functions serve generate-art",
-    "dev": "concurrently -k -n edge,web -c magenta,cyan \"npm:edge\" \"npm:start\""
+    "dev": "concurrently -k -n edge,web -c magenta,cyan \"npm:edge\" \"npm:start\"",
+    "fix:clock": "node scripts/fix-clock.mjs"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
