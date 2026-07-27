@@ -7,7 +7,12 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "edge": "supabase functions serve generate-art",
+    "dev": "concurrently -k -n edge,web -c magenta,cyan \"npm:edge\" \"npm:start\""
   },
   "private": true,
   "packageManager": "npm@11.13.0",
@@ -30,6 +35,7 @@
     "@angular/compiler-cli": "^22.0.0",
     "@eslint/js": "^10.0.1",
     "angular-eslint": "22.1.0",
+    "concurrently": "^10.0.4",
     "eslint": "^10.6.0",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
