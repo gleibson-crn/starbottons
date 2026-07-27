@@ -4,7 +4,7 @@
  * quando existir. A cor de erro nunca é a única pista (ícone ✕ + texto).
  */
 import { TestBed } from '@angular/core/testing';
-import { DEFAULT_TRANSFORM } from '../../../shared/types';
+import { DEFAULT_FILTERS, DEFAULT_TRANSFORM } from '../../../shared/types';
 import {
   IDLE_ART,
   type ArtState,
@@ -29,6 +29,8 @@ function makeItem(overrides: Partial<BatchItem> = {}): BatchItem {
     height: 2000,
     transform: DEFAULT_TRANSFORM,
     editorSide: 512,
+    filters: DEFAULT_FILTERS,
+    generationUpload: null,
     selectedSizes: new Set<BottonSize>([32, 44, 58]),
     perSizeDpi: zero,
     perSizeTier: { 32: 'ok', 44: 'ok', 58: 'ok' },

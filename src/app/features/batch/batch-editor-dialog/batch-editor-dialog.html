@@ -9,18 +9,59 @@
       Ajustar “{{ item().name }}”
     </h2>
     <p class="dialog__hint">
-      O ajuste vale para todos os tamanhos selecionados desta imagem.
+      O ajuste e os filtros valem para todos os tamanhos selecionados desta
+      imagem.
     </p>
 
-    <div class="dialog__stage">
-      <app-canvas-editor
-        [image]="image()"
-        [spec]="spec()"
-        [(transform)]="transform"
-      />
+    <div class="dialog__tabs" role="tablist" aria-label="Modo de edição">
+      @for (t of tabs; track t.id) {
+        <button
+          #tabBtn
+          type="button"
+          role="tab"
+          class="tab"
+          [id]="'batch-tab-' + t.id"
+          [class.tab--active]="activeTab() === t.id"
+          [attr.aria-selected]="activeTab() === t.id"
+          [attr.aria-controls]="'batch-panel-' + t.id"
+          [tabindex]="activeTab() === t.id ? 0 : -1"
+          (click)="selectTab(t.id)"
+          (keydown)="onTabKeydown($event)"
+        >
+          {{ t.label }}
+        </button>
+      }
     </div>
 
-    <app-resolution-badge [dpi]="dpi()" [dense]="true" />
+    <!-- O canvas fica montado em ambas as abas (via [hidden]) para preservar o
+         lado do editor e refletir os filtros ao vivo ao voltar para "Ajustar". -->
+    <div
+      role="tabpanel"
+      id="batch-panel-adjust"
+      aria-labelledby="batch-tab-adjust"
+      tabindex="0"
+      [hidden]="activeTab() !== 'adjust'"
+    >
+      <div class="dialog__stage">
+        <app-canvas-editor
+          [image]="image()"
+          [spec]="spec()"
+          [filters]="filters()"
+          [(transform)]="transform"
+        />
+      </div>
+      <app-resolution-badge [dpi]="dpi()" [dense]="true" />
+    </div>
+
+    <div
+      role="tabpanel"
+      id="batch-panel-treat"
+      aria-labelledby="batch-tab-treat"
+      tabindex="0"
+      [hidden]="activeTab() !== 'treat'"
+    >
+      <app-treat-panel [(filters)]="filters" />
+    </div>
 
     <div class="dialog__actions">
       <button type="button" class="btn btn--ghost" (click)="onClose()">

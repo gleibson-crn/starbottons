@@ -1,15 +1,14 @@
 /**
- * UploadPage — lista acumulável com decisão single × lote no "Continuar".
+ * UploadPage — lista acumulável com fluxo único no "Continuar".
  *
  * O valor da tela é deixar o usuário revisar/remover antes de prosseguir:
  * novos arquivos são ANEXADOS (não substituem), cada um pode ser removido
- * (revogando o object URL), e só o "Continuar" roteia — 1 item segue single
- * (upload + /app/selection); 2+ vão ao BatchStore (→ /app/batch). O teto
- * MAX_IMAGES é respeitado e as recusas viram toast.
+ * (revogando o object URL), e o "Continuar" envia SEMPRE todos os itens
+ * (1..N) ao BatchStore e navega para o grid (/app/batch). O teto MAX_IMAGES
+ * é respeitado e as recusas viram toast.
  */
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { WorkflowStore } from '../../core/workflow';
 import { UploadService } from '../../core/upload';
 import { ToastService } from '../../shared/ui';
 import { BatchStore, MAX_IMAGES } from '../../core/batch';
@@ -23,10 +22,8 @@ function pngFile(name = 'a.png'): File {
 
 interface Fakes {
   probe: ReturnType<typeof vi.fn>;
-  upload: ReturnType<typeof vi.fn>;
   addFiles: ReturnType<typeof vi.fn>;
   navigate: ReturnType<typeof vi.fn>;
-  setUpload: ReturnType<typeof vi.fn>;
   error: ReturnType<typeof vi.fn>;
   warning: ReturnType<typeof vi.fn>;
 }
@@ -34,18 +31,15 @@ interface Fakes {
 function setup(addFilesReturn: string[] = []): { page: UploadPage; f: Fakes } {
   const f: Fakes = {
     probe: vi.fn().mockResolvedValue(PROBE),
-    upload: vi.fn().mockResolvedValue({ id: 'up-1' }),
     addFiles: vi.fn().mockReturnValue(addFilesReturn),
     navigate: vi.fn().mockResolvedValue(true),
-    setUpload: vi.fn(),
     error: vi.fn(),
     warning: vi.fn(),
   };
   TestBed.configureTestingModule({
     imports: [UploadPage],
     providers: [
-      { provide: UploadService, useValue: { probe: f.probe, upload: f.upload } },
-      { provide: WorkflowStore, useValue: { setUpload: f.setUpload } },
+      { provide: UploadService, useValue: { probe: f.probe } },
       { provide: BatchStore, useValue: { addFiles: f.addFiles } },
       { provide: Router, useValue: { navigate: f.navigate } },
       { provide: ToastService, useValue: { error: f.error, warning: f.warning } },
@@ -55,7 +49,7 @@ function setup(addFilesReturn: string[] = []): { page: UploadPage; f: Fakes } {
   return { page, f };
 }
 
-describe('UploadPage — lista acumulável (single/lote)', () => {
+describe('UploadPage — lista acumulável (fluxo único)', () => {
   beforeEach(() => {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
   });
@@ -87,14 +81,13 @@ describe('UploadPage — lista acumulável (single/lote)', () => {
     expect(revoke).toHaveBeenCalledWith(PROBE.previewUrl);
   });
 
-  it('Continuar com 1 item faz upload single e navega para /app/selection', async () => {
+  it('Continuar com 1 item envia ao BatchStore e navega para /app/batch', async () => {
     const { page, f } = setup();
     await page.onFilesAccepted([pngFile()]);
     await page.continue();
-    expect(f.upload).toHaveBeenCalledTimes(1);
-    expect(f.setUpload).toHaveBeenCalledWith({ id: 'up-1' });
-    expect(f.navigate).toHaveBeenCalledWith(['/app/selection']);
-    expect(f.addFiles).not.toHaveBeenCalled();
+    expect(f.addFiles).toHaveBeenCalledTimes(1);
+    expect(f.addFiles.mock.calls[0][0]).toHaveLength(1);
+    expect(f.navigate).toHaveBeenCalledWith(['/app/batch']);
   });
 
   it('Continuar com 2+ itens envia ao BatchStore e navega para /app/batch', async () => {
@@ -104,7 +97,13 @@ describe('UploadPage — lista acumulável (single/lote)', () => {
     expect(f.addFiles).toHaveBeenCalledTimes(1);
     expect(f.addFiles.mock.calls[0][0]).toHaveLength(2);
     expect(f.navigate).toHaveBeenCalledWith(['/app/batch']);
-    expect(f.upload).not.toHaveBeenCalled();
+  });
+
+  it('Continuar sem itens não envia nem navega', async () => {
+    const { page, f } = setup();
+    await page.continue();
+    expect(f.addFiles).not.toHaveBeenCalled();
+    expect(f.navigate).not.toHaveBeenCalled();
   });
 
   it('o rótulo do botão de busca muda conforme a contagem', async () => {

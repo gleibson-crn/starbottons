@@ -2,8 +2,8 @@
  * ShellPage — menu superior global (navegação principal).
  *
  * Garante que os dois links levam às rotas certas e que a rota ativa recebe
- * `aria-current="page"` (via `routerLinkActive`), sem afetar o Stepper. O
- * Stepper continua condicionado por `data.step/batch/manage/contextual`.
+ * `aria-current="page"` (via `routerLinkActive`). O rótulo contextual continua
+ * condicionado por `data.batch/manage/contextual`.
  */
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -20,7 +20,7 @@ const routes = [
     path: 'app',
     component: ShellPage,
     children: [
-      { path: 'upload', component: Stub, data: { step: 0 } },
+      { path: 'upload', component: Stub },
       { path: 'mockups', component: Stub, data: { manage: true } },
       { path: 'batch', component: Stub, data: { batch: true } },
       { path: '', pathMatch: 'full' as const, redirectTo: 'upload' },

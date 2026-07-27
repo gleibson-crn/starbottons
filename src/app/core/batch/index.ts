@@ -46,6 +46,8 @@ export {
   withName,
   withToggledSize,
   withTransform,
+  withFilters,
+  withGenerationUpload,
   withArt,
 } from './batch-item';
 

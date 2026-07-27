@@ -4,9 +4,9 @@ import {
   computed,
   model,
 } from '@angular/core';
-import type { ImageFilters } from '../../shared/types';
-import { DEFAULT_FILTERS, isDefaultFilters } from '../../shared/types';
-import { FilterSlider } from './filter-slider';
+import type { ImageFilters } from '../../types';
+import { DEFAULT_FILTERS, isDefaultFilters } from '../../types';
+import { FilterSlider } from '../filter-slider/filter-slider';
 import {
   activePresetId,
   FILTER_PRESETS,

@@ -6,7 +6,6 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { WorkflowStore } from '../../core/workflow';
 import { FileDropzone, ToastService, type RejectedFile } from '../../shared/ui';
 import { BatchStore, MAX_IMAGES } from '../../core/batch';
 import type { ImageProbe } from '../../core/upload';
@@ -22,11 +21,11 @@ export interface UploadItem {
 }
 
 /**
- * UploadPage — passo 1. Dropzone que ACUMULA numa lista: novos arquivos são
- * anexados (não substituem) e podem ser removidos item a item. A decisão
- * single × lote acontece só no "Continuar": 1 item segue o fluxo single
- * (upload + preview → /app/selection); 2+ vão para o BatchStore (→ /app/batch).
- * Cada item mostra thumb + nome + dimensões e um heads-up de baixa resolução.
+ * UploadPage — passo único de entrada. Dropzone que ACUMULA numa lista: novos
+ * arquivos são anexados (não substituem) e podem ser removidos item a item.
+ * O "Continuar" envia SEMPRE todos os itens ao BatchStore e navega para o
+ * grid (/app/batch) — fluxo único, seja 1 ou N imagens. Cada item mostra
+ * thumb + nome + dimensões e um heads-up de baixa resolução.
  */
 @Component({
   selector: 'app-upload-page',
@@ -37,13 +36,11 @@ export interface UploadItem {
 })
 export class UploadPage {
   private readonly service = inject(UploadService);
-  private readonly store = inject(WorkflowStore);
   private readonly batch = inject(BatchStore);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly items = signal<UploadItem[]>([]);
-  readonly uploading = signal(false);
 
   readonly canContinue = computed(() => this.items().length >= 1);
   readonly browseLabel = computed(() =>
@@ -85,36 +82,16 @@ export class UploadPage {
     this.items.update((list) => list.filter((_, i) => i !== index));
   }
 
+  /** Envia todos os itens (1..N) ao lote e vai para o grid. */
   async continue(): Promise<void> {
     const list = this.items();
-    if (list.length === 0 || this.uploading()) {
+    if (list.length === 0) {
       return;
     }
-    if (list.length === 1) {
-      await this.continueSingle(list[0]);
-      return;
-    }
-    this.sendToBatch(list.map((i) => i.file));
-    await this.router.navigate(['/app/batch']);
-  }
-
-  private async continueSingle(item: UploadItem): Promise<void> {
-    this.uploading.set(true);
-    try {
-      const record = await this.service.upload(item.file, item.probe);
-      this.store.setUpload(record);
-      await this.router.navigate(['/app/selection']);
-    } catch (err) {
-      this.toast.error((err as Error).message);
-    } finally {
-      this.uploading.set(false);
-    }
-  }
-
-  private sendToBatch(files: File[]): void {
-    for (const reason of this.batch.addFiles(files)) {
+    for (const reason of this.batch.addFiles(list.map((i) => i.file))) {
       this.toast.warning(reason);
     }
+    await this.router.navigate(['/app/batch']);
   }
 
   private async appendProbed(file: File): Promise<void> {

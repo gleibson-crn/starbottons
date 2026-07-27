@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import type { ImageFilters, UploadRecord } from '../../shared/types';
+import { loadImage } from '../../shared/utils';
 import { UploadService } from './upload.service';
 import {
   renderFilteredBlob,
@@ -39,5 +40,19 @@ export class TreatedUploadService {
       previewUrl: URL.createObjectURL(blob),
     };
     return this.uploads.upload(file, probe);
+  }
+
+  /**
+   * Carrega a imagem original a partir da `previewUrl` (object URL do arquivo,
+   * portanto full-res) e materializa o upload tratado. Conveniência para o LOTE,
+   * que só guarda a URL de preview de cada item — não o `HTMLImageElement`.
+   */
+  async createTreatedUploadFromUrl(
+    previewUrl: string,
+    filters: ImageFilters,
+    sourceName: string,
+  ): Promise<UploadRecord> {
+    const image = await loadImage(previewUrl);
+    return this.createTreatedUpload(image, filters, sourceName);
   }
 }

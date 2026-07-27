@@ -4,8 +4,14 @@ import {
   GenerationGateway,
   GenerationService,
 } from '../generation';
-import { UploadService } from '../upload';
-import type { GenerationResult, PrintSpec } from '../../shared/types';
+import { TreatedUploadService, UploadService } from '../upload';
+import type {
+  GenerationResult,
+  ImageFilters,
+  PrintSpec,
+  UploadRecord,
+} from '../../shared/types';
+import { isDefaultFilters } from '../../shared/types';
 import { fallbackSpec, runPool } from '../../shared/utils';
 import {
   MAX_IMAGES,
@@ -15,6 +21,8 @@ import {
 import {
   newUploadingItem,
   withArt,
+  withFilters,
+  withGenerationUpload,
   withName,
   withToggledSize,
   withTransform,
@@ -56,6 +64,7 @@ function roundSpec(size: BottonSize): PrintSpec {
 @Injectable({ providedIn: 'root' })
 export class BatchStore {
   private readonly uploads = inject(UploadService);
+  private readonly treated = inject(TreatedUploadService);
   private readonly generation = inject(GenerationService);
   private readonly gateway = inject(GenerationGateway);
 
@@ -150,6 +159,11 @@ export class BatchStore {
     this.patch(id, (i) => withTransform(i, transform, editorSide));
   }
 
+  /** Define os filtros de tratamento de um item (invalida o tratado em cache). */
+  setItemFilters(id: string, filters: ImageFilters): void {
+    this.patch(id, (i) => withFilters(i, filters));
+  }
+
   cancel(): void {
     this.controller.abort();
     this.generating.set(false);
@@ -190,6 +204,7 @@ export class BatchStore {
         withArt(i, job.size, { status: 'generating', errorMessage: null }),
       );
     }
+    await this.prepareTreatedUploads(jobs);
     const tasks = jobs.map((job) => () => this.runArt(job));
     await runPool(tasks, {
       concurrency: POOL_CONCURRENCY,
@@ -204,18 +219,61 @@ export class BatchStore {
     if (!item?.upload) {
       throw new Error('Imagem sem upload concluído.');
     }
+    const source = this.sourceUpload(item, item.upload);
     const request = buildGenerateRequest({
-      uploadId: item.upload.id,
+      uploadId: source.id,
       sizeMm: job.size,
       spec: roundSpec(job.size),
       transform: item.transform,
       editorSide: item.editorSide,
     });
-    const jobId = await this.ensureJob(job, item.upload.id, request);
+    const jobId = await this.ensureJob(job, source.id, request);
     return this.generation.generate(request, {
       jobId,
       signal: this.controller.signal,
     });
+  }
+
+  /**
+   * Fonte da geração (Abordagem A): filtros neutros → upload ORIGINAL (não
+   * reprocessa); com filtros → o upload TRATADO full-res do item (materializado
+   * antes do pool). `null` aqui só ocorre se o tratamento falhou → sinaliza erro.
+   */
+  private sourceUpload(item: BatchItem, original: UploadRecord): UploadRecord {
+    if (isDefaultFilters(item.filters)) {
+      return original;
+    }
+    if (item.generationUpload) {
+      return item.generationUpload;
+    }
+    throw new Error('Falha ao aplicar os filtros à imagem.');
+  }
+
+  /**
+   * Materializa UMA vez o upload tratado de cada item com filtros ativos que
+   * ainda não tem cache. Reusa `TreatedUploadService` (ADR-014) e preserva a
+   * idempotência: todos os tamanhos do item compartilham o mesmo tratado.
+   */
+  private async prepareTreatedUploads(jobs: ArtJob[]): Promise<void> {
+    for (const id of new Set(jobs.map((j) => j.itemId))) {
+      const item = this.find(id);
+      if (item?.upload && !isDefaultFilters(item.filters) && !item.generationUpload) {
+        await this.materializeTreated(item);
+      }
+    }
+  }
+
+  private async materializeTreated(item: BatchItem): Promise<void> {
+    try {
+      const record = await this.treated.createTreatedUploadFromUrl(
+        item.previewUrl,
+        item.filters,
+        item.fileName,
+      );
+      this.patch(item.id, (i) => withGenerationUpload(i, record));
+    } catch {
+      // Mantém generationUpload null → runArt marca as artes do item como falha.
+    }
   }
 
   /** Reusa o jobId existente (retry idempotente) ou pré-insere um novo. */

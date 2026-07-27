@@ -1,4 +1,4 @@
-import { DEFAULT_FILTERS } from '../../shared/types';
+import { DEFAULT_FILTERS } from '../../types';
 import { activePresetId, FILTER_PRESETS } from './filter-presets';
 
 describe('filter-presets', () => {

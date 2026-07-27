@@ -4,8 +4,10 @@ import { ShellPage } from './shell/shell.page';
 
 /**
  * Rotas raiz. `/auth` é pública; tudo sob `/app` exige sessão (authGuard) e
- * roda dentro do ShellPage (stepper persistente). Cada passo faz lazy-load da
- * sua feature e declara `data.step` para sincronizar o Stepper.
+ * roda dentro do ShellPage. Fluxo único: o upload leva sempre ao grid de lote
+ * (/app/batch). As paths do antigo fluxo single (selection/editor/processing/
+ * result) foram removidas e redirecionam para /app/upload — links/bookmarks
+ * antigos não quebram (não dão 404).
  */
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'app/upload' },
@@ -20,33 +22,12 @@ export const routes: Routes = [
     children: [
       {
         path: 'upload',
-        data: { step: 0 },
         loadChildren: () => import('./features/upload/upload.routes'),
-      },
-      {
-        path: 'selection',
-        data: { step: 1 },
-        loadChildren: () => import('./features/selection/selection.routes'),
-      },
-      {
-        path: 'editor',
-        data: { step: 2 },
-        loadChildren: () => import('./features/editor/editor.routes'),
-      },
-      {
-        path: 'processing',
-        data: { step: 2 },
-        loadChildren: () => import('./features/generation/generation.routes'),
       },
       {
         path: 'batch',
         data: { batch: true },
         loadChildren: () => import('./features/batch/batch.routes'),
-      },
-      {
-        path: 'result',
-        data: { step: 3 },
-        loadChildren: () => import('./features/result/result.routes'),
       },
       {
         path: 'mockup',
@@ -60,6 +41,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/mockup/mockup-manager.routes'),
       },
+      // Redirects das paths do antigo fluxo single → fluxo único (upload).
+      { path: 'selection', pathMatch: 'full', redirectTo: 'upload' },
+      { path: 'editor', pathMatch: 'full', redirectTo: 'upload' },
+      { path: 'processing', pathMatch: 'full', redirectTo: 'upload' },
+      { path: 'result', pathMatch: 'full', redirectTo: 'upload' },
       { path: '', pathMatch: 'full', redirectTo: 'upload' },
     ],
   },

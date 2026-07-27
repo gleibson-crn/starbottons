@@ -1,5 +1,5 @@
-import type { ImageFilters } from '../../shared/types';
-import { DEFAULT_FILTERS, filtersEqual } from '../../shared/types';
+import type { ImageFilters } from '../../types';
+import { DEFAULT_FILTERS, filtersEqual } from '../../types';
 
 /** Id estável de cada preset (também usado como chave do chip). */
 export type PresetId = 'original' | 'grayscale' | 'sepia' | 'vivid';

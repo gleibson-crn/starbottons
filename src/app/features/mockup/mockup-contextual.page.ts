@@ -133,7 +133,7 @@ export class MockupContextualPage {
   }
 
   async back(): Promise<void> {
-    await this.router.navigate(['/app/result']);
+    await this.router.navigate(['/app/upload']);
   }
 
   private compose(): HTMLCanvasElement | null {

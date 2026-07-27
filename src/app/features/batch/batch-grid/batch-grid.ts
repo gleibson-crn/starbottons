@@ -103,6 +103,7 @@ export class BatchGrid {
 
   onTransform(id: string, result: BatchEditResult): void {
     this.store.setTransform(id, result.transform, result.editorSide);
+    this.store.setItemFilters(id, result.filters);
   }
 
   onRetry(id: string): void {

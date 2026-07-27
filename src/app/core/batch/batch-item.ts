@@ -1,5 +1,9 @@
-import { DEFAULT_TRANSFORM } from '../../shared/types';
-import type { EditorTransform, UploadRecord } from '../../shared/types';
+import { DEFAULT_FILTERS, DEFAULT_TRANSFORM } from '../../shared/types';
+import type {
+  EditorTransform,
+  ImageFilters,
+  UploadRecord,
+} from '../../shared/types';
 import type { ImageProbe } from '../upload';
 import { BATCH_EDITOR_SIDE } from './batch.constants';
 import {
@@ -34,6 +38,8 @@ export function newUploadingItem(id: string, file: File): BatchItem {
     height: 0,
     transform: DEFAULT_TRANSFORM,
     editorSide: BATCH_EDITOR_SIDE,
+    filters: DEFAULT_FILTERS,
+    generationUpload: null,
     selectedSizes: new Set(),
     perSizeDpi: { ...ZERO_DPI },
     perSizeTier: computePerSizeTier(ZERO_DPI),
@@ -85,6 +91,26 @@ export function withToggledSize(
     next.add(size);
   }
   return { ...item, selectedSizes: next };
+}
+
+/**
+ * Novos filtros de tratamento. Invalida o upload tratado em cache
+ * (`generationUpload`), pois ele reflete os filtros anteriores e precisa ser
+ * remateriazado na próxima geração.
+ */
+export function withFilters(
+  item: BatchItem,
+  filters: ImageFilters,
+): BatchItem {
+  return { ...item, filters, generationUpload: null };
+}
+
+/** Guarda o upload tratado full-res (reuso por todos os tamanhos do item). */
+export function withGenerationUpload(
+  item: BatchItem,
+  upload: UploadRecord,
+): BatchItem {
+  return { ...item, generationUpload: upload };
 }
 
 /** Novo enquadramento: recalcula DPI/tier e solta tamanhos que ficaram 🔴. */

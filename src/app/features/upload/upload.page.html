@@ -1,8 +1,8 @@
 <section aria-labelledby="upload-title">
   <h1 id="upload-title" class="hero__title">Envie suas imagens</h1>
   <p class="upload__lead">
-    Adicione uma ou mais imagens. Uma segue direto para o ajuste; duas ou mais
-    abrem o envio em lote. PNG ou JPEG, até 25 MB.
+    Adicione uma ou mais imagens. Todas seguem juntas para o ajuste e o
+    tratamento. PNG ou JPEG, até 25 MB.
   </p>
 
   <app-file-dropzone
@@ -49,9 +49,9 @@
         class="btn btn--primary"
         type="button"
         (click)="continue()"
-        [disabled]="!canContinue() || uploading()"
+        [disabled]="!canContinue()"
       >
-        {{ uploading() ? 'Enviando…' : 'Continuar' }}
+        Continuar
       </button>
     </div>
   }

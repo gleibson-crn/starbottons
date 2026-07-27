@@ -28,6 +28,44 @@
   color: var(--color-text-muted);
 }
 
+/* Segmented control / tablist "Ajustar | Tratar" */
+.dialog__tabs {
+  display: flex;
+  gap: var(--sp-1);
+  padding: var(--sp-1);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.tab {
+  flex: 1;
+  min-block-size: var(--tap-min);
+  padding-inline: var(--sp-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease);
+}
+
+.tab--active {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+[role='tabpanel'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
 .dialog__stage {
   display: grid;
   place-items: center;

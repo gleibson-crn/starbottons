@@ -1,4 +1,9 @@
-import type { EditorTransform, ResolutionTier, UploadRecord } from '../../shared/types';
+import type {
+  EditorTransform,
+  ImageFilters,
+  ResolutionTier,
+  UploadRecord,
+} from '../../shared/types';
 
 /** Tamanhos de botton suportados no MVP (mm). */
 export type BottonSize = 32 | 44 | 58;
@@ -57,6 +62,14 @@ export interface BatchItem {
   readonly transform: EditorTransform;
   /** Lado (px) do editor em que `transform` foi ajustado. */
   readonly editorSide: number;
+  /** Tratamento/filtros de imagem (default = neutro, nenhum filtro). */
+  readonly filters: ImageFilters;
+  /**
+   * Upload tratado full-res desta imagem (Abordagem A do ADR-014). `null` quando
+   * os filtros são neutros ou o tratado ainda não foi materializado; ao gerar
+   * com filtros é preenchido uma vez e reusado por todos os tamanhos do item.
+   */
+  readonly generationUpload: UploadRecord | null;
   readonly selectedSizes: ReadonlySet<BottonSize>;
   readonly perSizeDpi: Readonly<Record<BottonSize, number>>;
   readonly perSizeTier: Readonly<Record<BottonSize, ResolutionTier>>;
