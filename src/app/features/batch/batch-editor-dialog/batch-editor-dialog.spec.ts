@@ -73,6 +73,25 @@ describe('BatchEditorDialog — filtros', () => {
     cmp.selectTab('treat');
     expect(cmp.activeTab()).toBe('treat');
   });
+
+  it('resetFraming zera enquadramento mas preserva o fundo', () => {
+    const cmp = dialogWith(makeItem());
+    cmp.onBackground('#123456');
+    cmp.transform.update((t) => ({
+      ...t,
+      scale: 2,
+      rotation: 30,
+      offset: { x: 10, y: 10 },
+    }));
+
+    cmp.resetFraming();
+
+    const t = cmp.transform();
+    expect(t.scale).toBe(DEFAULT_TRANSFORM.scale);
+    expect(t.rotation).toBe(DEFAULT_TRANSFORM.rotation);
+    expect(t.offset).toEqual(DEFAULT_TRANSFORM.offset);
+    expect(t.background).toBe('#123456');
+  });
 });
 
 describe('BatchEditorDialog — fundo', () => {

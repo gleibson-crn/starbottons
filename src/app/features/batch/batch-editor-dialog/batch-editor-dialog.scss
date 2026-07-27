@@ -78,6 +78,13 @@
   place-items: center;
 }
 
+/* Dica textual da aba "Ajustar" (o enquadramento é feito na prévia acima). */
+.dialog__tabhint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
 .dialog__actions {
   display: flex;
   justify-content: flex-end;

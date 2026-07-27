@@ -21,6 +21,7 @@ import {
   CanvasEditor,
   ResolutionBadge,
   TreatPanel,
+  resetTransform,
 } from '../../../shared/ui';
 import { effectiveDpi, fallbackSpec, loadImage, rovingNext } from '../../../shared/utils';
 import { largestSelectedSize, type BatchItem } from '../../../core/batch';
@@ -47,14 +48,14 @@ const EDITOR_TABS: readonly EditorTab[] = [
 ];
 
 /**
- * BatchEditorDialog — modal de UMA imagem do lote com abas ARIA "Ajustar |
- * Tratar". Ajustar = CanvasEditor de enquadramento (spec do MAIOR tamanho
- * selecionado); Tratar = TreatPanel (presets + sliders). O canvas recebe
- * `[filters]` para refletir o tratamento ao vivo. Acessibilidade:
- * `role="dialog"` + `aria-modal`, Esc fecha, `role="tablist"` com navegação
- * ←/→/Home/End; ao confirmar devolve transform + filters (todos os tamanhos).
- * A aba "Fundo" (BackgroundPicker) edita `transform.background` (cor sólida sob
- * a imagem), refletida ao vivo pelo canvas.
+ * BatchEditorDialog — modal de UMA imagem do lote. A PRÉVIA (CanvasEditor, spec
+ * do MAIOR tamanho selecionado) é PERSISTENTE no topo — sempre visível — para
+ * que enquadramento, filtros e fundo apareçam ao vivo em qualquer aba. Abaixo,
+ * abas ARIA de CONTROLES: "Ajustar" (instruções de enquadramento + redefinir),
+ * "Tratar" (TreatPanel: presets + sliders) e "Fundo" (BackgroundPicker: cor
+ * sólida sob a imagem). Acessibilidade: `role="dialog"` + `aria-modal`, Esc
+ * fecha, `role="tablist"` com navegação ←/→/Home/End; ao confirmar devolve
+ * transform + filters (valem para todos os tamanhos da imagem).
  */
 @Component({
   selector: 'app-batch-editor-dialog',
@@ -114,6 +115,11 @@ export class BatchEditorDialog implements OnInit {
   /** Troca a cor de fundo (aba "Fundo"); o preview reflete ao vivo. */
   onBackground(color: string): void {
     this.transform.update((t) => ({ ...t, background: color }));
+  }
+
+  /** Redefine posição/zoom/rotação (aba "Ajustar"); preserva o fundo escolhido. */
+  resetFraming(): void {
+    this.transform.update((t) => resetTransform(t));
   }
 
   /** Navegação ARIA por teclado (←/→/Home/End) com ativação automática. */

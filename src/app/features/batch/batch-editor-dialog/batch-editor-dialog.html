@@ -13,6 +13,19 @@
       imagem.
     </p>
 
+    <!-- Prévia PERSISTENTE (fora das abas): sempre visível para que o usuário
+         veja ao vivo o efeito do enquadramento, dos filtros e do fundo,
+         independentemente da aba de controles ativa. -->
+    <div class="dialog__stage">
+      <app-canvas-editor
+        [image]="image()"
+        [spec]="spec()"
+        [filters]="filters()"
+        [(transform)]="transform"
+      />
+    </div>
+    <app-resolution-badge [dpi]="dpi()" [dense]="true" />
+
     <div class="dialog__tabs" role="tablist" aria-label="Modo de edição">
       @for (t of tabs; track t.id) {
         <button
@@ -33,8 +46,8 @@
       }
     </div>
 
-    <!-- O canvas fica montado em ambas as abas (via [hidden]) para preservar o
-         lado do editor e refletir os filtros ao vivo ao voltar para "Ajustar". -->
+    <!-- A prévia (canvas) é persistente acima; a aba "Ajustar" traz só as
+         instruções de enquadramento e o botão de redefinir. -->
     <div
       role="tabpanel"
       id="batch-panel-adjust"
@@ -42,15 +55,13 @@
       tabindex="0"
       [hidden]="activeTab() !== 'adjust'"
     >
-      <div class="dialog__stage">
-        <app-canvas-editor
-          [image]="image()"
-          [spec]="spec()"
-          [filters]="filters()"
-          [(transform)]="transform"
-        />
-      </div>
-      <app-resolution-badge [dpi]="dpi()" [dense]="true" />
+      <p class="dialog__tabhint">
+        Arraste na prévia acima para posicionar e role para dar zoom. Pelo
+        teclado: setas movem, + e − ampliam, colchetes giram e R redefine.
+      </p>
+      <button type="button" class="btn btn--ghost" (click)="resetFraming()">
+        Redefinir enquadramento
+      </button>
     </div>
 
     <div
