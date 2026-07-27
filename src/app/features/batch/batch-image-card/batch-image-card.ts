@@ -31,6 +31,19 @@ interface ReadyDownload {
   readonly pdfName: string;
 }
 
+/** Uma arte que falhou: qual tamanho + mensagem amigável + detalhe técnico. */
+interface ArtFailure {
+  readonly size: BottonSize;
+  readonly summary: string;
+  readonly detail: string | null;
+}
+
+/** Detalhe técnico só quando acrescenta algo além da mensagem amigável. */
+function failureDetail(raw: string | null): string | null {
+  const text = (raw ?? '').trim();
+  return text.length > 0 ? text : null;
+}
+
 /**
  * BatchImageCard — cartão de uma imagem do lote: nome (obrigatório), badge de
  * resolução (maior tamanho, denso), seleção de tamanhos com gating, ações e
@@ -75,6 +88,17 @@ export class BatchImageCard {
     return BOTTON_SIZES.filter(
       (s) => item.selectedSizes.has(s) && item.arts[s]?.status === 'ready',
     ).map((size) => this.toDownload(item, size));
+  });
+
+  readonly failures = computed<ArtFailure[]>(() => {
+    const item = this.item();
+    return BOTTON_SIZES.filter(
+      (s) => item.selectedSizes.has(s) && item.arts[s]?.status === 'failed',
+    ).map((size) => ({
+      size,
+      summary: `${size} mm: falha ao gerar. Tente novamente.`,
+      detail: failureDetail(item.arts[size]?.errorMessage ?? null),
+    }));
   });
 
   onName(event: Event): void {

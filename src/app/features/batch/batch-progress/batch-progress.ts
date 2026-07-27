@@ -5,8 +5,10 @@ type ProgressVariant = 'neutral' | 'success' | 'warning';
 
 /**
  * BatchProgress — envolve o ProgressIndicator com os contadores do lote.
- * O progresso é a fração de artes prontas; a variante (neutral/success/warning)
- * é comunicada por texto + contadores, não só por cor (WCAG 1.4.1).
+ * O progresso é a fração de artes RESOLVIDAS (prontas + falhas): a barra enche
+ * quando o processamento termina, mesmo com falhas, em vez de travar. A variante
+ * (neutral/success/warning) é comunicada por texto + contadores, não só por cor
+ * (WCAG 1.4.1); os contadores separam prontas × falhas.
  */
 @Component({
   selector: 'app-batch-progress',
@@ -23,7 +25,8 @@ export class BatchProgress {
 
   readonly percent = computed(() => {
     const total = this.total();
-    return total > 0 ? Math.round((this.ready() / total) * 100) : 0;
+    const resolved = this.ready() + this.failed();
+    return total > 0 ? Math.round((resolved / total) * 100) : 0;
   });
 
   readonly label = computed(

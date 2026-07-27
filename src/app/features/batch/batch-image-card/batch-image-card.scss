@@ -45,6 +45,42 @@
   color: var(--warning-500);
 }
 
+.bcard__failures {
+  list-style: none;
+  margin: 0;
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--error-500);
+  background: var(--color-surface-2);
+}
+
+.bcard__failure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--fs-sm);
+}
+
+.bcard__failure-summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  color: var(--error-500);
+  font-weight: 600;
+}
+
+.bcard__failure-icon {
+  font-weight: 700;
+}
+
+.bcard__failure-detail {
+  color: var(--color-text-muted);
+  word-break: break-word;
+}
+
 .bcard__actions {
   display: flex;
   flex-wrap: wrap;

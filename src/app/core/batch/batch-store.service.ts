@@ -24,6 +24,7 @@ import {
 import { isNameValid } from './batch-naming';
 import type { EditorTransform } from '../../shared/types';
 import {
+  BOTTON_SIZES,
   type ArtStatus,
   type BatchItem,
   type BottonSize,
@@ -81,8 +82,36 @@ export class BatchStore {
     ),
   );
 
+  /** Imagens enviadas que ainda não têm NENHUM tamanho selecionado. */
+  readonly itemsSemTamanho = computed(
+    () => this.items().filter((i) => i.upload && i.selectedSizes.size === 0).length,
+  );
+
+  /**
+   * Subconjunto de `itemsSemTamanho` sem saída por seleção: todos os tamanhos
+   * estão bloqueados por resolução (🔴). Só resolve removendo/trocando a imagem.
+   */
+  readonly itemsBloqueadosSemTamanho = computed(
+    () =>
+      this.items().filter(
+        (i) =>
+          i.upload &&
+          i.selectedSizes.size === 0 &&
+          BOTTON_SIZES.every((s) => i.perSizeTier[s] === 'blocked'),
+      ).length,
+  );
+
+  /** Lote já saiu do estado idle (geração iniciada ou artes resolvidas). */
+  readonly started = computed(
+    () => this.generating() || this.artesProntas() > 0 || this.artesFalhas() > 0,
+  );
+
   readonly podeGerar = computed(
-    () => !this.generating() && this.hasPending() && !this.nameMissing(),
+    () =>
+      !this.generating() &&
+      this.hasPending() &&
+      !this.nameMissing() &&
+      this.itemsSemTamanho() === 0,
   );
 
   /** Adiciona imagens (respeita MAX_IMAGES); retorna motivos de recusa. */

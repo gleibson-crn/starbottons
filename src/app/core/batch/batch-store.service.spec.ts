@@ -188,6 +188,52 @@ describe('BatchStore — nome obrigatório', () => {
   });
 });
 
+describe('BatchStore — imagem sem tamanho selecionado', () => {
+  it('bloqueia "Gerar tudo" quando uma imagem com upload está com 0 tamanhos', async () => {
+    const ctx = setup();
+    const item = await addImage(ctx, { width: 4000, height: 4000 });
+
+    expect(ctx.store.podeGerar()).toBe(true);
+    expect(ctx.store.itemsSemTamanho()).toBe(0);
+
+    // Desmarca todos os tamanhos → 0 selecionados.
+    for (const size of [32, 44, 58] as const) {
+      if (ctx.store.items()[0].selectedSizes.has(size)) {
+        ctx.store.toggleSize(item.id, size);
+      }
+    }
+
+    expect(ctx.store.items()[0].selectedSizes.size).toBe(0);
+    expect(ctx.store.itemsSemTamanho()).toBe(1);
+    expect(ctx.store.podeGerar()).toBe(false);
+  });
+
+  it('conta como bloqueado sem saída quando TODOS os tamanhos são 🔴', async () => {
+    const ctx = setup();
+    await addImage(ctx, { width: 100, height: 100 });
+
+    const item = ctx.store.items()[0];
+    expect(item.selectedSizes.size).toBe(0);
+    expect(ctx.store.itemsSemTamanho()).toBe(1);
+    expect(ctx.store.itemsBloqueadosSemTamanho()).toBe(1);
+    expect(ctx.store.podeGerar()).toBe(false);
+  });
+});
+
+describe('BatchStore — started (lote saiu do idle)', () => {
+  it('started vira true após iniciar a geração', async () => {
+    const ctx = setup();
+    await addImage(ctx, { width: 4000, height: 4000 });
+
+    expect(ctx.store.started()).toBe(false);
+
+    await ctx.store.generateAll();
+
+    expect(ctx.store.started()).toBe(true);
+    expect(ctx.store.artesProntas()).toBe(3);
+  });
+});
+
 describe('BatchStore — geração', () => {
   it('pré-insere com batch_id e usa o mesmo jobId externo no service', async () => {
     const ctx = setup();

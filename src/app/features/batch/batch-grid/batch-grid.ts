@@ -30,7 +30,7 @@ import type { BatchEditResult } from '../batch-editor-dialog/batch-editor-dialog
   styleUrl: './batch-grid.scss',
 })
 export class BatchGrid {
-  private readonly store = inject(BatchStore);
+  readonly store = inject(BatchStore);
   private readonly zip = inject(ZipExportService);
   private readonly toast = inject(ToastService);
 
@@ -44,6 +44,8 @@ export class BatchGrid {
   readonly capped = this.store.capped;
   readonly nameMissing = this.store.nameMissing;
   readonly remaining = this.store.remainingArtes;
+  readonly itemsSemTamanho = this.store.itemsSemTamanho;
+  readonly itemsBloqueadosSemTamanho = this.store.itemsBloqueadosSemTamanho;
   readonly zipping = signal(false);
 
   readonly hasItems = computed(() => this.items().length > 0);

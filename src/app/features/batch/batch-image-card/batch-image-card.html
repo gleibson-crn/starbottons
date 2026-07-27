@@ -60,6 +60,22 @@
       <p class="bcard__warn" role="status">Selecione ao menos 1 tamanho.</p>
     }
 
+    @if (failures().length > 0) {
+      <ul class="bcard__failures" aria-label="Artes com falha nesta imagem">
+        @for (f of failures(); track f.size) {
+          <li class="bcard__failure">
+            <span class="bcard__failure-summary">
+              <span class="bcard__failure-icon" aria-hidden="true">✕</span>
+              {{ f.summary }}
+            </span>
+            @if (f.detail) {
+              <span class="bcard__failure-detail">Detalhe técnico: {{ f.detail }}</span>
+            }
+          </li>
+        }
+      </ul>
+    }
+
     <div class="bcard__actions">
       <button
         type="button"
