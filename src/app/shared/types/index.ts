@@ -1,6 +1,7 @@
 export type { PrintSpec } from './print-spec';
 export type {
   EditorTransform,
+  BackgroundImageRef,
   ResolutionTier,
   ImageFilters,
   ImageEffect,

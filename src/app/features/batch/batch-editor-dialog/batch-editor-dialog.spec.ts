@@ -10,7 +10,30 @@ import {
   DEFAULT_TRANSFORM,
   type ImageFilters,
 } from '../../../shared/types';
+import type { UploadRecord } from '../../../shared/types';
+import { UploadService, type ImageProbe } from '../../../core/upload';
 import { BatchEditorDialog, type BatchEditResult } from './batch-editor-dialog';
+
+const FAKE_REC: UploadRecord = {
+  id: 'r1',
+  path: 'user/bg.png',
+  fileName: 'bg.png',
+  width: 100,
+  height: 100,
+  previewUrl: 'blob:bg',
+};
+
+/** UploadService de teste: não toca em rede/Storage. */
+const fakeUploads: Pick<UploadService, 'probe' | 'upload'> = {
+  probe: async (): Promise<ImageProbe> => ({
+    width: 100,
+    height: 100,
+    previewUrl: 'blob:bg',
+  }),
+  upload: async (): Promise<UploadRecord> => FAKE_REC,
+};
+
+const PNG = (): File => new File(['x'], 'bg.png', { type: 'image/png' });
 
 const VIVID: ImageFilters = {
   brightness: 1,
@@ -42,6 +65,9 @@ function makeItem(filters: ImageFilters = DEFAULT_FILTERS): BatchItem {
 }
 
 function dialogWith(item: BatchItem): BatchEditorDialog {
+  TestBed.configureTestingModule({
+    providers: [{ provide: UploadService, useValue: fakeUploads }],
+  });
   const fixture = TestBed.createComponent(BatchEditorDialog);
   fixture.componentRef.setInput('item', item);
   fixture.detectChanges();
@@ -118,5 +144,62 @@ describe('BatchEditorDialog — fundo', () => {
     cmp.onSave();
 
     expect(result?.transform.background).toBe('#00aaff');
+  });
+});
+
+describe('BatchEditorDialog — imagem de fundo', () => {
+  it('o painel "Fundo" começa no modo cor', () => {
+    const cmp = dialogWith(makeItem());
+    expect(cmp.bgMode()).toBe('color');
+  });
+
+  it('setBgMode alterna entre cor e imagem', () => {
+    const cmp = dialogWith(makeItem());
+    cmp.setBgMode('image');
+    expect(cmp.bgMode()).toBe('image');
+    cmp.setBgMode('color');
+    expect(cmp.bgMode()).toBe('color');
+  });
+
+  it('onBackgroundFile sobe o arquivo e define transform.backgroundImage', async () => {
+    const cmp = dialogWith(makeItem());
+    await cmp.onBackgroundFile(PNG());
+
+    const bg = cmp.transform().backgroundImage;
+    expect(bg?.path).toBe('user/bg.png');
+    expect(bg?.url).toBe('blob:bg');
+    expect(bg?.source).toBe('upload');
+    expect(cmp.bgUploading()).toBe(false);
+  });
+
+  it('removeBackgroundImage volta a usar a cor (null)', async () => {
+    const cmp = dialogWith(makeItem());
+    await cmp.onBackgroundFile(PNG());
+    cmp.removeBackgroundImage();
+    expect(cmp.transform().backgroundImage).toBeNull();
+  });
+
+  it('a imagem de fundo viaja no transform ao salvar', async () => {
+    const cmp = dialogWith(makeItem());
+    await cmp.onBackgroundFile(PNG());
+
+    let result: BatchEditResult | undefined;
+    cmp.saved.subscribe((r) => (result = r));
+    cmp.onSave();
+
+    expect(result?.transform.backgroundImage?.path).toBe('user/bg.png');
+  });
+
+  it('semeia o modo "imagem" quando o item já tem backgroundImage', () => {
+    const base = makeItem();
+    const item: BatchItem = {
+      ...base,
+      transform: {
+        ...base.transform,
+        backgroundImage: { path: 'p', url: 'blob:u', source: 'upload' },
+      },
+    };
+    const cmp = dialogWith(item);
+    expect(cmp.bgMode()).toBe('image');
   });
 });

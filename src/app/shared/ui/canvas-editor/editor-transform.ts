@@ -1,4 +1,4 @@
-import type { EditorTransform } from '../../types';
+import type { BackgroundImageRef, EditorTransform } from '../../types';
 import { DEFAULT_TRANSFORM } from '../../types';
 
 export const SCALE_MIN = 0.2;
@@ -50,7 +50,28 @@ export function withBackground(
   return { ...t, background: color };
 }
 
-/** Redefine o ajuste (posição/zoom/rotação), preservando o fundo escolhido. */
+/** Define a imagem de fundo (camada sob a arte). */
+export function withBackgroundImage(
+  t: EditorTransform,
+  ref: BackgroundImageRef,
+): EditorTransform {
+  return { ...t, backgroundImage: ref };
+}
+
+/** Remove a imagem de fundo (volta a usar só a cor). */
+export function clearBackgroundImage(t: EditorTransform): EditorTransform {
+  return { ...t, backgroundImage: null };
+}
+
+/**
+ * Redefine o ajuste (posição/zoom/rotação), preservando o fundo escolhido —
+ * tanto a COR (`background`) quanto a IMAGEM (`backgroundImage`), que são fundo,
+ * não enquadramento.
+ */
 export function resetTransform(t: EditorTransform): EditorTransform {
-  return { ...DEFAULT_TRANSFORM, background: t.background };
+  return {
+    ...DEFAULT_TRANSFORM,
+    background: t.background,
+    backgroundImage: t.backgroundImage,
+  };
 }

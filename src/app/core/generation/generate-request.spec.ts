@@ -25,6 +25,7 @@ const TRANSFORM: EditorTransform = {
   scale: 1.5,
   rotation: 30,
   background: '#112233',
+  backgroundImage: null,
 };
 
 describe('buildGenerateRequest', () => {
@@ -43,6 +44,7 @@ describe('buildGenerateRequest', () => {
     expect(body.upload_id).toBe('up-1');
     expect(Object.keys(body.options).sort()).toEqual([
       'background',
+      'backgroundImage',
       'fit',
       'offset',
       'rotation',
@@ -63,6 +65,37 @@ describe('buildGenerateRequest', () => {
     expect(body.options.scale).toBe(1.5);
     expect(body.options.rotation).toBe(30);
     expect(body.options.background).toBe('#112233');
+  });
+
+  it('serializa backgroundImage como null quando não há imagem de fundo', () => {
+    const body = buildGenerateRequest({
+      uploadId: 'up-1',
+      sizeMm: 32,
+      spec: SPEC_32,
+      transform: TRANSFORM,
+      editorSide: 440,
+    });
+
+    expect(body.options.backgroundImage).toBeNull();
+  });
+
+  it('serializa backgroundImage como o PATH do Storage (não a url)', () => {
+    const body = buildGenerateRequest({
+      uploadId: 'up-1',
+      sizeMm: 32,
+      spec: SPEC_32,
+      transform: {
+        ...TRANSFORM,
+        backgroundImage: {
+          path: 'user/bg-123.png',
+          url: 'blob:preview',
+          source: 'upload',
+        },
+      },
+      editorSide: 440,
+    });
+
+    expect(body.options.backgroundImage).toBe('user/bg-123.png');
   });
 
   it('converte o offset de px de tela para milímetros (÷ pxPerMm do layout)', () => {

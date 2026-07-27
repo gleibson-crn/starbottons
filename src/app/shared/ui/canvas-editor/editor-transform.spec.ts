@@ -1,15 +1,24 @@
 import { DEFAULT_TRANSFORM } from '../../types';
+import type { BackgroundImageRef } from '../../types';
 import {
   SCALE_MAX,
   SCALE_MIN,
+  clearBackgroundImage,
   resetTransform,
   withBackground,
+  withBackgroundImage,
   withOffset,
   withRotation,
   withRotationDelta,
   withScale,
   withZoom,
 } from './editor-transform';
+
+const BG_REF: BackgroundImageRef = {
+  path: 'user/bg-1.png',
+  url: 'blob:bg-1',
+  source: 'upload',
+};
 
 describe('editor-transform', () => {
   it('withOffset acumula deslocamento', () => {
@@ -36,8 +45,14 @@ describe('editor-transform', () => {
     expect(withRotationDelta({ ...DEFAULT_TRANSFORM, rotation: 178 }, 5).rotation).toBe(180);
   });
 
-  it('resetTransform zera ajuste mas preserva o fundo', () => {
-    const custom = { offset: { x: 9, y: 9 }, scale: 3, rotation: 45, background: '#ff0000' };
+  it('resetTransform zera ajuste mas preserva a COR de fundo', () => {
+    const custom = {
+      offset: { x: 9, y: 9 },
+      scale: 3,
+      rotation: 45,
+      background: '#ff0000',
+      backgroundImage: null,
+    };
     const reset = resetTransform(custom);
     expect(reset.offset).toEqual({ x: 0, y: 0 });
     expect(reset.scale).toBe(1);
@@ -45,7 +60,28 @@ describe('editor-transform', () => {
     expect(reset.background).toBe('#ff0000');
   });
 
+  it('resetTransform preserva a IMAGEM de fundo (é fundo, não enquadramento)', () => {
+    const custom = withBackgroundImage(
+      { ...DEFAULT_TRANSFORM, scale: 4, offset: { x: 5, y: 5 } },
+      BG_REF,
+    );
+    const reset = resetTransform(custom);
+    expect(reset.scale).toBe(1);
+    expect(reset.offset).toEqual({ x: 0, y: 0 });
+    expect(reset.backgroundImage).toEqual(BG_REF);
+  });
+
   it('withBackground troca apenas a cor', () => {
     expect(withBackground(DEFAULT_TRANSFORM, '#123456').background).toBe('#123456');
+  });
+
+  it('withBackgroundImage define a imagem de fundo', () => {
+    const t = withBackgroundImage(DEFAULT_TRANSFORM, BG_REF);
+    expect(t.backgroundImage).toEqual(BG_REF);
+  });
+
+  it('clearBackgroundImage volta para null (usa só a cor)', () => {
+    const t = withBackgroundImage(DEFAULT_TRANSFORM, BG_REF);
+    expect(clearBackgroundImage(t).backgroundImage).toBeNull();
   });
 });

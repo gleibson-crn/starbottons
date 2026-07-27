@@ -37,7 +37,7 @@ describe('scene-target', () => {
   });
 
   it('transform ↔ targetPx é round-trip', () => {
-    const t = { offset: { x: 40, y: -20 }, scale: 1.5, rotation: 25, background: '#fff' };
+    const t = { offset: { x: 40, y: -20 }, scale: 1.5, rotation: 25, background: '#fff', backgroundImage: null };
     const back = targetPxToTransform(transformToTargetPx(t, DIMS), DIMS);
     expect(back.offset.x).toBeCloseTo(40);
     expect(back.offset.y).toBeCloseTo(-20);
@@ -46,7 +46,7 @@ describe('scene-target', () => {
   });
 
   it('transformToSceneTarget ↔ sceneTargetToTransform preserva geometria', () => {
-    const t = { offset: { x: 10, y: 30 }, scale: 2, rotation: -10, background: '#fff' };
+    const t = { offset: { x: 10, y: 30 }, scale: 2, rotation: -10, background: '#fff', backgroundImage: null };
     const n = transformToSceneTarget(t, DIMS);
     const back = sceneTargetToTransform(n, DIMS);
     expect(back.offset.x).toBeCloseTo(10);

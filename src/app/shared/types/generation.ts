@@ -12,6 +12,8 @@ export interface GenerateOptionsBody {
     readonly scale: number;
     readonly rotation: number;
     readonly background: string;
+    /** Caminho da imagem de fundo no Storage, ou `null` para usar só a cor. */
+    readonly backgroundImage: string | null;
   };
 }
 

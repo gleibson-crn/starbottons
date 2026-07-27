@@ -35,6 +35,8 @@ const MIN_SIDE = 280;
 export class CanvasEditor implements AfterViewInit {
   private readonly host = inject(ElementRef<HTMLElement>);
   readonly image = input<HTMLImageElement | null>(null);
+  /** Imagem de fundo já carregada (COVER fixo sob a arte); `null` = só cor. */
+  readonly backgroundImage = input<HTMLImageElement | null>(null);
   readonly spec = input.required<PrintSpec>();
   readonly transform = model.required<EditorTransform>();
   /** Filtros aplicados só à imagem no preview (paralelo ao transform). */
@@ -114,6 +116,7 @@ export class CanvasEditor implements AfterViewInit {
       image: img,
       transform: t,
       filters: this.filters() ?? undefined,
+      backgroundImage: this.backgroundImage(),
       ...size,
     });
     this.coverageChange.emit(

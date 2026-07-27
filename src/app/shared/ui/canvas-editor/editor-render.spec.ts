@@ -68,6 +68,31 @@ const VIVID: ImageFilters = {
   effect: 'none',
 };
 
+const BG_IMAGE = { naturalWidth: 200, naturalHeight: 100 } as HTMLImageElement;
+
+describe('editor-render — imagem de fundo', () => {
+  it('sem backgroundImage desenha só a arte (1 drawImage)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawScene(params(ctx));
+    expect(ops.filter((o) => o.op === 'drawImage').length).toBe(1);
+  });
+
+  it('com backgroundImage desenha fundo + arte (2 drawImage)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawScene({ ...params(ctx), backgroundImage: BG_IMAGE });
+    expect(ops.filter((o) => o.op === 'drawImage').length).toBe(2);
+  });
+
+  it('o fundo é desenhado ANTES da arte (por baixo)', () => {
+    const { ctx, ops } = makeMockCtx();
+    // fillRect (cor) → drawImage (fundo) → drawImage (arte)
+    drawScene({ ...params(ctx), backgroundImage: BG_IMAGE });
+    const firstDraw = ops.findIndex((o) => o.op === 'drawImage');
+    const fillRect = ops.findIndex((o) => o.op === 'fillRect');
+    expect(fillRect).toBeLessThan(firstDraw);
+  });
+});
+
 describe('editor-render — filtros', () => {
   it('aplica o filtro APENAS na imagem e restaura antes das guias', () => {
     const { ctx, ops } = makeMockCtx();

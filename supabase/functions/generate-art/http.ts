@@ -36,6 +36,10 @@ function normalizeOptions(raw: Partial<ArtOptions> | undefined): ArtOptions {
     background: typeof raw?.background === "string"
       ? raw.background
       : "#ffffff",
+    backgroundImage: typeof raw?.backgroundImage === "string" &&
+        raw.backgroundImage
+      ? raw.backgroundImage
+      : null,
   };
 }
 

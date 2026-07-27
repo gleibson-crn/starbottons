@@ -32,6 +32,12 @@ export interface ArtOptions {
   readonly scale: number;
   readonly rotation: number;
   readonly background: string;
+  /**
+   * Camada opcional de IMAGEM de fundo (path no bucket 'uploads') composta SOB a
+   * arte do usuário — para bottons com cena/foto de fundo. `background` (cor)
+   * segue como base/fallback. Ausente/null/vazio → só a cor (comportamento atual).
+   */
+  readonly backgroundImage?: string | null;
 }
 
 /** Corpo esperado no POST /generate-art. */

@@ -25,6 +25,8 @@ export {
   withRotation,
   withRotationDelta,
   withBackground,
+  withBackgroundImage,
+  clearBackgroundImage,
   resetTransform,
 } from './canvas-editor/editor-transform';
 export { applyKey } from './canvas-editor/editor-keymap';
@@ -42,4 +44,4 @@ export type {
   SceneTargetPx,
   ContextualParams,
 } from './canvas-editor/mockup-render';
-export type { EditorTransform } from '../types';
+export type { EditorTransform, BackgroundImageRef } from '../types';

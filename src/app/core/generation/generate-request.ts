@@ -15,7 +15,7 @@ export function buildGenerateRequest(params: {
   editorSide: number;
 }): GenerateOptionsBody {
   const { pxPerMm } = computeLayout(params.spec, params.editorSide);
-  const { offset, scale, rotation, background } = params.transform;
+  const { offset, scale, rotation, background, backgroundImage } = params.transform;
   return {
     upload_id: params.uploadId,
     shape_key: 'round',
@@ -26,6 +26,7 @@ export function buildGenerateRequest(params: {
       scale,
       rotation,
       background,
+      backgroundImage: backgroundImage?.path ?? null,
     },
   };
 }

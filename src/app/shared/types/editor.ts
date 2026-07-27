@@ -3,6 +3,23 @@
  * Este mesmo objeto é serializado em `options` da Edge Function `generate-art`,
  * garantindo que preview (Angular) e arte final (server) usem o MESMO ajuste.
  */
+/**
+ * Referência a uma imagem de fundo do botton (camada sob a arte do usuário).
+ * O mesmo objeto é usado pelo preview (via `url`, um object URL) e pela Edge
+ * (via `path`, o caminho no Storage). Estágio 2: só `source: 'upload'`;
+ * `template` (com `id`) fica preparado para o próximo passo.
+ */
+export interface BackgroundImageRef {
+  /** Caminho no Storage bucket `uploads`. */
+  readonly path: string;
+  /** URL para preview (object URL do upload). */
+  readonly url: string;
+  /** Origem da imagem de fundo. */
+  readonly source: 'upload' | 'template';
+  /** Id do template (futuro; ausente em uploads). */
+  readonly id?: string;
+}
+
 export interface EditorTransform {
   /** Deslocamento do centro da imagem, em px de tela do editor. */
   readonly offset: { x: number; y: number };
@@ -12,14 +29,21 @@ export interface EditorTransform {
   readonly rotation: number;
   /** Cor sólida de fundo para área vazia (hex, default branco). */
   readonly background: string;
+  /**
+   * Imagem de fundo (por cima da cor, por baixo da arte). `null` = usar só a
+   * cor `background`. Preenche o círculo em COVER fixo (sem o transform do
+   * usuário).
+   */
+  readonly backgroundImage: BackgroundImageRef | null;
 }
 
-/** Estado default seguro do editor (sem ajuste, fundo branco). */
+/** Estado default seguro do editor (sem ajuste, fundo branco, sem imagem). */
 export const DEFAULT_TRANSFORM: EditorTransform = {
   offset: { x: 0, y: 0 },
   scale: 1,
   rotation: 0,
   background: '#ffffff',
+  backgroundImage: null,
 };
 
 /** Faixa de gating de resolução do editor (semáforo). */

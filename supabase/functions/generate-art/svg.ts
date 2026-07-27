@@ -6,17 +6,27 @@
  *     alpha nos cantos → nada de "xadrez" em visualizadores) e, por ser branco,
  *     NÃO gasta tinta (impressora não deposita branco sobre papel branco). Os
  *     cantos ficam fora do botton → não imprimem cor à toa.
- *  2. Fundo do botton (options.background: cor/imagem) recortado ao CÍRCULO da
- *     arte — a área que de fato vira o botton (face + sangria de dobra).
- *  3. A imagem composta (PNG base64), também recortada ao círculo da arte.
- *  4. LINHA DE CORTE: circunferência no diâmetro da arte, marcando onde recortar
+ *  2. Fundo de COR (options.background) recortado ao CÍRCULO da arte — a área
+ *     que de fato vira o botton (face + sangria de dobra). Base/fallback.
+ *  3. (OPCIONAL) IMAGEM de fundo (cena/foto), COVER preenchendo o círculo
+ *     inteiro (preserveAspectRatio slice), recortada ao mesmo círculo. Fica SOB
+ *     a arte do usuário; NÃO recebe o transform de enquadramento (só a arte
+ *     recebe). Só entra quando há `backgroundImage`.
+ *  4. A imagem composta da arte do usuário (PNG base64), recortada ao círculo.
+ *  5. LINHA DE CORTE: circunferência no diâmetro da arte, marcando onde recortar
  *     (o botton é redondo). Sempre presente na saída — sem ela o operador não
  *     sabe o tamanho de corte.
- *  5. Guias extras (só quando `withGuides`, p/ conferência): sangria, corte
+ *  6. Guias extras (só quando `withGuides`, p/ conferência): sangria, corte
  *     (visível) e área segura, em cores distintas.
  */
 
 import type { ArtLayout } from "./types.ts";
+
+/** Imagem de fundo já baixada: base64 cru + mime (resvg lê PNG e JPEG no href). */
+export interface BackgroundImage {
+  readonly b64: string;
+  readonly mime: "image/png" | "image/jpeg";
+}
 
 const GUIDE_STROKE = Math.max(1, Math.round(1));
 
@@ -58,7 +68,22 @@ function guides(l: ArtLayout): string {
 }
 
 /**
- * @param composedPngBase64 imagem já redimensionada para artPx (sem prefixo data:)
+ * Camada 3: imagem de fundo em COVER preenchendo o círculo da arte, recortada
+ * ao `artClip`. Sem transform de enquadramento (o slice do SVG já faz o cover).
+ * String vazia quando não há imagem de fundo.
+ */
+function backgroundImageLayer(
+  size: number,
+  bg: BackgroundImage | null | undefined,
+): string {
+  if (!bg) return "";
+  return `<image href="data:${bg.mime};base64,${bg.b64}" x="0" y="0" width="${size}" height="${size}" clip-path="url(#artClip)" preserveAspectRatio="xMidYMid slice"/>`;
+}
+
+/**
+ * @param composedPngBase64 imagem da arte já redimensionada para artPx (sem data:)
+ * @param background         cor de base/fallback do fundo (options.background)
+ * @param backgroundImage    camada de imagem de fundo opcional (null → só a cor)
  * @param withGuides         inclui as guias extras (sangria/visível/segura) além
  *                           da linha de corte, para conferência.
  */
@@ -66,6 +91,7 @@ export function buildLayoutSvg(
   l: ArtLayout,
   composedPngBase64: string,
   background: string,
+  backgroundImage?: BackgroundImage | null,
   withGuides = false,
 ): string {
   const c = l.artCenter;
@@ -75,6 +101,7 @@ export function buildLayoutSvg(
 <defs><clipPath id="artClip"><circle cx="${c}" cy="${c}" r="${l.artCenter}"/></clipPath></defs>
 <rect width="${size}" height="${size}" fill="#ffffff"/>
 <rect width="${size}" height="${size}" fill="${xmlAttr(background)}" clip-path="url(#artClip)"/>
+${backgroundImageLayer(size, backgroundImage)}
 <image href="${href}" x="0" y="0" width="${size}" height="${size}" clip-path="url(#artClip)" preserveAspectRatio="xMidYMid slice"/>
 ${cutLine(l)}
 ${withGuides ? guides(l) : ""}

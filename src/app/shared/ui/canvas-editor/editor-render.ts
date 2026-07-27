@@ -13,6 +13,11 @@ export interface SceneParams {
   readonly drawH: number;
   /** Filtros aplicados APENAS à imagem (opcional; ausência = sem filtro). */
   readonly filters?: ImageFilters;
+  /**
+   * Imagem de fundo já carregada. Desenhada em COVER fixo preenchendo o círculo
+   * (sem o transform do usuário), por cima da cor e por baixo da arte.
+   */
+  readonly backgroundImage?: HTMLImageElement | null;
 }
 
 /** Desenha a cena inteira: fundo, imagem, escurecimento e guias. */
@@ -32,6 +37,10 @@ function drawImageLayer(p: SceneParams): void {
   // O fundo neutro (modo quieto) NÃO recebe filtro.
   ctx.fillStyle = transform.background;
   ctx.fillRect(0, 0, p.side, p.side);
+  if (p.backgroundImage) {
+    // Fundo em COVER fixo (centrado, sem offset/scale/rotation do usuário).
+    drawCover(ctx, p.backgroundImage, layout.center, layout.bleedR * 2);
+  }
   if (image) {
     ctx.translate(layout.center + transform.offset.x, layout.center + transform.offset.y);
     ctx.rotate((transform.rotation * Math.PI) / 180);
@@ -46,6 +55,25 @@ function drawImageLayer(p: SceneParams): void {
     }
   }
   ctx.restore();
+}
+
+/**
+ * Desenha `img` cobrindo (COVER) um quadrado de lado `size` centrado em
+ * `center` — o menor lado da imagem preenche o quadrado, centralizado, sem
+ * distorção. Usado para o fundo (recorte ao círculo é feito pelo clip do pai).
+ */
+function drawCover(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  center: number,
+  size: number,
+): void {
+  const iw = img.naturalWidth || 1;
+  const ih = img.naturalHeight || 1;
+  const scale = Math.max(size / iw, size / ih);
+  const w = iw * scale;
+  const h = ih * scale;
+  ctx.drawImage(img, center - w / 2, center - h / 2, w, h);
 }
 
 function drawDarkenOutsideCut(

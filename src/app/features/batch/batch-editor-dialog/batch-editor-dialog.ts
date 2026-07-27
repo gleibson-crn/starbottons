@@ -2,7 +2,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   ElementRef,
+  inject,
   input,
   OnInit,
   output,
@@ -19,12 +21,16 @@ import { DEFAULT_FILTERS, DEFAULT_TRANSFORM } from '../../../shared/types';
 import {
   BackgroundPicker,
   CanvasEditor,
+  FileDropzone,
   ResolutionBadge,
   TreatPanel,
+  clearBackgroundImage,
   resetTransform,
+  withBackgroundImage,
 } from '../../../shared/ui';
 import { effectiveDpi, fallbackSpec, loadImage, rovingNext } from '../../../shared/utils';
 import { largestSelectedSize, type BatchItem } from '../../../core/batch';
+import { UploadService } from '../../../core/upload';
 
 /** Ajuste salvo pelo diálogo (vale p/ todos os tamanhos da imagem). */
 export interface BatchEditResult {
@@ -35,6 +41,9 @@ export interface BatchEditResult {
 
 /** Aba do painel do diálogo. */
 type TabId = 'adjust' | 'treat' | 'background';
+
+/** Modo do painel "Fundo": cor sólida ou imagem por upload. */
+type BackgroundMode = 'color' | 'image';
 
 interface EditorTab {
   readonly id: TabId;
@@ -60,12 +69,19 @@ const EDITOR_TABS: readonly EditorTab[] = [
 @Component({
   selector: 'app-batch-editor-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CanvasEditor, ResolutionBadge, TreatPanel, BackgroundPicker],
+  imports: [
+    CanvasEditor,
+    ResolutionBadge,
+    TreatPanel,
+    BackgroundPicker,
+    FileDropzone,
+  ],
   host: { '(keydown)': 'onKeydown($event)' },
   templateUrl: './batch-editor-dialog.html',
   styleUrl: './batch-editor-dialog.scss',
 })
 export class BatchEditorDialog implements OnInit {
+  private readonly uploads = inject(UploadService);
   readonly item = input.required<BatchItem>();
   readonly saved = output<BatchEditResult>();
   readonly closed = output<void>();
@@ -74,6 +90,22 @@ export class BatchEditorDialog implements OnInit {
   readonly transform = signal<EditorTransform>(DEFAULT_TRANSFORM);
   readonly filters = signal<ImageFilters>(DEFAULT_FILTERS);
   private readonly canvas = viewChild(CanvasEditor);
+
+  /** Modo do painel "Fundo" (cor sólida vs imagem por upload). */
+  readonly bgMode = signal<BackgroundMode>('color');
+  /** Imagem de fundo já carregada para o preview (ou `null`). */
+  readonly bgImageEl = signal<HTMLImageElement | null>(null);
+  /** `true` enquanto um upload de fundo está em curso. */
+  readonly bgUploading = signal(false);
+  /** Mensagem de erro do último upload de fundo (ou `null`). */
+  readonly bgError = signal<string | null>(null);
+  private readonly bgUrl = computed(
+    () => this.transform().backgroundImage?.url ?? null,
+  );
+
+  constructor() {
+    effect(() => this.syncBackgroundImageEl(this.bgUrl()));
+  }
 
   readonly tabs = EDITOR_TABS;
   readonly activeTab = signal<TabId>('adjust');
@@ -103,8 +135,10 @@ export class BatchEditorDialog implements OnInit {
   });
 
   ngOnInit(): void {
-    this.transform.set(this.item().transform);
+    const t = this.item().transform;
+    this.transform.set(t);
     this.filters.set(this.item().filters);
+    this.bgMode.set(t.backgroundImage ? 'image' : 'color');
     void this.hydrate();
   }
 
@@ -112,9 +146,48 @@ export class BatchEditorDialog implements OnInit {
     this.activeTab.set(id);
   }
 
+  /** Alterna o modo do painel "Fundo" (cor | imagem). */
+  setBgMode(mode: BackgroundMode): void {
+    this.bgMode.set(mode);
+  }
+
   /** Troca a cor de fundo (aba "Fundo"); o preview reflete ao vivo. */
   onBackground(color: string): void {
     this.transform.update((t) => ({ ...t, background: color }));
+  }
+
+  /** Sobe o arquivo escolhido e o define como imagem de fundo. */
+  async onBackgroundFile(file: File): Promise<void> {
+    this.bgError.set(null);
+    this.bgUploading.set(true);
+    try {
+      const probe = await this.uploads.probe(file);
+      const rec = await this.uploads.upload(file, probe);
+      this.transform.update((t) =>
+        withBackgroundImage(t, {
+          path: rec.path,
+          url: rec.previewUrl,
+          source: 'upload',
+        }),
+      );
+    } catch (err) {
+      this.bgError.set(
+        err instanceof Error ? err.message : 'Falha ao enviar a imagem de fundo.',
+      );
+    } finally {
+      this.bgUploading.set(false);
+    }
+  }
+
+  /** Recusa de arquivo pela dropzone (formato/tamanho). */
+  onBackgroundFileRejected(reason: string): void {
+    this.bgError.set(reason);
+  }
+
+  /** Remove a imagem de fundo (volta a usar a cor). */
+  removeBackgroundImage(): void {
+    this.bgError.set(null);
+    this.transform.update((t) => clearBackgroundImage(t));
   }
 
   /** Redefine posição/zoom/rotação (aba "Ajustar"); preserva o fundo escolhido. */
@@ -168,5 +241,18 @@ export class BatchEditorDialog implements OnInit {
 
   private async hydrate(): Promise<void> {
     this.image.set(await loadImage(this.item().previewUrl));
+  }
+
+  /** Carrega (ou limpa) o `HTMLImageElement` do fundo conforme a URL atual. */
+  private syncBackgroundImageEl(url: string | null): void {
+    if (!url) {
+      this.bgImageEl.set(null);
+      return;
+    }
+    void loadImage(url).then((img) => {
+      if (this.transform().backgroundImage?.url === url) {
+        this.bgImageEl.set(img);
+      }
+    });
   }
 }

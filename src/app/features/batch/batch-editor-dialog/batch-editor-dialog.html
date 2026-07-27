@@ -19,6 +19,7 @@
     <div class="dialog__stage">
       <app-canvas-editor
         [image]="image()"
+        [backgroundImage]="bgImageEl()"
         [spec]="spec()"
         [filters]="filters()"
         [(transform)]="transform"
@@ -81,10 +82,70 @@
       tabindex="0"
       [hidden]="activeTab() !== 'background'"
     >
-      <app-background-picker
-        [color]="transform().background"
-        (colorChange)="onBackground($event)"
-      />
+      <div class="bgmode" role="group" aria-label="Tipo de fundo do botton">
+        <button
+          type="button"
+          class="bgmode__opt"
+          [class.bgmode__opt--active]="bgMode() === 'color'"
+          [attr.aria-pressed]="bgMode() === 'color'"
+          (click)="setBgMode('color')"
+        >
+          Cor
+        </button>
+        <button
+          type="button"
+          class="bgmode__opt"
+          [class.bgmode__opt--active]="bgMode() === 'image'"
+          [attr.aria-pressed]="bgMode() === 'image'"
+          (click)="setBgMode('image')"
+        >
+          Imagem
+        </button>
+      </div>
+
+      @if (bgMode() === 'color') {
+        <app-background-picker
+          [color]="transform().background"
+          (colorChange)="onBackground($event)"
+        />
+      } @else {
+        <div class="bgimg">
+          <p class="bgimg__hint">
+            A imagem de fundo preenche o círculo do botton por baixo da sua
+            arte. Ela é centralizada e cobre todo o círculo automaticamente.
+          </p>
+
+          @if (transform().backgroundImage) {
+            <div class="bgimg__current">
+              <img
+                class="bgimg__thumb"
+                [src]="transform().backgroundImage?.url"
+                alt="Miniatura da imagem de fundo atual"
+              />
+              <button
+                type="button"
+                class="btn btn--ghost"
+                (click)="removeBackgroundImage()"
+              >
+                Remover (usar cor)
+              </button>
+            </div>
+          }
+
+          <app-file-dropzone
+            browseLabel="Enviar imagem de fundo"
+            (fileAccepted)="onBackgroundFile($event)"
+            (fileRejected)="onBackgroundFileRejected($event)"
+          />
+
+          @if (bgUploading()) {
+            <p class="bgimg__status" role="status">Enviando imagem…</p>
+          }
+          @if (bgError()) {
+            <p class="bgimg__error" role="alert">{{ bgError() }}</p>
+          }
+        </div>
+      }
     </div>
 
     <div class="dialog__actions">
