@@ -9,15 +9,21 @@ import {
   OnInit,
   output,
   signal,
+  untracked,
   viewChild,
   viewChildren,
 } from '@angular/core';
 import type {
   EditorTransform,
+  Framing,
   ImageFilters,
   PrintSpec,
 } from '../../../shared/types';
-import { DEFAULT_FILTERS, DEFAULT_TRANSFORM } from '../../../shared/types';
+import {
+  DEFAULT_BACKGROUND_FRAMING,
+  DEFAULT_FILTERS,
+  DEFAULT_TRANSFORM,
+} from '../../../shared/types';
 import {
   BackgroundPicker,
   CanvasEditor,
@@ -51,9 +57,6 @@ export interface BatchEditResult {
 
 /** Aba do painel do diálogo. */
 type TabId = 'adjust' | 'treat' | 'background';
-
-/** Modo do painel "Fundo": cor sólida ou imagem por upload. */
-type BackgroundMode = 'color' | 'image';
 
 /** Fase de carregamento da galeria de templates de fundo. */
 type GalleryPhase = 'idle' | 'loading' | 'ready' | 'error';
@@ -105,8 +108,6 @@ export class BatchEditorDialog implements OnInit {
   readonly filters = signal<ImageFilters>(DEFAULT_FILTERS);
   private readonly canvas = viewChild(CanvasEditor);
 
-  /** Modo do painel "Fundo" (cor sólida vs imagem por upload). */
-  readonly bgMode = signal<BackgroundMode>('color');
   /** Imagem de fundo já carregada para o preview (ou `null`). */
   readonly bgImageEl = signal<HTMLImageElement | null>(null);
   /** `true` enquanto um upload de fundo está em curso. */
@@ -117,12 +118,34 @@ export class BatchEditorDialog implements OnInit {
   readonly bgTemplates = signal<BackgroundTemplate[]>([]);
   /** Fase de carregamento da galeria de templates. */
   readonly bgGalleryPhase = signal<GalleryPhase>('idle');
+  /**
+   * Enquadramento do fundo (posição/zoom/rotação) enquanto se edita. É a fonte
+   * que o CanvasEditor muta ao arrastar na prévia; um `effect` grava de volta em
+   * `transform.backgroundImage` para persistir/serializar.
+   */
+  readonly bgTransform = signal<Framing>(DEFAULT_BACKGROUND_FRAMING);
   private readonly bgUrl = computed(
     () => this.transform().backgroundImage?.url ?? null,
   );
 
+  /**
+   * Camada dos gestos na prévia: `'background'` quando a aba "Fundo" está ativa
+   * E há imagem de fundo (arrastar/rolar/girar movem o FUNDO); senão `'art'`.
+   */
+  readonly bgLayer = computed<'art' | 'background'>(() =>
+    this.activeTab() === 'background' && this.transform().backgroundImage
+      ? 'background'
+      : 'art',
+  );
+
   constructor() {
     effect(() => this.syncBackgroundImageEl(this.bgUrl()));
+    effect(() => this.persistBgTransform(this.bgTransform()));
+    effect(() => {
+      if (this.activeTab() === 'background') {
+        void this.loadBgTemplates();
+      }
+    });
   }
 
   readonly tabs = EDITOR_TABS;
@@ -156,23 +179,12 @@ export class BatchEditorDialog implements OnInit {
     const t = this.item().transform;
     this.transform.set(t);
     this.filters.set(this.item().filters);
-    this.bgMode.set(t.backgroundImage ? 'image' : 'color');
-    if (this.bgMode() === 'image') {
-      void this.loadBgTemplates();
-    }
+    this.bgTransform.set(framingOf(t.backgroundImage));
     void this.hydrate();
   }
 
   selectTab(id: TabId): void {
     this.activeTab.set(id);
-  }
-
-  /** Alterna o modo do painel "Fundo" (cor | imagem); carrega a galeria no modo imagem. */
-  setBgMode(mode: BackgroundMode): void {
-    this.bgMode.set(mode);
-    if (mode === 'image') {
-      void this.loadBgTemplates();
-    }
   }
 
   /** Carrega os templates de fundo (uma vez; `force` reexecuta após erro). */
@@ -204,6 +216,8 @@ export class BatchEditorDialog implements OnInit {
         id: tpl.id,
       }),
     );
+    // Nova imagem → posição do fundo reinicia (centrado, cover, 0°).
+    this.bgTransform.set(DEFAULT_BACKGROUND_FRAMING);
   }
 
   /** Troca a cor de fundo (aba "Fundo"); o preview reflete ao vivo. */
@@ -228,6 +242,8 @@ export class BatchEditorDialog implements OnInit {
           source: 'upload',
         }),
       );
+      // Nova imagem → posição do fundo reinicia (centrado, cover, 0°).
+      this.bgTransform.set(DEFAULT_BACKGROUND_FRAMING);
     } catch (err) {
       this.bgError.set(
         err instanceof Error ? err.message : 'Falha ao enviar a imagem de fundo.',
@@ -242,15 +258,21 @@ export class BatchEditorDialog implements OnInit {
     this.bgError.set(reason);
   }
 
-  /** Remove a imagem de fundo (volta a usar a cor). */
+  /** Remove a imagem de fundo (volta a usar só a cor). */
   removeBackgroundImage(): void {
     this.bgError.set(null);
     this.transform.update((t) => clearBackgroundImage(t));
+    this.bgTransform.set(DEFAULT_BACKGROUND_FRAMING);
   }
 
   /** Redefine posição/zoom/rotação (aba "Ajustar"); preserva o fundo escolhido. */
   resetFraming(): void {
     this.transform.update((t) => resetTransform(t));
+  }
+
+  /** Redefine a posição/zoom/rotação DO FUNDO (centrado, cover, 0°). */
+  resetBackground(): void {
+    this.bgTransform.set(DEFAULT_BACKGROUND_FRAMING);
   }
 
   /** Navegação ARIA por teclado (←/→/Home/End) com ativação automática. */
@@ -313,4 +335,46 @@ export class BatchEditorDialog implements OnInit {
       }
     });
   }
+
+  /**
+   * Grava o enquadramento do fundo de volta em `transform.backgroundImage` para
+   * persistir/serializar. Lê/escreve `transform` em `untracked` (só rastreia
+   * `bgTransform`) e não escreve quando já está sincronizado — evitando loop.
+   */
+  private persistBgTransform(bt: Framing): void {
+    untracked(() => {
+      const cur = this.transform();
+      const bg = cur.backgroundImage;
+      if (!bg || sameFraming(bg, bt)) {
+        return;
+      }
+      this.transform.set({
+        ...cur,
+        backgroundImage: {
+          ...bg,
+          offset: bt.offset,
+          scale: bt.scale,
+          rotation: bt.rotation,
+        },
+      });
+    });
+  }
+}
+
+/** Extrai o enquadramento de uma ref de fundo (ou o neutro se `null`). */
+function framingOf(ref: EditorTransform['backgroundImage']): Framing {
+  if (!ref) {
+    return DEFAULT_BACKGROUND_FRAMING;
+  }
+  return { offset: ref.offset, scale: ref.scale, rotation: ref.rotation };
+}
+
+/** `true` quando dois enquadramentos são idênticos (evita escritas redundantes). */
+function sameFraming(a: Framing, b: Framing): boolean {
+  return (
+    a.offset.x === b.offset.x &&
+    a.offset.y === b.offset.y &&
+    a.scale === b.scale &&
+    a.rotation === b.rotation
+  );
 }

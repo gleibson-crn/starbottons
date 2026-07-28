@@ -18,6 +18,9 @@ const BG_REF: BackgroundImageRef = {
   path: 'user/bg-1.png',
   url: 'blob:bg-1',
   source: 'upload',
+  offset: { x: 0, y: 0 },
+  scale: 1,
+  rotation: 0,
 };
 
 describe('editor-transform', () => {
@@ -78,6 +81,37 @@ describe('editor-transform', () => {
   it('withBackgroundImage define a imagem de fundo', () => {
     const t = withBackgroundImage(DEFAULT_TRANSFORM, BG_REF);
     expect(t.backgroundImage).toEqual(BG_REF);
+  });
+
+  it('withBackgroundImage inicializa o enquadramento neutro se não vier', () => {
+    const t = withBackgroundImage(DEFAULT_TRANSFORM, {
+      path: 'user/x.png',
+      url: 'blob:x',
+      source: 'upload',
+    });
+    expect(t.backgroundImage?.offset).toEqual({ x: 0, y: 0 });
+    expect(t.backgroundImage?.scale).toBe(1);
+    expect(t.backgroundImage?.rotation).toBe(0);
+  });
+
+  it('withBackgroundImage preserva o enquadramento quando informado', () => {
+    const t = withBackgroundImage(DEFAULT_TRANSFORM, {
+      path: 'user/x.png',
+      url: 'blob:x',
+      source: 'upload',
+      offset: { x: 12, y: -5 },
+      scale: 1.5,
+      rotation: 20,
+    });
+    expect(t.backgroundImage?.offset).toEqual({ x: 12, y: -5 });
+    expect(t.backgroundImage?.scale).toBe(1.5);
+    expect(t.backgroundImage?.rotation).toBe(20);
+  });
+
+  it('resetTransform genérico zera um Framing de fundo', () => {
+    const framing = { offset: { x: 9, y: -3 }, scale: 2.5, rotation: 40 };
+    const reset = resetTransform(framing);
+    expect(reset).toEqual({ offset: { x: 0, y: 0 }, scale: 1, rotation: 0 });
   });
 
   it('clearBackgroundImage volta para null (usa só a cor)', () => {

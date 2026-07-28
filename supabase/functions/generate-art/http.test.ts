@@ -45,3 +45,34 @@ Deno.test("F-007: job_id não-UUID arbitrário é rejeitado (400)", async () => 
   );
   assertEquals((err as ArtError).status, 400);
 });
+
+Deno.test("fundo: enquadramento ausente aplica defaults ({x:0,y:0}/1/0)", async () => {
+  const req = await parseRequest(post(base));
+  assertEquals(req.options.backgroundOffset, { x: 0, y: 0 });
+  assertEquals(req.options.backgroundScale, 1);
+  assertEquals(req.options.backgroundRotation, 0);
+});
+
+Deno.test("fundo: enquadramento informado é repassado", async () => {
+  const options = {
+    backgroundOffset: { x: 3, y: -2 },
+    backgroundScale: 1.5,
+    backgroundRotation: 90,
+  };
+  const req = await parseRequest(post({ ...base, options }));
+  assertEquals(req.options.backgroundOffset, { x: 3, y: -2 });
+  assertEquals(req.options.backgroundScale, 1.5);
+  assertEquals(req.options.backgroundRotation, 90);
+});
+
+Deno.test("fundo: valores não-finitos caem no default (sanitização)", async () => {
+  const options = {
+    backgroundOffset: { x: "NaO", y: null },
+    backgroundScale: "muito",
+    backgroundRotation: Number.POSITIVE_INFINITY,
+  };
+  const req = await parseRequest(post({ ...base, options }));
+  assertEquals(req.options.backgroundOffset, { x: 0, y: 0 });
+  assertEquals(req.options.backgroundScale, 1);
+  assertEquals(req.options.backgroundRotation, 0);
+});

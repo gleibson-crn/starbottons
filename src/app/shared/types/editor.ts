@@ -18,7 +18,35 @@ export interface BackgroundImageRef {
   readonly source: 'upload' | 'template';
   /** Id do template (futuro; ausente em uploads). */
   readonly id?: string;
+  /**
+   * Deslocamento do centro da imagem de fundo, em px de tela do editor (mesma
+   * unidade do `offset` da arte). `{0,0}` = centrado.
+   */
+  readonly offset: { x: number; y: number };
+  /** Fator de zoom do fundo (1 = "cover" exato do círculo). */
+  readonly scale: number;
+  /** Rotação livre do fundo em graus (−180..+180). */
+  readonly rotation: number;
 }
+
+/**
+ * Enquadramento genérico de uma camada (posição/zoom/rotação). Compartilhado
+ * pelas mesmas funções de gesto usadas pela arte (`EditorTransform`) e pela
+ * imagem de fundo. O canvas-editor muta um `Framing` do fundo ou o transform da
+ * arte conforme a camada ativa.
+ */
+export interface Framing {
+  readonly offset: { x: number; y: number };
+  readonly scale: number;
+  readonly rotation: number;
+}
+
+/** Enquadramento neutro (fundo centrado, cover exato, sem rotação). */
+export const DEFAULT_BACKGROUND_FRAMING: Framing = {
+  offset: { x: 0, y: 0 },
+  scale: 1,
+  rotation: 0,
+};
 
 export interface EditorTransform {
   /** Deslocamento do centro da imagem, em px de tela do editor. */

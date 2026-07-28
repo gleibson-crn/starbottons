@@ -22,7 +22,9 @@
         [backgroundImage]="bgImageEl()"
         [spec]="spec()"
         [filters]="filters()"
+        [layer]="bgLayer()"
         [(transform)]="transform"
+        [(backgroundTransform)]="bgTransform"
       />
     </div>
     <app-resolution-badge [dpi]="dpi()" [dense]="true" />
@@ -82,133 +84,136 @@
       tabindex="0"
       [hidden]="activeTab() !== 'background'"
     >
-      <div class="bgmode" role="group" aria-label="Tipo de fundo do botton">
-        <button
-          type="button"
-          class="bgmode__opt"
-          [class.bgmode__opt--active]="bgMode() === 'color'"
-          [attr.aria-pressed]="bgMode() === 'color'"
-          (click)="setBgMode('color')"
-        >
-          Cor
-        </button>
-        <button
-          type="button"
-          class="bgmode__opt"
-          [class.bgmode__opt--active]="bgMode() === 'image'"
-          [attr.aria-pressed]="bgMode() === 'image'"
-          (click)="setBgMode('image')"
-        >
-          Imagem
-        </button>
-      </div>
-
-      @if (bgMode() === 'color') {
+      <!-- COR base do botton: sempre visível. Aparece sob as áreas
+           transparentes da imagem de fundo (a cor e a imagem se combinam). -->
+      <div class="bgsection">
+        <h3 class="bgsection__title" id="bgcolor-title">Cor do botton</h3>
+        <p class="bgsection__hint">
+          Cor de base do círculo. Ela aparece sob as áreas transparentes da
+          imagem de fundo, se houver.
+        </p>
         <app-background-picker
+          aria-labelledby="bgcolor-title"
           [color]="transform().background"
           (colorChange)="onBackground($event)"
         />
-      } @else {
-        <div class="bgimg">
-          <p class="bgimg__hint">
-            A imagem de fundo preenche o círculo do botton por baixo da sua
-            arte. Ela é centralizada e cobre todo o círculo automaticamente.
+      </div>
+
+      <!-- IMAGEM de fundo: opcional (add-on por cima da cor). -->
+      <section class="bgsection bgimg" aria-labelledby="bgimg-title">
+        <h3 class="bgsection__title" id="bgimg-title">
+          Imagem de fundo (opcional)
+        </h3>
+        <p class="bgsection__hint">
+          Fica por cima da cor, sob a sua arte. Onde a imagem for transparente,
+          a cor acima aparece.
+        </p>
+
+        @if (transform().backgroundImage) {
+          <div class="bgimg__current">
+            <img
+              class="bgimg__thumb"
+              [src]="transform().backgroundImage?.url"
+              alt="Miniatura da imagem de fundo atual"
+            />
+            <button
+              type="button"
+              class="btn btn--ghost"
+              (click)="removeBackgroundImage()"
+            >
+              Remover imagem
+            </button>
+          </div>
+
+          <p class="bgsection__hint">
+            Arraste na prévia para posicionar o fundo; role para dar zoom;
+            colchetes giram.
           </p>
+          <button
+            type="button"
+            class="btn btn--ghost"
+            (click)="resetBackground()"
+          >
+            Redefinir fundo
+          </button>
+        }
 
-          @if (transform().backgroundImage) {
-            <div class="bgimg__current">
-              <img
-                class="bgimg__thumb"
-                [src]="transform().backgroundImage?.url"
-                alt="Miniatura da imagem de fundo atual"
-              />
-              <button
-                type="button"
-                class="btn btn--ghost"
-                (click)="removeBackgroundImage()"
-              >
-                Remover (usar cor)
-              </button>
-            </div>
-          }
+        <app-file-dropzone
+          browseLabel="Enviar imagem de fundo"
+          (fileAccepted)="onBackgroundFile($event)"
+          (fileRejected)="onBackgroundFileRejected($event)"
+        />
 
-          <app-file-dropzone
-            browseLabel="Enviar imagem de fundo"
-            (fileAccepted)="onBackgroundFile($event)"
-            (fileRejected)="onBackgroundFileRejected($event)"
-          />
+        @if (bgUploading()) {
+          <p class="bgimg__status" role="status">Enviando imagem…</p>
+        }
+        @if (bgError()) {
+          <p class="bgimg__error" role="alert">{{ bgError() }}</p>
+        }
 
-          @if (bgUploading()) {
-            <p class="bgimg__status" role="status">Enviando imagem…</p>
-          }
-          @if (bgError()) {
-            <p class="bgimg__error" role="alert">{{ bgError() }}</p>
-          }
-
-          <section class="bggallery" aria-labelledby="bggallery-title">
-            <h3 id="bggallery-title" class="bggallery__title">
-              Templates de fundo
-            </h3>
-            @switch (bgGalleryPhase()) {
-              @case ('loading') {
+        <section class="bggallery" aria-labelledby="bggallery-title">
+          <h3 id="bggallery-title" class="bggallery__title">
+            Templates de fundo
+          </h3>
+          @switch (bgGalleryPhase()) {
+            @case ('loading') {
+              <p class="bggallery__status" role="status">
+                Carregando templates…
+              </p>
+            }
+            @case ('error') {
+              <div class="bggallery__status" role="status">
+                <p>Não foi possível carregar os templates.</p>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  (click)="loadBgTemplates(true)"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            }
+            @default {
+              @if (bgTemplates().length === 0) {
                 <p class="bggallery__status" role="status">
-                  Carregando templates…
+                  Nenhum template ainda — cadastre em Curadoria de fundos.
                 </p>
-              }
-              @case ('error') {
-                <div class="bggallery__status" role="status">
-                  <p>Não foi possível carregar os templates.</p>
-                  <button
-                    type="button"
-                    class="btn btn--ghost"
-                    (click)="loadBgTemplates(true)"
-                  >
-                    Tentar novamente
-                  </button>
-                </div>
-              }
-              @default {
-                @if (bgTemplates().length === 0) {
-                  <p class="bggallery__status" role="status">
-                    Nenhum template ainda — cadastre em Curadoria de fundos.
-                  </p>
-                } @else {
-                  <ul class="bggallery__grid" aria-label="Templates de fundo">
-                    @for (tpl of bgTemplates(); track tpl.id) {
-                      <li>
-                        <button
-                          type="button"
-                          class="bggallery__item"
-                          [class.bggallery__item--active]="
-                            transform().backgroundImage?.id === tpl.id
-                          "
-                          [attr.aria-pressed]="
-                            transform().backgroundImage?.id === tpl.id
-                          "
-                          [attr.aria-label]="'Usar fundo ' + tpl.name"
-                          [disabled]="!tpl.thumbUrl"
-                          (click)="pickTemplate(tpl)"
-                        >
-                          @if (tpl.thumbUrl) {
-                            <img
-                              class="bggallery__thumb"
-                              [src]="tpl.thumbUrl"
-                              [alt]="tpl.name"
-                            />
-                          } @else {
-                            <span class="bggallery__ph" aria-hidden="true">—</span>
-                          }
-                          <span class="bggallery__name">{{ tpl.name }}</span>
-                        </button>
-                      </li>
-                    }
-                  </ul>
-                }
+              } @else {
+                <ul class="bggallery__grid" aria-label="Templates de fundo">
+                  @for (tpl of bgTemplates(); track tpl.id) {
+                    <li>
+                      <button
+                        type="button"
+                        class="bggallery__item"
+                        [class.bggallery__item--active]="
+                          transform().backgroundImage?.id === tpl.id
+                        "
+                        [attr.aria-pressed]="
+                          transform().backgroundImage?.id === tpl.id
+                        "
+                        [attr.aria-label]="'Usar fundo ' + tpl.name"
+                        [disabled]="!tpl.thumbUrl"
+                        (click)="pickTemplate(tpl)"
+                      >
+                        @if (tpl.thumbUrl) {
+                          <img
+                            class="bggallery__thumb"
+                            [src]="tpl.thumbUrl"
+                            [alt]="tpl.name"
+                          />
+                        } @else {
+                          <span class="bggallery__ph" aria-hidden="true">—</span>
+                        }
+                        <span class="bggallery__name">{{ tpl.name }}</span>
+                      </button>
+                    </li>
+                  }
+                </ul>
               }
             }
-          </section>
-        </div>
-      }
+          }
+        </section>
+      </section>
     </div>
 
     <div class="dialog__actions">

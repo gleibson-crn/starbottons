@@ -14,6 +14,12 @@ export interface GenerateOptionsBody {
     readonly background: string;
     /** Caminho da imagem de fundo no Storage, ou `null` para usar só a cor. */
     readonly backgroundImage: string | null;
+    /** Offset do fundo em MILÍMETROS (mesma conversão px→mm da arte). */
+    readonly backgroundOffset: EditorTransform['offset'];
+    /** Zoom do fundo (1 = cover exato). */
+    readonly backgroundScale: number;
+    /** Rotação do fundo em graus. */
+    readonly backgroundRotation: number;
   };
 }
 

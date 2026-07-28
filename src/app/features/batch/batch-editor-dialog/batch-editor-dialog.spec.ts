@@ -84,7 +84,7 @@ function makeItem(filters: ImageFilters = DEFAULT_FILTERS): BatchItem {
   };
 }
 
-function dialogWith(item: BatchItem): BatchEditorDialog {
+function fixtureWith(item: BatchItem) {
   TestBed.configureTestingModule({
     providers: [
       { provide: UploadService, useValue: fakeUploads },
@@ -94,7 +94,11 @@ function dialogWith(item: BatchItem): BatchEditorDialog {
   const fixture = TestBed.createComponent(BatchEditorDialog);
   fixture.componentRef.setInput('item', item);
   fixture.detectChanges();
-  return fixture.componentInstance;
+  return fixture;
+}
+
+function dialogWith(item: BatchItem): BatchEditorDialog {
+  return fixtureWith(item).componentInstance;
 }
 
 describe('BatchEditorDialog — filtros', () => {
@@ -171,19 +175,6 @@ describe('BatchEditorDialog — fundo', () => {
 });
 
 describe('BatchEditorDialog — imagem de fundo', () => {
-  it('o painel "Fundo" começa no modo cor', () => {
-    const cmp = dialogWith(makeItem());
-    expect(cmp.bgMode()).toBe('color');
-  });
-
-  it('setBgMode alterna entre cor e imagem', () => {
-    const cmp = dialogWith(makeItem());
-    cmp.setBgMode('image');
-    expect(cmp.bgMode()).toBe('image');
-    cmp.setBgMode('color');
-    expect(cmp.bgMode()).toBe('color');
-  });
-
   it('onBackgroundFile sobe o arquivo e define transform.backgroundImage', async () => {
     const cmp = dialogWith(makeItem());
     await cmp.onBackgroundFile(PNG());
@@ -244,16 +235,118 @@ describe('BatchEditorDialog — imagem de fundo', () => {
     expect(result?.transform.backgroundImage?.source).toBe('template');
   });
 
-  it('semeia o modo "imagem" quando o item já tem backgroundImage', () => {
+});
+
+describe('BatchEditorDialog — posicionamento do fundo', () => {
+  const bgItem = (framing: {
+    offset: { x: number; y: number };
+    scale: number;
+    rotation: number;
+  }): BatchItem => {
     const base = makeItem();
-    const item: BatchItem = {
+    return {
       ...base,
       transform: {
         ...base.transform,
-        backgroundImage: { path: 'p', url: 'blob:u', source: 'upload' },
+        backgroundImage: {
+          path: 'p',
+          url: 'blob:u',
+          source: 'upload',
+          ...framing,
+        },
       },
     };
-    const cmp = dialogWith(item);
-    expect(cmp.bgMode()).toBe('image');
+  };
+
+  it('bgLayer é "art" por padrão (aba Ajustar)', () => {
+    const cmp = dialogWith(makeItem());
+    expect(cmp.bgLayer()).toBe('art');
+  });
+
+  it('bgLayer vira "background" na aba Fundo quando há imagem', () => {
+    const cmp = dialogWith(bgItem({ offset: { x: 0, y: 0 }, scale: 1, rotation: 0 }));
+    cmp.selectTab('background');
+    expect(cmp.bgLayer()).toBe('background');
+  });
+
+  it('bgLayer continua "art" na aba Fundo se NÃO há imagem', () => {
+    const cmp = dialogWith(makeItem());
+    cmp.selectTab('background');
+    expect(cmp.bgLayer()).toBe('art');
+  });
+
+  it('semeia bgTransform a partir de transform.backgroundImage no ngOnInit', () => {
+    const cmp = dialogWith(
+      bgItem({ offset: { x: 3, y: 4 }, scale: 1.5, rotation: 20 }),
+    );
+    expect(cmp.bgTransform()).toEqual({
+      offset: { x: 3, y: 4 },
+      scale: 1.5,
+      rotation: 20,
+    });
+  });
+
+  it('bgTransform começa no neutro quando o item não tem fundo', () => {
+    const cmp = dialogWith(makeItem());
+    expect(cmp.bgTransform()).toEqual({
+      offset: { x: 0, y: 0 },
+      scale: 1,
+      rotation: 0,
+    });
+  });
+
+  it('mudar bgTransform persiste em transform.backgroundImage (effect)', () => {
+    const fixture = fixtureWith(
+      bgItem({ offset: { x: 0, y: 0 }, scale: 1, rotation: 0 }),
+    );
+    const cmp = fixture.componentInstance;
+    cmp.bgTransform.set({ offset: { x: 5, y: 7 }, scale: 2, rotation: 10 });
+    fixture.detectChanges();
+
+    const bg = cmp.transform().backgroundImage;
+    expect(bg?.offset).toEqual({ x: 5, y: 7 });
+    expect(bg?.scale).toBe(2);
+    expect(bg?.rotation).toBe(10);
+  });
+
+  it('o posicionamento do fundo viaja no transform ao salvar', () => {
+    const fixture = fixtureWith(
+      bgItem({ offset: { x: 0, y: 0 }, scale: 1, rotation: 0 }),
+    );
+    const cmp = fixture.componentInstance;
+    cmp.bgTransform.set({ offset: { x: 8, y: -2 }, scale: 1.25, rotation: 15 });
+    fixture.detectChanges();
+
+    let result: BatchEditResult | undefined;
+    cmp.saved.subscribe((r) => (result = r));
+    cmp.onSave();
+
+    expect(result?.transform.backgroundImage?.offset).toEqual({ x: 8, y: -2 });
+    expect(result?.transform.backgroundImage?.scale).toBe(1.25);
+    expect(result?.transform.backgroundImage?.rotation).toBe(15);
+  });
+
+  it('resetBackground zera o enquadramento do fundo', () => {
+    const cmp = dialogWith(
+      bgItem({ offset: { x: 9, y: 9 }, scale: 3, rotation: 45 }),
+    );
+    cmp.resetBackground();
+    expect(cmp.bgTransform()).toEqual({
+      offset: { x: 0, y: 0 },
+      scale: 1,
+      rotation: 0,
+    });
+  });
+
+  it('escolher novo template reinicia a posição do fundo', () => {
+    const cmp = dialogWith(
+      bgItem({ offset: { x: 9, y: 9 }, scale: 3, rotation: 45 }),
+    );
+    cmp.pickTemplate(TPL);
+    expect(cmp.bgTransform()).toEqual({
+      offset: { x: 0, y: 0 },
+      scale: 1,
+      rotation: 0,
+    });
   });
 });

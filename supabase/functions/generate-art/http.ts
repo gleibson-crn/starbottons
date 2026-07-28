@@ -26,13 +26,25 @@ export function preflight(): Response {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
+/** Número finito ou fallback (descarta NaN/Infinity de payloads maliciosos). */
+function finiteOr(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+/** Offset {x,y} em MM, sanitizado campo a campo (default {x:0,y:0}). */
+function sanitizeOffset(
+  raw: { x?: number; y?: number } | undefined,
+): { x: number; y: number } {
+  return { x: finiteOr(raw?.x, 0), y: finiteOr(raw?.y, 0) };
+}
+
 /** Normaliza options com defaults seguros (fundo branco, sem transform). */
 function normalizeOptions(raw: Partial<ArtOptions> | undefined): ArtOptions {
   return {
     fit: "cover",
-    offset: { x: raw?.offset?.x ?? 0, y: raw?.offset?.y ?? 0 },
-    scale: typeof raw?.scale === "number" ? raw.scale : 1,
-    rotation: typeof raw?.rotation === "number" ? raw.rotation : 0,
+    offset: sanitizeOffset(raw?.offset),
+    scale: finiteOr(raw?.scale, 1),
+    rotation: finiteOr(raw?.rotation, 0),
     background: typeof raw?.background === "string"
       ? raw.background
       : "#ffffff",
@@ -40,6 +52,10 @@ function normalizeOptions(raw: Partial<ArtOptions> | undefined): ArtOptions {
         raw.backgroundImage
       ? raw.backgroundImage
       : null,
+    // Enquadramento do fundo (aditivo): mesma sanitização da arte.
+    backgroundOffset: sanitizeOffset(raw?.backgroundOffset),
+    backgroundScale: finiteOr(raw?.backgroundScale, 1),
+    backgroundRotation: finiteOr(raw?.backgroundRotation, 0),
   };
 }
 

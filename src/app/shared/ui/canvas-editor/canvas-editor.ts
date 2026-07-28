@@ -11,7 +11,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import type { EditorTransform, ImageFilters, PrintSpec } from '../../types';
+import type { EditorTransform, Framing, ImageFilters, PrintSpec } from '../../types';
 import { computeLayout, imageDrawSize, isBleedCovered } from '../../utils';
 import { applyKey } from './editor-keymap';
 import { drawScene } from './editor-render';
@@ -41,6 +41,18 @@ export class CanvasEditor implements AfterViewInit {
   readonly transform = model.required<EditorTransform>();
   /** Filtros aplicados só à imagem no preview (paralelo ao transform). */
   readonly filters = input<ImageFilters | null>(null);
+  /**
+   * Camada-alvo dos gestos: `'art'` (padrão) muta o `transform`; `'background'`
+   * muta o `backgroundTransform` (quando não-nulo), reusando as MESMAS funções
+   * de gesto. Permite reposicionar o fundo pela prévia sem sair da arte.
+   */
+  readonly layer = input<'art' | 'background'>('art');
+  /**
+   * Enquadramento do fundo (posição/zoom/rotação). `null` = sem imagem de fundo
+   * (gestos caem sempre na arte). Two-way: os gestos na camada `'background'`
+   * atualizam este model.
+   */
+  readonly backgroundTransform = model<Framing | null>(null);
   readonly coverageChange = output<boolean>();
 
   private readonly canvasRef =
@@ -70,7 +82,7 @@ export class CanvasEditor implements AfterViewInit {
     const dx = (event.clientX - this.dragFrom.x) * k;
     const dy = (event.clientY - this.dragFrom.y) * k;
     this.dragFrom = { x: event.clientX, y: event.clientY };
-    this.transform.update((t) => withOffset(t, dx, dy));
+    this.mutate((t) => withOffset(t, dx, dy));
   }
 
   onPointerUp(): void {
@@ -80,15 +92,40 @@ export class CanvasEditor implements AfterViewInit {
   onWheel(event: WheelEvent): void {
     event.preventDefault();
     const factor = event.deltaY < 0 ? 1.08 : 1 / 1.08;
-    this.transform.update((t) => withZoom(t, factor));
+    this.mutate((t) => withZoom(t, factor));
   }
 
   onKeydown(event: KeyboardEvent): void {
-    const next = applyKey(this.transform(), event.key, this.side() * 0.02);
-    if (next) {
+    if (this.mutate((t) => applyKey(t, event.key, this.side() * 0.02))) {
       event.preventDefault();
-      this.transform.set(next);
     }
+  }
+
+  /** `true` quando os gestos devem atuar sobre o fundo (não a arte). */
+  private bgActive(): boolean {
+    return this.layer() === 'background' && this.backgroundTransform() !== null;
+  }
+
+  /**
+   * Aplica uma mutação de enquadramento à camada ativa: fundo (`bgActive`) ou
+   * arte. Retorna `true` se algo mudou (a mutação pode devolver `null`, ex.:
+   * tecla não reconhecida). As MESMAS funções servem às duas camadas.
+   */
+  private mutate(fn: (t: Framing) => Framing | null): boolean {
+    if (this.bgActive()) {
+      const next = fn(this.backgroundTransform() as Framing);
+      if (!next) {
+        return false;
+      }
+      this.backgroundTransform.set(next);
+      return true;
+    }
+    const next = fn(this.transform());
+    if (!next) {
+      return false;
+    }
+    this.transform.set(next as EditorTransform);
+    return true;
   }
 
   private canvasRect(): DOMRect {
@@ -109,6 +146,9 @@ export class CanvasEditor implements AfterViewInit {
     const t = this.transform();
     const img = this.image();
     const size = this.drawSize(img, layout.bleedR * 2, t.scale);
+    const bgImg = this.backgroundImage();
+    const bgT = this.backgroundTransform();
+    const bgSize = this.drawSize(bgImg, layout.bleedR * 2, bgT?.scale ?? 1);
     drawScene({
       ctx,
       side,
@@ -116,7 +156,10 @@ export class CanvasEditor implements AfterViewInit {
       image: img,
       transform: t,
       filters: this.filters() ?? undefined,
-      backgroundImage: this.backgroundImage(),
+      backgroundImage: bgImg,
+      backgroundTransform: bgT,
+      bgDrawW: bgSize.drawW,
+      bgDrawH: bgSize.drawH,
       ...size,
     });
     this.coverageChange.emit(

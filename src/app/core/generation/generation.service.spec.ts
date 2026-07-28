@@ -13,7 +13,17 @@ const REQUEST: GenerateOptionsBody = {
   upload_id: 'u1',
   shape_key: 'round',
   size_mm: 32,
-  options: { fit: 'cover', offset: { x: 0, y: 0 }, scale: 1, rotation: 0, background: '#ffffff', backgroundImage: null },
+  options: {
+    fit: 'cover',
+    offset: { x: 0, y: 0 },
+    scale: 1,
+    rotation: 0,
+    background: '#ffffff',
+    backgroundImage: null,
+    backgroundOffset: { x: 0, y: 0 },
+    backgroundScale: 1,
+    backgroundRotation: 0,
+  },
 };
 
 const NO_SLEEP = { sleep: (): Promise<void> => Promise.resolve() };

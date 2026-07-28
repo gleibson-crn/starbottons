@@ -1,6 +1,7 @@
-import type { EditorTransform, ImageFilters } from '../../types';
-import { filterString } from '../../types';
+import type { EditorTransform, Framing, ImageFilters } from '../../types';
+import { DEFAULT_BACKGROUND_FRAMING, filterString } from '../../types';
 import type { EditorLayout } from '../../utils';
+import { imageDrawSize } from '../../utils';
 
 /** Parâmetros de uma cena completa do editor. */
 export interface SceneParams {
@@ -14,10 +15,19 @@ export interface SceneParams {
   /** Filtros aplicados APENAS à imagem (opcional; ausência = sem filtro). */
   readonly filters?: ImageFilters;
   /**
-   * Imagem de fundo já carregada. Desenhada em COVER fixo preenchendo o círculo
-   * (sem o transform do usuário), por cima da cor e por baixo da arte.
+   * Imagem de fundo já carregada. Desenhada por cima da COR e por baixo da
+   * arte, com o mesmo enquadramento (translate→rotate→drawImage centrado) da
+   * arte. A transparência da imagem revela a cor `transform.background`.
    */
   readonly backgroundImage?: HTMLImageElement | null;
+  /**
+   * Enquadramento do fundo (posição/zoom/rotação). Ausente/`null` = neutro
+   * (centrado, cover exato, 0°) — idêntico ao antigo COVER fixo.
+   */
+  readonly backgroundTransform?: Framing | null;
+  /** Tamanho de desenho do fundo (px). Se ausente, calculado em COVER. */
+  readonly bgDrawW?: number;
+  readonly bgDrawH?: number;
 }
 
 /** Desenha a cena inteira: fundo, imagem, escurecimento e guias. */
@@ -34,13 +44,11 @@ function drawImageLayer(p: SceneParams): void {
   ctx.save();
   circlePath(ctx, layout.center, layout.bleedR);
   ctx.clip();
-  // O fundo neutro (modo quieto) NÃO recebe filtro.
+  // A cor de base NÃO recebe filtro. É pintada ANTES do fundo para que a
+  // transparência da imagem de fundo revele esta cor (composição cor + imagem).
   ctx.fillStyle = transform.background;
   ctx.fillRect(0, 0, p.side, p.side);
-  if (p.backgroundImage) {
-    // Fundo em COVER fixo (centrado, sem offset/scale/rotation do usuário).
-    drawCover(ctx, p.backgroundImage, layout.center, layout.bleedR * 2);
-  }
+  drawBackgroundLayer(p);
   if (image) {
     ctx.translate(layout.center + transform.offset.x, layout.center + transform.offset.y);
     ctx.rotate((transform.rotation * Math.PI) / 180);
@@ -58,22 +66,42 @@ function drawImageLayer(p: SceneParams): void {
 }
 
 /**
- * Desenha `img` cobrindo (COVER) um quadrado de lado `size` centrado em
- * `center` — o menor lado da imagem preenche o quadrado, centralizado, sem
- * distorção. Usado para o fundo (recorte ao círculo é feito pelo clip do pai).
+ * Desenha o fundo com o MESMO enquadramento da arte (translate→rotate→drawImage
+ * centrado no tamanho em COVER × `scale`). O `save`/`restore` interno isola o
+ * transform do fundo para não afetar a arte desenhada a seguir. Recorte ao
+ * círculo vem do clip do pai. No enquadramento neutro é idêntico ao COVER fixo.
  */
-function drawCover(
-  ctx: CanvasRenderingContext2D,
+function drawBackgroundLayer(p: SceneParams): void {
+  const img = p.backgroundImage;
+  if (!img) {
+    return;
+  }
+  const bt = p.backgroundTransform ?? DEFAULT_BACKGROUND_FRAMING;
+  const { w, h } = bgDrawSize(p, img, bt.scale);
+  const { ctx, layout } = p;
+  ctx.save();
+  ctx.translate(layout.center + bt.offset.x, layout.center + bt.offset.y);
+  ctx.rotate((bt.rotation * Math.PI) / 180);
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  ctx.restore();
+}
+
+/** Tamanho de desenho do fundo: usa o passado ou calcula o COVER (× scale). */
+function bgDrawSize(
+  p: SceneParams,
   img: HTMLImageElement,
-  center: number,
-  size: number,
-): void {
-  const iw = img.naturalWidth || 1;
-  const ih = img.naturalHeight || 1;
-  const scale = Math.max(size / iw, size / ih);
-  const w = iw * scale;
-  const h = ih * scale;
-  ctx.drawImage(img, center - w / 2, center - h / 2, w, h);
+  scale: number,
+): { w: number; h: number } {
+  if (p.bgDrawW != null && p.bgDrawH != null) {
+    return { w: p.bgDrawW, h: p.bgDrawH };
+  }
+  const s = imageDrawSize(
+    img.naturalWidth,
+    img.naturalHeight,
+    p.layout.bleedR * 2,
+    scale,
+  );
+  return { w: s.drawW, h: s.drawH };
 }
 
 function drawDarkenOutsideCut(

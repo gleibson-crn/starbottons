@@ -45,6 +45,9 @@ describe('buildGenerateRequest', () => {
     expect(Object.keys(body.options).sort()).toEqual([
       'background',
       'backgroundImage',
+      'backgroundOffset',
+      'backgroundRotation',
+      'backgroundScale',
       'fit',
       'offset',
       'rotation',
@@ -79,6 +82,20 @@ describe('buildGenerateRequest', () => {
     expect(body.options.backgroundImage).toBeNull();
   });
 
+  it('sem fundo: backgroundOffset/Scale/Rotation ficam no neutro', () => {
+    const body = buildGenerateRequest({
+      uploadId: 'up-1',
+      sizeMm: 32,
+      spec: SPEC_32,
+      transform: TRANSFORM,
+      editorSide: 440,
+    });
+
+    expect(body.options.backgroundOffset).toEqual({ x: 0, y: 0 });
+    expect(body.options.backgroundScale).toBe(1);
+    expect(body.options.backgroundRotation).toBe(0);
+  });
+
   it('serializa backgroundImage como o PATH do Storage (não a url)', () => {
     const body = buildGenerateRequest({
       uploadId: 'up-1',
@@ -90,12 +107,43 @@ describe('buildGenerateRequest', () => {
           path: 'user/bg-123.png',
           url: 'blob:preview',
           source: 'upload',
+          offset: { x: 0, y: 0 },
+          scale: 1,
+          rotation: 0,
         },
       },
       editorSide: 440,
     });
 
     expect(body.options.backgroundImage).toBe('user/bg-123.png');
+  });
+
+  it('converte o offset do FUNDO px→mm com o MESMO pxPerMm e repassa scale/rotation', () => {
+    const editorSide = 440;
+    const { pxPerMm } = computeLayout(SPEC_32, editorSide);
+
+    const body = buildGenerateRequest({
+      uploadId: 'up-1',
+      sizeMm: 32,
+      spec: SPEC_32,
+      transform: {
+        ...TRANSFORM,
+        backgroundImage: {
+          path: 'user/bg-123.png',
+          url: 'blob:preview',
+          source: 'upload',
+          offset: { x: 60, y: -24 },
+          scale: 2,
+          rotation: 45,
+        },
+      },
+      editorSide,
+    });
+
+    expect(body.options.backgroundOffset.x).toBeCloseTo(60 / pxPerMm, 9);
+    expect(body.options.backgroundOffset.y).toBeCloseTo(-24 / pxPerMm, 9);
+    expect(body.options.backgroundScale).toBe(2);
+    expect(body.options.backgroundRotation).toBe(45);
   });
 
   it('converte o offset de px de tela para milímetros (÷ pxPerMm do layout)', () => {

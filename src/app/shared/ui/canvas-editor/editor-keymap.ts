@@ -1,4 +1,4 @@
-import type { EditorTransform } from '../../types';
+import type { Framing } from '../../types';
 import {
   resetTransform,
   withOffset,
@@ -10,16 +10,17 @@ const ZOOM_STEP = 1.1;
 const ROT_STEP = 5;
 
 /**
- * Mapeia uma tecla para uma mutação de transform (WCAG 2.1.1 — todo gesto tem
- * equivalente de teclado). Retorna `null` quando a tecla não é reconhecida.
+ * Mapeia uma tecla para uma mutação de enquadramento (WCAG 2.1.1 — todo gesto
+ * tem equivalente de teclado). Genérico sobre `Framing`: serve para a arte e
+ * para o fundo. Retorna `null` quando a tecla não é reconhecida.
  *
  * Setas movem; `+/-` dão zoom; `[ ]` rotacionam; `r` redefine.
  */
-export function applyKey(
-  t: EditorTransform,
+export function applyKey<T extends Framing>(
+  t: T,
   key: string,
   step: number,
-): EditorTransform | null {
+): T | null {
   switch (key) {
     case 'ArrowLeft':
       return withOffset(t, -step, 0);
@@ -34,10 +35,7 @@ export function applyKey(
   }
 }
 
-function applySymbolKey(
-  t: EditorTransform,
-  key: string,
-): EditorTransform | null {
+function applySymbolKey<T extends Framing>(t: T, key: string): T | null {
   switch (key) {
     case '+':
     case '=':

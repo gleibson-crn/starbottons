@@ -6,9 +6,11 @@ import { drawScene, type SceneParams } from './editor-render';
 interface Op {
   readonly op: string;
   readonly filter: string;
+  /** Args registrados p/ `translate` (tx,ty) e `drawImage` (dx,dy,dw,dh). */
+  readonly args?: number[];
 }
 
-/** Contexto 2D falso: registra o valor de `ctx.filter` em cada operação. */
+/** Contexto 2D falso: registra `ctx.filter` e args em cada operação. */
 function makeMockCtx(): { ctx: CanvasRenderingContext2D; ops: Op[] } {
   const ops: Op[] = [];
   const ctx = {
@@ -28,9 +30,17 @@ function makeMockCtx(): { ctx: CanvasRenderingContext2D; ops: Op[] } {
     fill: () => ops.push({ op: 'fill', filter: ctx.filter }),
     fillRect: () => ops.push({ op: 'fillRect', filter: ctx.filter }),
     stroke: () => ops.push({ op: 'stroke', filter: ctx.filter }),
-    translate: () => undefined,
-    rotate: () => undefined,
-    drawImage: () => ops.push({ op: 'drawImage', filter: ctx.filter }),
+    translate: (tx: number, ty: number) =>
+      ops.push({ op: 'translate', filter: ctx.filter, args: [tx, ty] }),
+    rotate: (r: number) =>
+      ops.push({ op: 'rotate', filter: ctx.filter, args: [r] }),
+    drawImage: (
+      _img: unknown,
+      dx: number,
+      dy: number,
+      dw: number,
+      dh: number,
+    ) => ops.push({ op: 'drawImage', filter: ctx.filter, args: [dx, dy, dw, dh] }),
   } as unknown as CanvasRenderingContext2D & { filter: string };
   return { ctx, ops };
 }
@@ -90,6 +100,43 @@ describe('editor-render — imagem de fundo', () => {
     const firstDraw = ops.findIndex((o) => o.op === 'drawImage');
     const fillRect = ops.findIndex((o) => o.op === 'fillRect');
     expect(fillRect).toBeLessThan(firstDraw);
+  });
+
+  it('a cor de base é pintada ANTES do fundo (transparência revela a cor)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawScene({ ...params(ctx), backgroundImage: BG_IMAGE });
+    const fillRect = ops.findIndex((o) => o.op === 'fillRect');
+    const bgDraw = ops.findIndex((o) => o.op === 'drawImage');
+    expect(fillRect).toBeLessThan(bgDraw);
+  });
+
+  it('aplica o backgroundTransform (translate em center+offset) ao fundo', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawScene({
+      ...params(ctx),
+      image: null, // isola o fundo (a arte também usa translate)
+      backgroundImage: BG_IMAGE,
+      backgroundTransform: { offset: { x: 12, y: -8 }, scale: 1, rotation: 15 },
+      bgDrawW: 240,
+      bgDrawH: 120,
+    });
+    const translate = ops.find((o) => o.op === 'translate');
+    // center = layout.center = 100
+    expect(translate?.args).toEqual([112, 92]);
+    const draw = ops.find((o) => o.op === 'drawImage');
+    // desenhado centrado no tamanho passado (bgDrawW/bgDrawH)
+    expect(draw?.args).toEqual([-120, -60, 240, 120]);
+  });
+
+  it('sem backgroundTransform desenha o fundo em COVER (neutro)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawScene({ ...params(ctx), image: null, backgroundImage: BG_IMAGE });
+    // COVER de 200×100 no diâmetro 160 (bleedR*2): base = 160/100 = 1.6 →
+    // 320×160, centrado em 100 → [-160,-80,320,160]. translate no centro exato.
+    const translate = ops.find((o) => o.op === 'translate');
+    expect(translate?.args).toEqual([100, 100]);
+    const draw = ops.find((o) => o.op === 'drawImage');
+    expect(draw?.args).toEqual([-160, -80, 320, 160]);
   });
 });
 

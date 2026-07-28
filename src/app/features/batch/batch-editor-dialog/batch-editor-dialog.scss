@@ -91,36 +91,29 @@
   gap: var(--sp-3);
 }
 
-/* Alternador "Cor | Imagem" do painel "Fundo" (segmented radiogroup). */
-.bgmode {
+/* Seção do painel "Fundo": COR (base, sempre) e IMAGEM (add-on opcional). A
+ * cor e a imagem se combinam — não são mais mutuamente exclusivas. */
+.bgsection {
   display: flex;
-  gap: var(--sp-1);
-  padding: var(--sp-1);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  flex-direction: column;
+  gap: var(--sp-3);
 }
 
-.bgmode__opt {
-  flex: 1;
-  min-block-size: var(--tap-min);
-  padding-inline: var(--sp-4);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
+.bgsection + .bgsection {
+  padding-block-start: var(--sp-4);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.bgsection__title {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+
+.bgsection__hint {
+  margin: 0;
+  font-size: var(--fs-sm);
   color: var(--color-text-muted);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--motion-fast) var(--ease),
-    color var(--motion-fast) var(--ease);
-}
-
-.bgmode__opt--active {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-text);
-  box-shadow: var(--shadow-sm);
 }
 
 .bgimg {

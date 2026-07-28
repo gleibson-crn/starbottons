@@ -38,6 +38,14 @@ export interface ArtOptions {
    * segue como base/fallback. Ausente/null/vazio → só a cor (comportamento atual).
    */
   readonly backgroundImage?: string | null;
+  /**
+   * Enquadramento do FUNDO (espelha offset/scale/rotation da arte). Aplicados
+   * SÓ quando há `backgroundImage`. Todos opcionais com defaults ({x:0,y:0}/1/0)
+   * → ausência reproduz o cover fixo/centrado anterior.
+   */
+  readonly backgroundOffset?: { x: number; y: number }; // MM (default {x:0,y:0})
+  readonly backgroundScale?: number; // default 1
+  readonly backgroundRotation?: number; // default 0
 }
 
 /** Corpo esperado no POST /generate-art. */

@@ -44,4 +44,5 @@ export type {
   SceneTargetPx,
   ContextualParams,
 } from './canvas-editor/mockup-render';
-export type { EditorTransform, BackgroundImageRef } from '../types';
+export type { EditorTransform, BackgroundImageRef, Framing } from '../types';
+export { DEFAULT_BACKGROUND_FRAMING } from '../types';

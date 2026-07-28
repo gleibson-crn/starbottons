@@ -5,7 +5,7 @@
  */
 
 import { type SupabaseClient } from "./deps.ts";
-import { composeArtwork } from "./image.ts";
+import { composeArtwork, type TransformOpts } from "./image.ts";
 import { assertSafeSource } from "./image-header.ts";
 import { buildLayoutSvg } from "./svg.ts";
 import { rasterizeSvg } from "./raster.ts";
@@ -70,6 +70,18 @@ async function loadBackgroundImage(
   }
 }
 
+/**
+ * Enquadramento do FUNDO a partir das options (defaults = cover fixo/centrado).
+ * Espelha offset(MM)/scale/rotation da arte para o layer de fundo.
+ */
+function backgroundOpts(req: GenerateRequest): TransformOpts {
+  return {
+    offset: req.options.backgroundOffset ?? { x: 0, y: 0 },
+    scale: req.options.backgroundScale ?? 1,
+    rotation: req.options.backgroundRotation ?? 0,
+  };
+}
+
 /** Rasteriza o PNG da arte a partir da origem já baixada (+ fundo opcional). */
 async function renderPrintPng(
   source: Uint8Array,
@@ -83,6 +95,7 @@ async function renderPrintPng(
     layout.dpi,
     req.options,
     backgroundBytes,
+    backgroundOpts(req),
   );
   const svg = buildLayoutSvg(
     layout,

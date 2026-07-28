@@ -2,12 +2,14 @@ export type { PrintSpec } from './print-spec';
 export type {
   EditorTransform,
   BackgroundImageRef,
+  Framing,
   ResolutionTier,
   ImageFilters,
   ImageEffect,
 } from './editor';
 export {
   DEFAULT_TRANSFORM,
+  DEFAULT_BACKGROUND_FRAMING,
   DEFAULT_FILTERS,
   filterString,
   filtersEqual,
