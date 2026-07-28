@@ -29,6 +29,15 @@
     </div>
     <app-resolution-badge [dpi]="dpi()" [dense]="true" />
 
+    <!-- Dica de posicionamento do FUNDO, em destaque logo abaixo da prévia,
+         quando a aba "Fundo" está ativa e os gestos movem o fundo. -->
+    @if (bgLayer() === 'background') {
+      <p class="dialog__poshint" role="status">
+        Arraste na prévia para posicionar o fundo; role para dar zoom; colchetes
+        giram.
+      </p>
+    }
+
     <div class="dialog__tabs" role="tablist" aria-label="Modo de edição">
       @for (t of tabs; track t.id) {
         <button
@@ -125,10 +134,6 @@
             </button>
           </div>
 
-          <p class="bgsection__hint">
-            Arraste na prévia para posicionar o fundo; role para dar zoom;
-            colchetes giram.
-          </p>
           <button
             type="button"
             class="btn btn--ghost"
