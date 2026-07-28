@@ -30,6 +30,11 @@ export const routes: Routes = [
         loadChildren: () => import('./features/batch/batch.routes'),
       },
       {
+        path: 'impressao',
+        data: { print: true },
+        loadChildren: () => import('./features/print/print.routes'),
+      },
+      {
         path: 'mockup',
         data: { contextual: true },
         loadChildren: () =>

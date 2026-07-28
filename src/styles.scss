@@ -295,6 +295,23 @@ h2,
   padding: var(--sp-6);
 }
 
+/* Impressão — some com o "chrome" do app (Área de Impressão) ------------- */
+@media print {
+  .shell__header,
+  .shell__context {
+    display: none !important;
+  }
+
+  .shell,
+  .shell__main {
+    display: block;
+    inline-size: auto;
+    max-inline-size: none;
+    margin: 0;
+    padding: 0;
+  }
+}
+
 /* Campos de formulário -------------------------------------------------- */
 .field {
   display: flex;

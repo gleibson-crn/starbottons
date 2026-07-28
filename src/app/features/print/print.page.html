@@ -1,0 +1,152 @@
+<section class="print" aria-labelledby="print-title">
+  <div class="print__intro">
+    <h1 id="print-title">Impressão</h1>
+    <p class="print__lead">
+      Monte uma folha A4 com as artes já geradas no lote. Escolha a quantidade de
+      cada arte; o sistema organiza os bottons (tamanhos mistos) de forma
+      otimizada. Depois é só imprimir — o diálogo do navegador também salva em PDF.
+    </p>
+  </div>
+
+  @if (readyArts().length === 0) {
+    <div class="card print__empty" role="status">
+      <p>Você ainda não tem nenhuma arte pronta para imprimir.</p>
+      <a class="btn btn--primary" routerLink="/app/batch">Gerar artes no lote</a>
+    </div>
+  } @else {
+    <div class="print__layout">
+      <div class="print__panel">
+        <section class="card" aria-labelledby="ready-title">
+          <h2 id="ready-title" class="print__h2">Artes prontas</h2>
+          <ul class="print__ready" role="list">
+            @for (art of readyArts(); track art.key) {
+              <li class="ready-item">
+                <img
+                  class="ready-item__thumb"
+                  [src]="art.url"
+                  [alt]="'Arte de ' + art.name + ' (' + art.sizeMm + ' mm)'"
+                />
+                <div class="ready-item__info">
+                  <span class="ready-item__name">{{ art.name }}</span>
+                  <span class="ready-item__size">{{ art.sizeMm }} mm</span>
+                </div>
+                <div class="ready-item__actions">
+                  <label class="ready-item__qty">
+                    <span class="sr-only">Quantidade de {{ art.name }} ({{ art.sizeMm }} mm)</span>
+                    <input
+                      class="field__control ready-item__qty-input"
+                      type="number"
+                      inputmode="numeric"
+                      min="1"
+                      max="999"
+                      step="1"
+                      [value]="qtyFor(art.key)"
+                      (input)="onDraftInput(art.key, $event)"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    class="btn btn--primary ready-item__add"
+                    (click)="addToSheet(art)"
+                    [attr.aria-label]="'Adicionar ' + art.name + ' (' + art.sizeMm + ' mm) à folha'"
+                  >
+                    Adicionar
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+
+        <section class="card" aria-labelledby="added-title">
+          <h2 id="added-title" class="print__h2">Na folha</h2>
+          @if (lines().length === 0) {
+            <p class="print__hint">Nenhum botton adicionado ainda.</p>
+          } @else {
+            <ul class="print__added" role="list">
+              @for (line of lines(); track line.key) {
+                <li class="added-item">
+                  <img
+                    class="added-item__thumb"
+                    [src]="line.url"
+                    [alt]="'Arte de ' + line.name + ' (' + line.sizeMm + ' mm)'"
+                  />
+                  <div class="added-item__info">
+                    <span class="added-item__name">{{ line.name }}</span>
+                    <span class="added-item__size">{{ line.sizeMm }} mm</span>
+                  </div>
+                  <label class="added-item__qty">
+                    <span class="sr-only">Quantidade de {{ line.name }} ({{ line.sizeMm }} mm) na folha</span>
+                    <input
+                      class="field__control added-item__qty-input"
+                      type="number"
+                      inputmode="numeric"
+                      min="1"
+                      max="999"
+                      step="1"
+                      [value]="line.quantity"
+                      (input)="setLineQty(line.key, $event)"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    class="btn btn--ghost added-item__remove"
+                    (click)="removeLine(line.key)"
+                    [attr.aria-label]="'Remover ' + line.name + ' (' + line.sizeMm + ' mm) da folha'"
+                  >
+                    Remover
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        <div class="print__meta" aria-live="polite">
+          @if (hasSheet()) {
+            <p class="print__stat">
+              {{ packed().totalPieces }} peça(s) em {{ pageCount() }} página(s) —
+              aproveitamento de {{ packed().utilizationPct }}%.
+            </p>
+          }
+          <button
+            type="button"
+            class="btn btn--primary print__do"
+            (click)="print()"
+            [disabled]="!hasSheet()"
+          >
+            Imprimir
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="print__preview"
+        role="region"
+        aria-label="Prévia das folhas A4 para impressão"
+      >
+        @if (hasSheet()) {
+          @for (page of packed().pages; track $index) {
+            <div class="sheet-frame">
+              <div class="sheet" aria-hidden="false">
+                @for (piece of page; track $index) {
+                  <img
+                    class="sheet__piece"
+                    [src]="piece.url"
+                    [alt]="pieceAlt(piece)"
+                    [style.left.mm]="piece.xMm"
+                    [style.top.mm]="piece.yMm"
+                    [style.width.mm]="piece.artMm"
+                    [style.height.mm]="piece.artMm"
+                  />
+                }
+              </div>
+            </div>
+          }
+        } @else {
+          <p class="print__hint">Adicione artes para ver a prévia da folha.</p>
+        }
+      </div>
+    </div>
+  }
+</section>

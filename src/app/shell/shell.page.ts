@@ -44,6 +44,8 @@ export class ShellPage {
   readonly manageMode = signal(false);
   /** `true` na área curadora de fundos. */
   readonly manageBackgroundsMode = signal(false);
+  /** `true` na Área de Impressão. */
+  readonly printMode = signal(false);
 
   constructor() {
     this.syncContext();
@@ -67,5 +69,6 @@ export class ShellPage {
     this.contextualMode.set(data?.['contextual'] === true);
     this.manageMode.set(data?.['manage'] === true);
     this.manageBackgroundsMode.set(data?.['manageBackgrounds'] === true);
+    this.printMode.set(data?.['print'] === true);
   }
 }

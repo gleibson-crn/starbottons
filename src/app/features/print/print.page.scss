@@ -1,0 +1,220 @@
+:host {
+  display: block;
+}
+
+.print__intro {
+  margin-block-end: var(--sp-6);
+}
+
+.print__lead {
+  margin: 0;
+  color: var(--color-text-muted);
+  max-inline-size: 70ch;
+}
+
+.print__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-4);
+}
+
+.print__layout {
+  display: grid;
+  gap: var(--sp-6);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 960px) {
+  .print__layout {
+    grid-template-columns: minmax(320px, 420px) 1fr;
+    align-items: start;
+  }
+}
+
+.print__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.print__h2 {
+  font-size: var(--fs-lg);
+  margin-block-end: var(--sp-4);
+}
+
+.print__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* --- Listas (artes prontas / na folha) --------------------------------- */
+.print__ready,
+.print__added {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.ready-item,
+.added-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  flex-wrap: wrap;
+}
+
+.ready-item__thumb,
+.added-item__thumb {
+  inline-size: 48px;
+  block-size: 48px;
+  object-fit: contain;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+}
+
+.ready-item__info,
+.added-item__info {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 8rem;
+  min-inline-size: 0;
+}
+
+.ready-item__name,
+.added-item__name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ready-item__size,
+.added-item__size {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.ready-item__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.ready-item__qty-input,
+.added-item__qty-input {
+  inline-size: 4.5rem;
+  text-align: center;
+}
+
+.print__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  align-items: flex-start;
+}
+
+.print__stat {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* --- Prévia da folha ---------------------------------------------------- */
+.print__preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  align-items: center;
+}
+
+/* Escala visual (NÃO afeta o tamanho impresso): a moldura tem o tamanho já
+ * reduzido e a folha em mm é reduzida por transform. */
+.sheet-frame {
+  --preview-scale: 0.42;
+  inline-size: calc(210mm * var(--preview-scale));
+  block-size: calc(297mm * var(--preview-scale));
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+@media (min-width: 640px) {
+  .sheet-frame {
+    --preview-scale: 0.6;
+  }
+}
+
+@media (min-width: 1280px) {
+  .sheet-frame {
+    --preview-scale: 0.72;
+  }
+}
+
+.sheet {
+  position: relative;
+  inline-size: 210mm;
+  block-size: 297mm;
+  background: #fff;
+  transform: scale(var(--preview-scale));
+  transform-origin: top left;
+}
+
+.sheet__piece {
+  position: absolute;
+  object-fit: contain;
+}
+
+/* --- Impressão física --------------------------------------------------- */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  /* Some com tudo que não é folha. */
+  .print__intro,
+  .print__panel,
+  .print__hint {
+    display: none !important;
+  }
+
+  .print__layout {
+    display: block;
+  }
+
+  .print__preview {
+    display: block;
+    gap: 0;
+  }
+
+  /* A folha volta ao tamanho real, uma por página, sem moldura/sombra. */
+  .sheet-frame {
+    inline-size: auto;
+    block-size: auto;
+    overflow: visible;
+    box-shadow: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .sheet {
+    transform: none;
+    box-shadow: none;
+    margin: 0;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .sheet-frame:last-child .sheet {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}

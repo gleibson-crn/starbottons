@@ -11,6 +11,13 @@
       >Novo botton</a>
       <a
         class="shell__nav-link"
+        routerLink="/app/impressao"
+        routerLinkActive="is-active"
+        #impressaoLink="routerLinkActive"
+        [attr.aria-current]="impressaoLink.isActive ? 'page' : null"
+      >Impressão</a>
+      <a
+        class="shell__nav-link"
         routerLink="/app/mockups"
         routerLinkActive="is-active"
         #mockupsLink="routerLinkActive"
@@ -27,7 +34,7 @@
     <button type="button" class="btn btn--ghost" (click)="logout()">Sair</button>
   </header>
 
-  @if (batchMode() || contextualMode() || manageMode() || manageBackgroundsMode()) {
+  @if (batchMode() || contextualMode() || manageMode() || manageBackgroundsMode() || printMode()) {
     <div class="shell__context">
       @if (batchMode()) {
         <p class="shell__batch-label">Processamento em lote</p>
@@ -35,6 +42,8 @@
         <p class="shell__batch-label">Aplicar em cenário</p>
       } @else if (manageMode()) {
         <p class="shell__batch-label">Curadoria de mockups</p>
+      } @else if (printMode()) {
+        <p class="shell__batch-label">Área de impressão</p>
       } @else {
         <p class="shell__batch-label">Curadoria de fundos</p>
       }

@@ -52,19 +52,20 @@ describe('ShellPage — menu superior', () => {
     const labels = links(root).map((a) => a.textContent?.trim());
     expect(labels).toEqual([
       'Novo botton',
+      'Impressão',
       'Curadoria de mockups',
       'Curadoria de fundos',
     ]);
   });
 
   it('marca aria-current="page" no link de Upload quando ativo', async () => {
-    const [upload, mockups] = links(await renderAt('/app/upload'));
+    const [upload, , mockups] = links(await renderAt('/app/upload'));
     expect(upload.getAttribute('aria-current')).toBe('page');
     expect(mockups.getAttribute('aria-current')).toBeNull();
   });
 
   it('marca aria-current="page" na Curadoria quando ativa', async () => {
-    const [upload, mockups] = links(await renderAt('/app/mockups'));
+    const [upload, , mockups] = links(await renderAt('/app/mockups'));
     expect(mockups.getAttribute('aria-current')).toBe('page');
     expect(upload.getAttribute('aria-current')).toBeNull();
   });
