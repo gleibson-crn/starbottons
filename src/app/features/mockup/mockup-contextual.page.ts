@@ -5,9 +5,13 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
-import { WorkflowStore } from '../../core/workflow';
-import { DEFAULT_TRANSFORM, type EditorTransform } from '../../shared/types';
+import { ActivatedRoute, Router } from '@angular/router';
+import {
+  DEFAULT_TRANSFORM,
+  type EditorTransform,
+  type Framing,
+  type PrintSpec,
+} from '../../shared/types';
 import {
   DownloadButton,
   mockupToBlob,
@@ -15,9 +19,11 @@ import {
   ToastService,
   type MockupSprite,
 } from '../../shared/ui';
-import { loadImage } from '../../shared/utils';
+import { BatchStore, largestReadySize, type BatchItem } from '../../core/batch';
+import { fallbackSpec, loadImage } from '../../shared/utils';
 import { composeContextual } from './contextual-compose';
 import { ContextualTemplateService, type SceneTemplate } from './contextual-template.service';
+import { bgFraming } from './item-arts';
 import { DEFAULT_SCENE_TARGET, type SceneTarget } from './scene-target';
 import { SaveTemplateDialog } from './save-template-dialog/save-template-dialog';
 import { SceneControls } from './scene-controls/scene-controls';
@@ -28,10 +34,11 @@ import { SourcePicker } from './source-picker/source-picker';
 const PREVIEW_RADIUS = 640;
 
 /**
- * MockupContextualPage — aplica a arte do botton (sprite renderizado do
- * WorkflowStore) sobre uma foto de cenário. Fases: empty (escolher cena),
- * composing (posicionar + exportar), saving (diálogo de template). O guard
- * garante upload + spec em memória.
+ * MockupContextualPage — aplica a arte de uma imagem do LOTE (sprite FIEL:
+ * cor + fundo + arte com filtros, ADR-017) sobre uma foto de cenário. Lê o item
+ * por `:itemId` no `BatchStore` e usa o MAIOR tamanho pronto p/ a resolução.
+ * Fases: empty (escolher cena), composing (posicionar + exportar), saving
+ * (diálogo de template). O guard garante item + ≥1 arte pronta.
  */
 @Component({
   selector: 'app-mockup-contextual-page',
@@ -41,12 +48,17 @@ const PREVIEW_RADIUS = 640;
   styleUrl: './mockup-contextual.page.scss',
 })
 export class MockupContextualPage {
-  private readonly store = inject(WorkflowStore);
+  private readonly store = inject(BatchStore);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   private readonly templates = inject(ContextualTemplateService);
 
+  private item: BatchItem | null = null;
   private bottonImage: HTMLImageElement | null = null;
+  private bgImage: HTMLImageElement | null = null;
+  private bgTransform: Framing | null = null;
+  private spec: PrintSpec | null = null;
   private sceneUrl: string | null = null;
 
   readonly sprite = signal<MockupSprite | null>(null);
@@ -133,39 +145,64 @@ export class MockupContextualPage {
   }
 
   async back(): Promise<void> {
-    await this.router.navigate(['/app/upload']);
+    await this.router.navigate(['/app/batch']);
   }
 
   private compose(): HTMLCanvasElement | null {
     const scene = this.scene();
-    const spec = this.store.spec();
-    if (!scene || !this.bottonImage || !spec) {
+    if (!scene || !this.bottonImage || !this.spec || !this.item) {
       return null;
     }
     return composeContextual({
       scene,
       bottonImage: this.bottonImage,
-      bottonTransform: this.store.transform(),
-      spec,
+      bottonTransform: this.item.transform,
+      spec: this.spec,
       target: this.target(),
+      filters: this.item.filters,
+      backgroundImage: this.bgImage,
+      backgroundTransform: this.bgTransform,
     });
   }
 
   private async hydrateBotton(): Promise<void> {
-    const upload = this.store.upload();
-    const spec = this.store.spec();
-    if (!upload || !spec) {
+    const itemId = this.route.snapshot.paramMap.get('itemId');
+    const item = itemId ? this.store.items().find((i) => i.id === itemId) ?? null : null;
+    const size = item ? largestReadySize(item) : null;
+    const spec = size ? fallbackSpec('round', size) : null;
+    if (!item || !spec) {
+      await this.router.navigate(['/app/batch']);
       return;
     }
-    this.bottonImage = await loadImage(upload.previewUrl);
+    this.item = item;
+    this.spec = spec;
+    this.bgTransform = bgFraming(item.transform.backgroundImage);
+    this.bottonImage = await loadImage(item.previewUrl);
+    this.bgImage = await this.loadBackground(item);
     this.sprite.set(
       renderMockupSprite({
         image: this.bottonImage,
-        transform: this.store.transform(),
+        transform: item.transform,
         spec,
         targetRadiusPx: PREVIEW_RADIUS,
+        filters: item.filters,
+        backgroundImage: this.bgImage,
+        backgroundTransform: this.bgTransform,
       }),
     );
+  }
+
+  /** Carrega a imagem de fundo do botton (se houver); falha → sem fundo. */
+  private async loadBackground(item: BatchItem): Promise<HTMLImageElement | null> {
+    const ref = item.transform.backgroundImage;
+    if (!ref) {
+      return null;
+    }
+    try {
+      return await loadImage(ref.url);
+    } catch {
+      return null;
+    }
   }
 
   private async loadScene(url: string): Promise<void> {

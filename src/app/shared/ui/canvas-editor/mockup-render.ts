@@ -1,5 +1,6 @@
-import type { EditorTransform, PrintSpec } from '../../types';
-import { computeLayout, imageDrawSize } from '../../utils';
+import type { EditorTransform, Framing, ImageFilters, PrintSpec } from '../../types';
+import { computeLayout } from '../../utils';
+import { drawBottonFace } from './botton-face';
 
 /** Parâmetros para compor o mockup (face visível) de um botton. */
 export interface MockupParams {
@@ -8,6 +9,12 @@ export interface MockupParams {
   readonly spec: PrintSpec;
   /** Lado do canvas (deve ser o mesmo do editor p/ os offsets baterem). */
   readonly side: number;
+  /** Filtros aplicados APENAS à arte (ausência = sem filtro). */
+  readonly filters?: ImageFilters;
+  /** Imagem de fundo (por cima da cor, por baixo da arte). */
+  readonly backgroundImage?: HTMLImageElement | null;
+  /** Enquadramento do fundo (ausente/`null` = neutro, cover centrado). */
+  readonly backgroundTransform?: Framing | null;
 }
 
 /**
@@ -28,28 +35,32 @@ export function renderMockup(p: MockupParams): HTMLCanvasElement {
   return canvas;
 }
 
+/**
+ * Face FIEL ao editor: recorta ao CÍRCULO DE CORTE (fora fica transparente — sem
+ * cantos brancos nem linha de corte) e delega a composição (cor → fundo → arte
+ * com filtros) ao helper compartilhado `drawBottonFace`. Mesma matemática do
+ * preview do editor (ADR-017).
+ */
 function drawFace(
   ctx: CanvasRenderingContext2D,
   p: MockupParams,
   center: number,
   cutR: number,
 ): void {
-  const bleedDiameter = computeLayout(p.spec, p.side).bleedR * 2;
-  const { drawW, drawH } = imageDrawSize(
-    p.image.naturalWidth,
-    p.image.naturalHeight,
-    bleedDiameter,
-    p.transform.scale,
-  );
   ctx.save();
   ctx.beginPath();
   ctx.arc(center, center, cutR, 0, Math.PI * 2);
   ctx.clip();
-  ctx.fillStyle = p.transform.background;
-  ctx.fillRect(0, 0, p.side, p.side);
-  ctx.translate(center + p.transform.offset.x, center + p.transform.offset.y);
-  ctx.rotate((p.transform.rotation * Math.PI) / 180);
-  ctx.drawImage(p.image, -drawW / 2, -drawH / 2, drawW, drawH);
+  drawBottonFace({
+    ctx,
+    side: p.side,
+    layout: computeLayout(p.spec, p.side),
+    image: p.image,
+    transform: p.transform,
+    filters: p.filters,
+    backgroundImage: p.backgroundImage,
+    backgroundTransform: p.backgroundTransform,
+  });
   ctx.restore();
 }
 
@@ -139,9 +150,15 @@ export interface SpriteParams {
   readonly spec: PrintSpec;
   /** Raio (px) que o disco terá na cena — dimensiona o sprite p/ nitidez. */
   readonly targetRadiusPx: number;
+  /** Filtros aplicados APENAS à arte (ausência = sem filtro). */
+  readonly filters?: ImageFilters;
+  /** Imagem de fundo (por cima da cor, por baixo da arte). */
+  readonly backgroundImage?: HTMLImageElement | null;
+  /** Enquadramento do fundo (ausente/`null` = neutro, cover centrado). */
+  readonly backgroundTransform?: Framing | null;
 }
 
-/** Rende o sprite do botton dimensionado a partir do raio-alvo (reusa renderMockup). */
+/** Rende o sprite FIEL do botton dimensionado a partir do raio-alvo (reusa renderMockup). */
 export function renderMockupSprite(p: SpriteParams): MockupSprite {
   const side = spriteSide(p.targetRadiusPx, p.spec);
   const canvas = renderMockup({
@@ -149,6 +166,9 @@ export function renderMockupSprite(p: SpriteParams): MockupSprite {
     transform: p.transform,
     spec: p.spec,
     side,
+    filters: p.filters,
+    backgroundImage: p.backgroundImage,
+    backgroundTransform: p.backgroundTransform,
   });
   const layout = computeLayout(p.spec, side);
   return {

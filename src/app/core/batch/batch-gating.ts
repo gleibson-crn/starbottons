@@ -68,6 +68,23 @@ export function largestSelectedSize(item: BatchItem): BottonSize | null {
 }
 
 /**
+ * `true` se o item existe e tem ≥1 arte GERADA com sucesso (`status === 'ready'`).
+ * Pré-requisito para "Aplicar em cenário" (Mockup Contextual, ADR-017).
+ */
+export function hasReadyArt(item: BatchItem | null | undefined): boolean {
+  return !!item && BOTTON_SIZES.some((s) => item.arts[s]?.status === 'ready');
+}
+
+/**
+ * Maior tamanho com arte PRONTA (define a resolução do sprite fiel do mockup);
+ * `null` se nenhuma arte está pronta. `BOTTON_SIZES` é crescente → último = maior.
+ */
+export function largestReadySize(item: BatchItem): BottonSize | null {
+  const ready = BOTTON_SIZES.filter((s) => item.arts[s]?.status === 'ready');
+  return ready.length > 0 ? ready[ready.length - 1] : null;
+}
+
+/**
  * DPI do PIOR tier entre os tamanhos SELECIONADOS = o do MAIOR tamanho
  * selecionado (arte maior → menor densidade). `null` se nada selecionado.
  */

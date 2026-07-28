@@ -84,3 +84,25 @@ describe('BatchImageCard — falhas por arte', () => {
     expect(cmp.failures()).toEqual([]);
   });
 });
+
+describe('BatchImageCard — Aplicar em cenário', () => {
+  it('habilita quando há ≥1 arte pronta', () => {
+    const cmp = cardWith(makeItem({ arts: { 44: art({ status: 'ready', printPngUrl: 'png' }) } }));
+    expect(cmp.canApplyScene()).toBe(true);
+  });
+
+  it('permanece desabilitado sem nenhuma arte pronta (idle/falha)', () => {
+    const cmp = cardWith(
+      makeItem({ arts: { 44: art({ status: 'failed' }), 58: art({ status: 'generating' }) } }),
+    );
+    expect(cmp.canApplyScene()).toBe(false);
+  });
+
+  it('emite applyScene ao acionar', () => {
+    const cmp = cardWith(makeItem({ arts: { 32: art({ status: 'ready', printPngUrl: 'png' }) } }));
+    const spy = vi.fn();
+    cmp.applyScene.subscribe(spy);
+    cmp.applyScene.emit();
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+});

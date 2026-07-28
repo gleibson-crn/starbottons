@@ -10,6 +10,7 @@ import { DownloadButton, ResolutionBadge } from '../../../shared/ui';
 import {
   BOTTON_SIZES,
   deriveItemStatus,
+  hasReadyArt,
   worstSelectedDpi,
   artFileName,
   isNameValid,
@@ -67,6 +68,8 @@ export class BatchImageCard {
   readonly nameChanged = output<string>();
   readonly transformChanged = output<BatchEditResult>();
   readonly retried = output<void>();
+  /** Pedido de abrir o Mockup Contextual desta imagem (grid → /app/mockup/:id). */
+  readonly applyScene = output<void>();
 
   readonly editing = signal(false);
 
@@ -82,6 +85,8 @@ export class BatchImageCard {
   readonly showRetry = computed(() =>
     ['failed', 'partial'].includes(this.status()),
   );
+  /** Habilita "Aplicar em cenário": exige ≥1 arte pronta nesta imagem. */
+  readonly canApplyScene = computed(() => hasReadyArt(this.item()));
 
   readonly downloads = computed<ReadyDownload[]>(() => {
     const item = this.item();

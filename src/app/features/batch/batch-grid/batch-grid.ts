@@ -5,7 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ToastService } from '../../../shared/ui';
 import { BatchStore, ZipExportService, type BottonSize } from '../../../core/batch';
 import { BatchProgress } from '../batch-progress/batch-progress';
@@ -33,6 +33,7 @@ export class BatchGrid {
   readonly store = inject(BatchStore);
   private readonly zip = inject(ZipExportService);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
 
   readonly items = this.store.items;
   readonly totalArtes = this.store.totalArtes;
@@ -95,6 +96,10 @@ export class BatchGrid {
 
   onRetry(id: string): void {
     void this.store.retryItem(id);
+  }
+
+  onApplyScene(id: string): void {
+    void this.router.navigate(['/app/mockup', id]);
   }
 
   private reportZip(zipped: number, skipped: number): void {

@@ -1,50 +1,68 @@
 import { runInInjectionContext, Injector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
-import { WorkflowStore } from '../../core/workflow';
+import { ActivatedRouteSnapshot, Router } from '@angular/router';
+import { BatchStore, IDLE_ART, type BatchItem, type BottonSize } from '../../core/batch';
 import { ToastService } from '../../shared/ui';
 import { mockupGuard } from './mockup.guard';
 
-const URL_TREE = { __urlTree: '/app/upload' } as unknown;
+const URL_TREE = { __urlTree: '/app/batch' } as unknown;
 
-function makeStore(upload: boolean, selection: boolean): Partial<WorkflowStore> {
-  return { hasUpload: () => upload, hasSelection: () => selection } as Partial<WorkflowStore>;
+/** Item mínimo do lote com um mapa de status de artes por tamanho. */
+function makeItem(id: string, arts: Partial<Record<BottonSize, 'ready' | 'failed' | 'idle'>>): BatchItem {
+  const artMap: BatchItem['arts'] = {};
+  for (const [size, status] of Object.entries(arts)) {
+    (artMap as Record<number, unknown>)[Number(size)] = { ...IDLE_ART, status };
+  }
+  return { id, arts: artMap } as unknown as BatchItem;
 }
 
-function run(store: Partial<WorkflowStore>, toast: { show: unknown }) {
+function routeWith(itemId: string | null): ActivatedRouteSnapshot {
+  return {
+    paramMap: { get: (k: string) => (k === 'itemId' ? itemId : null) },
+  } as unknown as ActivatedRouteSnapshot;
+}
+
+function run(items: BatchItem[], itemId: string | null, toast: { show: unknown }) {
+  const store = { items: () => items } as Partial<BatchStore>;
   const router = { createUrlTree: () => URL_TREE } as unknown as Router;
   TestBed.configureTestingModule({
     providers: [
-      { provide: WorkflowStore, useValue: store },
+      { provide: BatchStore, useValue: store },
       { provide: Router, useValue: router },
       { provide: ToastService, useValue: toast },
     ],
   });
   const injector = TestBed.inject(Injector);
   return runInInjectionContext(injector, () =>
-    (mockupGuard as unknown as () => unknown)(),
+    (mockupGuard as unknown as (r: ActivatedRouteSnapshot) => unknown)(routeWith(itemId)),
   );
 }
 
-describe('mockupGuard (não-regressão)', () => {
-  it('libera quando há upload E seleção em memória', () => {
+describe('mockupGuard (lote + rota)', () => {
+  it('libera quando o item da rota tem ≥1 arte pronta', () => {
     const toast = { show: vi.fn() };
-    const result = run(makeStore(true, true), toast);
-    expect(result).toBe(true);
+    const items = [makeItem('a', { 44: 'ready', 58: 'failed' })];
+    expect(run(items, 'a', toast)).toBe(true);
     expect(toast.show).not.toHaveBeenCalled();
   });
 
-  it('bloqueia (redireciona + avisa) sem upload', () => {
+  it('bloqueia (redireciona a /app/batch + avisa) quando o item não existe', () => {
     const toast = { show: vi.fn() };
-    const result = run(makeStore(false, true), toast);
-    expect(result).toBe(URL_TREE);
+    const items = [makeItem('a', { 44: 'ready' })];
+    expect(run(items, 'zzz', toast)).toBe(URL_TREE);
     expect(toast.show).toHaveBeenCalled();
   });
 
-  it('bloqueia sem seleção de tamanho', () => {
+  it('bloqueia quando o item existe mas nenhuma arte está pronta', () => {
     const toast = { show: vi.fn() };
-    const result = run(makeStore(true, false), toast);
-    expect(result).toBe(URL_TREE);
+    const items = [makeItem('a', { 44: 'failed', 58: 'idle' })];
+    expect(run(items, 'a', toast)).toBe(URL_TREE);
+    expect(toast.show).toHaveBeenCalled();
+  });
+
+  it('bloqueia quando não há itemId na rota', () => {
+    const toast = { show: vi.fn() };
+    expect(run([], null, toast)).toBe(URL_TREE);
     expect(toast.show).toHaveBeenCalled();
   });
 });

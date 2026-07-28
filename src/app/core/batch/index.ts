@@ -59,6 +59,8 @@ export {
   largestSelectedSize,
   worstSelectedDpi,
   deriveItemStatus,
+  hasReadyArt,
+  largestReadySize,
 } from './batch-gating';
 
 // Nomeação de arquivos das artes

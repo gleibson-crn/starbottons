@@ -1,4 +1,4 @@
-import type { EditorTransform, PrintSpec } from '../../shared/types';
+import type { EditorTransform, Framing, ImageFilters, PrintSpec } from '../../shared/types';
 import {
   renderContextualMockup,
   renderMockupSprite,
@@ -14,6 +14,12 @@ export interface ComposeInput {
   readonly spec: PrintSpec;
   readonly target: SceneTarget;
   readonly lighting?: 'none' | 'multiply-soft';
+  /** Filtros aplicados APENAS à arte (fiel ao editor). */
+  readonly filters?: ImageFilters;
+  /** Imagem de fundo já carregada (por baixo da arte). */
+  readonly backgroundImage?: HTMLImageElement | null;
+  /** Enquadramento do fundo (offset/scale/rotation). */
+  readonly backgroundTransform?: Framing | null;
 }
 
 function naturalDims(scene: HTMLImageElement): { width: number; height: number } {
@@ -28,7 +34,10 @@ function naturalDims(scene: HTMLImageElement): { width: number; height: number }
  * para reuso entre preview (raio de preview) e export (raio natural da cena).
  */
 export function spriteForRadius(
-  input: Pick<ComposeInput, 'bottonImage' | 'bottonTransform' | 'spec'>,
+  input: Pick<
+    ComposeInput,
+    'bottonImage' | 'bottonTransform' | 'spec' | 'filters' | 'backgroundImage' | 'backgroundTransform'
+  >,
   targetRadiusPx: number,
 ): MockupSprite {
   return renderMockupSprite({
@@ -36,6 +45,9 @@ export function spriteForRadius(
     transform: input.bottonTransform,
     spec: input.spec,
     targetRadiusPx,
+    filters: input.filters,
+    backgroundImage: input.backgroundImage,
+    backgroundTransform: input.backgroundTransform,
   });
 }
 

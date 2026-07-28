@@ -1,5 +1,6 @@
 import { DEFAULT_TRANSFORM } from '../../types';
-import type { PrintSpec } from '../../types';
+import type { EditorTransform, ImageFilters, PrintSpec } from '../../types';
+import { computeLayout } from '../../utils';
 import {
   renderContextualMockup,
   renderMockup,
@@ -134,4 +135,116 @@ describe('mockup-render (contextual)', () => {
       discCenter: { x: 150, y: 150 },
     };
   }
+});
+
+// ---------------------------------------------------------------------------
+// Sprite FIEL (ADR-017): cor + fundo + arte com filtros, transparente fora do
+// círculo de corte. Mock que registra `filter`/`fillStyle` e o raio dos `arc`.
+// ---------------------------------------------------------------------------
+
+interface FaithOp {
+  readonly op: string;
+  readonly filter: string;
+  readonly fillStyle: string;
+  readonly args?: number[];
+}
+
+function makeFaithfulCtx(ops: FaithOp[]): CanvasRenderingContext2D {
+  const grad = { addColorStop: (): void => undefined };
+  const rec = (op: string, args?: number[]): void => {
+    ops.push({ op, filter: ctx.filter, fillStyle: ctx.fillStyle, args });
+  };
+  const ctx = {
+    filter: 'none',
+    fillStyle: '',
+    save: () => undefined,
+    restore: () => undefined,
+    beginPath: () => undefined,
+    clip: () => undefined,
+    translate: (x: number, y: number) => rec('translate', [x, y]),
+    rotate: (r: number) => rec('rotate', [r]),
+    arc: (x: number, y: number, r: number) => rec('arc', [x, y, r]),
+    fillRect: () => rec('fillRect'),
+    drawImage: (_i: unknown, dx: number, dy: number, dw: number, dh: number) =>
+      rec('drawImage', [dx, dy, dw, dh]),
+    createRadialGradient: () => grad,
+  } as unknown as CanvasRenderingContext2D & { filter: string; fillStyle: string };
+  return ctx;
+}
+
+const RED: EditorTransform = { ...DEFAULT_TRANSFORM, background: '#ff0000' };
+const VIVID: ImageFilters = { brightness: 1, contrast: 1.2, saturate: 1.4, effect: 'none' };
+
+describe('renderMockup — sprite fiel (cor/fundo/filtros + recorte)', () => {
+  let ops: FaithOp[];
+
+  beforeEach(() => {
+    ops = [];
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      makeFaithfulCtx(ops) as unknown as ReturnType<HTMLCanvasElement['getContext']>,
+    );
+  });
+
+  it('recorta no CÍRCULO DE CORTE (cutR) → transparente fora do disco', () => {
+    const side = 520;
+    renderMockup({ image: fakeImage(1000, 1000), transform: RED, spec: SPEC, side });
+    const cutR = computeLayout(SPEC, side).cutR;
+    const center = side / 2;
+    expect(ops.some((o) => o.op === 'arc' && o.args?.[2] === cutR)).toBe(true);
+    expect(ops.every((o) => o.op !== 'arc' || o.args?.[0] === center)).toBe(true);
+  });
+
+  it('pinta a COR de fundo do transform (fillRect sem filtro)', () => {
+    renderMockup({ image: fakeImage(1000, 1000), transform: RED, spec: SPEC, side: 520 });
+    const fill = ops.find((o) => o.op === 'fillRect');
+    expect(fill?.fillStyle).toBe('#ff0000');
+    expect(fill?.filter).toBe('none');
+  });
+
+  it('desenha a imagem de fundo SOB a arte (2 drawImage, fundo primeiro)', () => {
+    renderMockup({
+      image: fakeImage(1000, 1000),
+      transform: RED,
+      spec: SPEC,
+      side: 520,
+      backgroundImage: fakeImage(400, 200),
+    });
+    expect(ops.filter((o) => o.op === 'drawImage').length).toBe(2);
+    const fillRect = ops.findIndex((o) => o.op === 'fillRect');
+    const firstDraw = ops.findIndex((o) => o.op === 'drawImage');
+    expect(fillRect).toBeLessThan(firstDraw);
+  });
+
+  it('aplica os filtros APENAS na arte', () => {
+    renderMockup({
+      image: fakeImage(1000, 1000),
+      transform: RED,
+      spec: SPEC,
+      side: 520,
+      filters: VIVID,
+    });
+    expect(ops.find((o) => o.op === 'drawImage')?.filter).toBe(
+      'brightness(1) contrast(1.2) saturate(1.4)',
+    );
+    expect(ops.find((o) => o.op === 'fillRect')?.filter).toBe('none');
+  });
+
+  it('renderMockupSprite propaga fundo + filtros ao sprite', () => {
+    const s = renderMockupSprite({
+      image: fakeImage(1200, 1200),
+      transform: RED,
+      spec: SPEC,
+      targetRadiusPx: 200,
+      filters: VIVID,
+      backgroundImage: fakeImage(400, 200),
+    });
+    expect(s.discRadiusPx).toBeGreaterThan(0);
+    expect(ops.filter((o) => o.op === 'drawImage').length).toBe(2);
+    // Com fundo, o 1º drawImage é o fundo (sem filtro); a ARTE (com filtro) é o 2º.
+    expect(
+      ops.some(
+        (o) => o.op === 'drawImage' && o.filter === 'brightness(1) contrast(1.2) saturate(1.4)',
+      ),
+    ).toBe(true);
+  });
 });

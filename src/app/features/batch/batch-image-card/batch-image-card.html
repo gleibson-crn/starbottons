@@ -85,6 +85,20 @@
       >
         Ajustar
       </button>
+      <button
+        type="button"
+        class="btn btn--ghost"
+        [disabled]="!canApplyScene() || busy()"
+        [attr.title]="canApplyScene() ? null : 'Gere ao menos um tamanho para aplicar em cenário'"
+        [attr.aria-label]="
+          canApplyScene()
+            ? 'Aplicar em cenário'
+            : 'Aplicar em cenário — gere ao menos um tamanho para habilitar'
+        "
+        (click)="applyScene.emit()"
+      >
+        Aplicar em cenário
+      </button>
       @if (showRetry()) {
         <button
           type="button"
