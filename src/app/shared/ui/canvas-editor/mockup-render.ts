@@ -7,8 +7,10 @@ export interface MockupParams {
   readonly image: HTMLImageElement;
   readonly transform: EditorTransform;
   readonly spec: PrintSpec;
-  /** Lado do canvas (deve ser o mesmo do editor p/ os offsets baterem). */
+  /** Lado do canvas de destino (pode diferir do editor no sprite do mockup). */
   readonly side: number;
+  /** Lado (px) em que os offsets foram capturados no editor (escala do offset). */
+  readonly editorSide: number;
   /** Filtros aplicados APENAS à arte (ausência = sem filtro). */
   readonly filters?: ImageFilters;
   /** Imagem de fundo (por cima da cor, por baixo da arte). */
@@ -54,6 +56,7 @@ function drawFace(
   drawBottonFace({
     ctx,
     side: p.side,
+    editorSide: p.editorSide,
     layout: computeLayout(p.spec, p.side),
     image: p.image,
     transform: p.transform,
@@ -148,6 +151,8 @@ export interface SpriteParams {
   readonly image: HTMLImageElement;
   readonly transform: EditorTransform;
   readonly spec: PrintSpec;
+  /** Lado (px) em que os offsets foram capturados no editor (escala do offset). */
+  readonly editorSide: number;
   /** Raio (px) que o disco terá na cena — dimensiona o sprite p/ nitidez. */
   readonly targetRadiusPx: number;
   /** Filtros aplicados APENAS à arte (ausência = sem filtro). */
@@ -166,6 +171,7 @@ export function renderMockupSprite(p: SpriteParams): MockupSprite {
     transform: p.transform,
     spec: p.spec,
     side,
+    editorSide: p.editorSide,
     filters: p.filters,
     backgroundImage: p.backgroundImage,
     backgroundTransform: p.backgroundTransform,

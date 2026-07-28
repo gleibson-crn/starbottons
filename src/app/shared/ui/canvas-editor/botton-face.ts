@@ -15,6 +15,13 @@ export interface BottonFaceParams {
   /** Arte do usuário. `null` = só cor + fundo. */
   readonly image: HTMLImageElement | null;
   readonly transform: EditorTransform;
+  /**
+   * Lado (px) em que os OFFSETS (arte e fundo) foram capturados no editor. Os
+   * offsets estão nessa unidade; ao pintar num `side` diferente (ex.: sprite do
+   * mockup), são escalados por `side / editorSide`. Ausente = igual a `side`
+   * (k=1), como no próprio editor.
+   */
+  readonly editorSide?: number;
   /** Filtros aplicados APENAS à arte (ausência = sem filtro). */
   readonly filters?: ImageFilters;
   /** Imagem de fundo (por cima da cor, por baixo da arte). */
@@ -45,6 +52,14 @@ export function drawBottonFace(p: BottonFaceParams): void {
   drawArt(p);
 }
 
+/**
+ * Fator de escala do offset: os offsets vêm em px do `editorSide`; ao pintar num
+ * `side` diferente (sprite do mockup), escala proporcionalmente. `1` no editor.
+ */
+function offsetScale(p: BottonFaceParams): number {
+  return p.editorSide && p.editorSide > 0 ? p.side / p.editorSide : 1;
+}
+
 /** Fundo com o mesmo enquadramento da arte (translate→rotate→drawImage). */
 function drawBackground(p: BottonFaceParams): void {
   const img = p.backgroundImage;
@@ -54,8 +69,9 @@ function drawBackground(p: BottonFaceParams): void {
   const bt = p.backgroundTransform ?? DEFAULT_BACKGROUND_FRAMING;
   const { w, h } = faceDrawSize(p.bgDrawW, p.bgDrawH, img, p.layout, bt.scale);
   const { ctx, layout } = p;
+  const k = offsetScale(p);
   ctx.save();
-  ctx.translate(layout.center + bt.offset.x, layout.center + bt.offset.y);
+  ctx.translate(layout.center + bt.offset.x * k, layout.center + bt.offset.y * k);
   ctx.rotate((bt.rotation * Math.PI) / 180);
   ctx.drawImage(img, -w / 2, -h / 2, w, h);
   ctx.restore();
@@ -69,8 +85,9 @@ function drawArt(p: BottonFaceParams): void {
   }
   const { w, h } = faceDrawSize(p.drawW, p.drawH, img, p.layout, p.transform.scale);
   const { ctx, layout, transform } = p;
+  const k = offsetScale(p);
   ctx.save();
-  ctx.translate(layout.center + transform.offset.x, layout.center + transform.offset.y);
+  ctx.translate(layout.center + transform.offset.x * k, layout.center + transform.offset.y * k);
   ctx.rotate((transform.rotation * Math.PI) / 180);
   const css = p.filters ? filterString(p.filters) : '';
   if (css) {

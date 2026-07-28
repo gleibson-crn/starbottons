@@ -107,6 +107,7 @@ describe('mockup-render (contextual)', () => {
       image: fakeImage(1200, 1200),
       transform: DEFAULT_TRANSFORM,
       spec: SPEC,
+      editorSide: 520,
       targetRadiusPx: 200,
     });
     expect(s.discRadiusPx).toBeGreaterThan(0);
@@ -119,6 +120,7 @@ describe('mockup-render (contextual)', () => {
       image: fakeImage(1000, 1000),
       transform: DEFAULT_TRANSFORM,
       spec: SPEC,
+      editorSide: 520,
       side: 520,
     });
     expect(canvas.width).toBe(520);
@@ -187,7 +189,7 @@ describe('renderMockup — sprite fiel (cor/fundo/filtros + recorte)', () => {
 
   it('recorta no CÍRCULO DE CORTE (cutR) → transparente fora do disco', () => {
     const side = 520;
-    renderMockup({ image: fakeImage(1000, 1000), transform: RED, spec: SPEC, side });
+    renderMockup({ image: fakeImage(1000, 1000), transform: RED, spec: SPEC, side, editorSide: side });
     const cutR = computeLayout(SPEC, side).cutR;
     const center = side / 2;
     expect(ops.some((o) => o.op === 'arc' && o.args?.[2] === cutR)).toBe(true);
@@ -195,7 +197,7 @@ describe('renderMockup — sprite fiel (cor/fundo/filtros + recorte)', () => {
   });
 
   it('pinta a COR de fundo do transform (fillRect sem filtro)', () => {
-    renderMockup({ image: fakeImage(1000, 1000), transform: RED, spec: SPEC, side: 520 });
+    renderMockup({ image: fakeImage(1000, 1000), transform: RED, spec: SPEC, side: 520, editorSide: 520 });
     const fill = ops.find((o) => o.op === 'fillRect');
     expect(fill?.fillStyle).toBe('#ff0000');
     expect(fill?.filter).toBe('none');
@@ -206,6 +208,7 @@ describe('renderMockup — sprite fiel (cor/fundo/filtros + recorte)', () => {
       image: fakeImage(1000, 1000),
       transform: RED,
       spec: SPEC,
+      editorSide: 520,
       side: 520,
       backgroundImage: fakeImage(400, 200),
     });
@@ -220,6 +223,7 @@ describe('renderMockup — sprite fiel (cor/fundo/filtros + recorte)', () => {
       image: fakeImage(1000, 1000),
       transform: RED,
       spec: SPEC,
+      editorSide: 520,
       side: 520,
       filters: VIVID,
     });
@@ -234,6 +238,7 @@ describe('renderMockup — sprite fiel (cor/fundo/filtros + recorte)', () => {
       image: fakeImage(1200, 1200),
       transform: RED,
       spec: SPEC,
+      editorSide: 520,
       targetRadiusPx: 200,
       filters: VIVID,
       backgroundImage: fakeImage(400, 200),

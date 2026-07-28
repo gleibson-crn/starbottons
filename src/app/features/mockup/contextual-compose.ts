@@ -11,6 +11,8 @@ export interface ComposeInput {
   readonly scene: HTMLImageElement;
   readonly bottonImage: HTMLImageElement;
   readonly bottonTransform: EditorTransform;
+  /** Lado (px) em que os offsets foram capturados no editor (escala do offset). */
+  readonly editorSide: number;
   readonly spec: PrintSpec;
   readonly target: SceneTarget;
   readonly lighting?: 'none' | 'multiply-soft';
@@ -36,7 +38,7 @@ function naturalDims(scene: HTMLImageElement): { width: number; height: number }
 export function spriteForRadius(
   input: Pick<
     ComposeInput,
-    'bottonImage' | 'bottonTransform' | 'spec' | 'filters' | 'backgroundImage' | 'backgroundTransform'
+    'bottonImage' | 'bottonTransform' | 'editorSide' | 'spec' | 'filters' | 'backgroundImage' | 'backgroundTransform'
   >,
   targetRadiusPx: number,
 ): MockupSprite {
@@ -44,6 +46,7 @@ export function spriteForRadius(
     image: input.bottonImage,
     transform: input.bottonTransform,
     spec: input.spec,
+    editorSide: input.editorSide,
     targetRadiusPx,
     filters: input.filters,
     backgroundImage: input.backgroundImage,
