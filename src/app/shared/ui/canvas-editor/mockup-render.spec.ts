@@ -26,6 +26,7 @@ function makeMockCtx(rec: Recorded): CanvasRenderingContext2D {
     beginPath: () => undefined,
     clip: () => undefined,
     fill: () => undefined,
+    stroke: () => undefined,
     fillRect: () => undefined,
     clearRect: () => undefined,
     translate: (x: number, y: number) => void rec.translate.push([x, y]),

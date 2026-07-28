@@ -33,7 +33,9 @@ export function renderMockup(p: MockupParams): HTMLCanvasElement {
   }
   const layout = computeLayout(p.spec, p.side);
   drawFace(ctx, p, layout.center, layout.cutR);
-  applyGloss(ctx, layout.center, layout.cutR);
+  // Sem gloss aqui: a sprite é a face PLANA. O volume 3D (sombra/curvatura/aro/
+  // brilho) é aplicado pelo compositor `renderContextualMockup`, evitando efeito
+  // dobrado e permitindo tunar a profundidade sobre a cena.
   return canvas;
 }
 
@@ -64,28 +66,6 @@ function drawFace(
     backgroundImage: p.backgroundImage,
     backgroundTransform: p.backgroundTransform,
   });
-  ctx.restore();
-}
-
-/** Brilho superior-esquerdo + sombra inferior, para aparência de pin/botton. */
-function applyGloss(
-  ctx: CanvasRenderingContext2D,
-  center: number,
-  cutR: number,
-): void {
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(center, center, cutR, 0, Math.PI * 2);
-  ctx.clip();
-  const hi = ctx.createRadialGradient(
-    center - cutR * 0.4, center - cutR * 0.4, cutR * 0.1,
-    center, center, cutR * 1.2,
-  );
-  hi.addColorStop(0, 'hsl(0 0% 100% / 45%)');
-  hi.addColorStop(0.5, 'hsl(0 0% 100% / 0%)');
-  hi.addColorStop(1, 'hsl(240 40% 6% / 40%)');
-  ctx.fillStyle = hi;
-  ctx.fillRect(center - cutR, center - cutR, cutR * 2, cutR * 2);
   ctx.restore();
 }
 
@@ -185,9 +165,11 @@ export function renderMockupSprite(p: SpriteParams): MockupSprite {
 }
 
 /**
- * Compõe o botton sobre a foto de cenário na RESOLUÇÃO NATURAL da cena:
- * fundo → sombra de contato → disco (translate/rotate/scale/drawImage) →
- * (opcional) iluminação multiply-soft clipada ao disco.
+ * Compõe o botton sobre a foto de cenário na RESOLUÇÃO NATURAL da cena, com
+ * PROFUNDIDADE de pin-back real: sombra projetada (descola da roupa) → disco →
+ * sombreamento de curvatura + aro nas BORDAS → brilho glossy especular →
+ * (opcional) iluminação multiply-soft. Assim o botton deixa de parecer adesivo
+ * plano.
  */
 export function renderContextualMockup(p: ContextualParams): HTMLCanvasElement {
   const width = p.scene.naturalWidth || p.scene.width;
@@ -200,32 +182,87 @@ export function renderContextualMockup(p: ContextualParams): HTMLCanvasElement {
     throw new Error('Canvas 2D indisponível.');
   }
   ctx.drawImage(p.scene, 0, 0, width, height);
-  drawContactShadow(ctx, p.target);
+  drawDropShadow(ctx, p.target);
   drawDisc(ctx, p.sprite, p.target);
+  drawEdgeShading(ctx, p.target);
+  drawSpecular(ctx, p.target);
   if (p.lighting === 'multiply-soft') {
     applyMultiplySoft(ctx, p.target);
   }
   return canvas;
 }
 
-/** Sombra radial escura sob o alvo (leve deslocamento p/ baixo = contato). */
-function drawContactShadow(
+/**
+ * Sombra PROJETADA: disco escuro borrado, deslocado p/ baixo/direita (luz vinda
+ * de cima-esquerda), dando a sensação de que o botton se ergue sobre a roupa.
+ */
+function drawDropShadow(
   ctx: CanvasRenderingContext2D,
   target: SceneTargetPx,
 ): void {
-  const cy = target.cy + target.r * 0.12;
-  const outer = target.r * 1.22;
+  const blur = Math.max(2, target.r * 0.07);
   ctx.save();
-  const grad = ctx.createRadialGradient(
-    target.cx, cy, target.r * 0.6,
-    target.cx, cy, outer,
-  );
-  grad.addColorStop(0, 'hsl(240 40% 6% / 38%)');
-  grad.addColorStop(1, 'hsl(240 40% 6% / 0%)');
-  ctx.fillStyle = grad;
+  ctx.filter = `blur(${blur}px)`;
+  ctx.fillStyle = 'hsl(240 30% 4% / 45%)';
   ctx.beginPath();
-  ctx.arc(target.cx, cy, outer, 0, Math.PI * 2);
+  ctx.arc(target.cx + target.r * 0.05, target.cy + target.r * 0.11, target.r * 1.02, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * Sombreamento de CURVATURA + ARO, clipado ao disco: vinheta radial que escurece
+ * as bordas (o botton é abaulado → a borda "foge") e um aro fino escuro na beira
+ * (metal/plástico crimpado). Dá volume sem alterar o miolo da arte.
+ */
+function drawEdgeShading(
+  ctx: CanvasRenderingContext2D,
+  target: SceneTargetPx,
+): void {
+  const { cx, cy, r } = target;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.clip();
+  const g = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, r);
+  g.addColorStop(0, 'hsl(240 30% 5% / 0%)');
+  g.addColorStop(0.82, 'hsl(240 30% 5% / 12%)');
+  g.addColorStop(1, 'hsl(240 30% 4% / 46%)');
+  ctx.fillStyle = g;
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  // Aro: traço escuro na beira + fio de realce logo dentro (brilho do metal).
+  const rim = Math.max(1, r * 0.03);
+  ctx.lineWidth = rim;
+  ctx.strokeStyle = 'hsl(240 30% 3% / 55%)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - rim / 2, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = Math.max(1, rim * 0.6);
+  ctx.strokeStyle = 'hsl(0 0% 100% / 22%)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - rim * 1.6, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Brilho glossy: mancha especular suave no topo-esquerdo (luz refletida). */
+function drawSpecular(
+  ctx: CanvasRenderingContext2D,
+  target: SceneTargetPx,
+): void {
+  const { cx, cy, r } = target;
+  const hx = cx - r * 0.34;
+  const hy = cy - r * 0.4;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.clip();
+  const g = ctx.createRadialGradient(hx, hy, r * 0.02, hx, hy, r * 0.72);
+  g.addColorStop(0, 'hsl(0 0% 100% / 32%)');
+  g.addColorStop(0.45, 'hsl(0 0% 100% / 8%)');
+  g.addColorStop(1, 'hsl(0 0% 100% / 0%)');
+  ctx.fillStyle = g;
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
   ctx.restore();
 }
 
