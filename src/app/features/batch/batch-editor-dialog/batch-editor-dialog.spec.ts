@@ -12,7 +12,27 @@ import {
 } from '../../../shared/types';
 import type { UploadRecord } from '../../../shared/types';
 import { UploadService, type ImageProbe } from '../../../core/upload';
+import {
+  BackgroundTemplateService,
+  type BackgroundTemplate,
+} from '../../../core/backgrounds';
 import { BatchEditorDialog, type BatchEditResult } from './batch-editor-dialog';
+
+const TPL: BackgroundTemplate = {
+  id: 'bg1',
+  name: 'Céu estrelado',
+  storagePath: 'user/ceu.png',
+  mime: 'image/png',
+  width: 1200,
+  height: 1200,
+  createdAt: '2026-07-25T10:00:00Z',
+  thumbUrl: 'https://app/ceu.png?token=x',
+};
+
+/** BackgroundTemplateService de teste: não toca em rede/Storage. */
+const fakeBgTemplates: Pick<BackgroundTemplateService, 'list'> = {
+  list: async (): Promise<BackgroundTemplate[]> => [TPL],
+};
 
 const FAKE_REC: UploadRecord = {
   id: 'r1',
@@ -66,7 +86,10 @@ function makeItem(filters: ImageFilters = DEFAULT_FILTERS): BatchItem {
 
 function dialogWith(item: BatchItem): BatchEditorDialog {
   TestBed.configureTestingModule({
-    providers: [{ provide: UploadService, useValue: fakeUploads }],
+    providers: [
+      { provide: UploadService, useValue: fakeUploads },
+      { provide: BackgroundTemplateService, useValue: fakeBgTemplates },
+    ],
   });
   const fixture = TestBed.createComponent(BatchEditorDialog);
   fixture.componentRef.setInput('item', item);
@@ -188,6 +211,37 @@ describe('BatchEditorDialog — imagem de fundo', () => {
     cmp.onSave();
 
     expect(result?.transform.backgroundImage?.path).toBe('user/bg.png');
+  });
+
+  it('loadBgTemplates popula a galeria e marca a fase ready', async () => {
+    const cmp = dialogWith(makeItem());
+    await cmp.loadBgTemplates();
+    expect(cmp.bgTemplates().length).toBe(1);
+    expect(cmp.bgTemplates()[0].id).toBe('bg1');
+    expect(cmp.bgGalleryPhase()).toBe('ready');
+  });
+
+  it('pickTemplate define transform.backgroundImage a partir do template', () => {
+    const cmp = dialogWith(makeItem());
+    cmp.pickTemplate(TPL);
+
+    const bg = cmp.transform().backgroundImage;
+    expect(bg?.source).toBe('template');
+    expect(bg?.id).toBe('bg1');
+    expect(bg?.path).toBe('user/ceu.png');
+    expect(bg?.url).toBe('https://app/ceu.png?token=x');
+  });
+
+  it('a imagem de fundo de um template viaja no transform ao salvar', () => {
+    const cmp = dialogWith(makeItem());
+    cmp.pickTemplate(TPL);
+
+    let result: BatchEditResult | undefined;
+    cmp.saved.subscribe((r) => (result = r));
+    cmp.onSave();
+
+    expect(result?.transform.backgroundImage?.id).toBe('bg1');
+    expect(result?.transform.backgroundImage?.source).toBe('template');
   });
 
   it('semeia o modo "imagem" quando o item já tem backgroundImage', () => {

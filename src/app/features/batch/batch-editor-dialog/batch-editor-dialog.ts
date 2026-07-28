@@ -28,9 +28,19 @@ import {
   resetTransform,
   withBackgroundImage,
 } from '../../../shared/ui';
-import { effectiveDpi, fallbackSpec, loadImage, rovingNext } from '../../../shared/utils';
+import {
+  downscaleImageFile,
+  effectiveDpi,
+  fallbackSpec,
+  loadImage,
+  rovingNext,
+} from '../../../shared/utils';
 import { largestSelectedSize, type BatchItem } from '../../../core/batch';
 import { UploadService } from '../../../core/upload';
+import {
+  BackgroundTemplateService,
+  type BackgroundTemplate,
+} from '../../../core/backgrounds';
 
 /** Ajuste salvo pelo diálogo (vale p/ todos os tamanhos da imagem). */
 export interface BatchEditResult {
@@ -44,6 +54,9 @@ type TabId = 'adjust' | 'treat' | 'background';
 
 /** Modo do painel "Fundo": cor sólida ou imagem por upload. */
 type BackgroundMode = 'color' | 'image';
+
+/** Fase de carregamento da galeria de templates de fundo. */
+type GalleryPhase = 'idle' | 'loading' | 'ready' | 'error';
 
 interface EditorTab {
   readonly id: TabId;
@@ -82,6 +95,7 @@ const EDITOR_TABS: readonly EditorTab[] = [
 })
 export class BatchEditorDialog implements OnInit {
   private readonly uploads = inject(UploadService);
+  private readonly bgTemplatesService = inject(BackgroundTemplateService);
   readonly item = input.required<BatchItem>();
   readonly saved = output<BatchEditResult>();
   readonly closed = output<void>();
@@ -99,6 +113,10 @@ export class BatchEditorDialog implements OnInit {
   readonly bgUploading = signal(false);
   /** Mensagem de erro do último upload de fundo (ou `null`). */
   readonly bgError = signal<string | null>(null);
+  /** Galeria de templates de fundo pré-cadastrados (curadoria). */
+  readonly bgTemplates = signal<BackgroundTemplate[]>([]);
+  /** Fase de carregamento da galeria de templates. */
+  readonly bgGalleryPhase = signal<GalleryPhase>('idle');
   private readonly bgUrl = computed(
     () => this.transform().backgroundImage?.url ?? null,
   );
@@ -139,6 +157,9 @@ export class BatchEditorDialog implements OnInit {
     this.transform.set(t);
     this.filters.set(this.item().filters);
     this.bgMode.set(t.backgroundImage ? 'image' : 'color');
+    if (this.bgMode() === 'image') {
+      void this.loadBgTemplates();
+    }
     void this.hydrate();
   }
 
@@ -146,9 +167,43 @@ export class BatchEditorDialog implements OnInit {
     this.activeTab.set(id);
   }
 
-  /** Alterna o modo do painel "Fundo" (cor | imagem). */
+  /** Alterna o modo do painel "Fundo" (cor | imagem); carrega a galeria no modo imagem. */
   setBgMode(mode: BackgroundMode): void {
     this.bgMode.set(mode);
+    if (mode === 'image') {
+      void this.loadBgTemplates();
+    }
+  }
+
+  /** Carrega os templates de fundo (uma vez; `force` reexecuta após erro). */
+  async loadBgTemplates(force = false): Promise<void> {
+    const phase = this.bgGalleryPhase();
+    if (!force && (phase === 'loading' || phase === 'ready')) {
+      return;
+    }
+    this.bgGalleryPhase.set('loading');
+    try {
+      this.bgTemplates.set(await this.bgTemplatesService.list());
+      this.bgGalleryPhase.set('ready');
+    } catch {
+      this.bgGalleryPhase.set('error');
+    }
+  }
+
+  /** Aplica um template de fundo pré-cadastrado; o preview reflete ao vivo. */
+  pickTemplate(tpl: BackgroundTemplate): void {
+    if (!tpl.thumbUrl) {
+      return;
+    }
+    this.bgError.set(null);
+    this.transform.update((t) =>
+      withBackgroundImage(t, {
+        path: tpl.storagePath,
+        url: tpl.thumbUrl!,
+        source: 'template',
+        id: tpl.id,
+      }),
+    );
   }
 
   /** Troca a cor de fundo (aba "Fundo"); o preview reflete ao vivo. */
@@ -161,8 +216,11 @@ export class BatchEditorDialog implements OnInit {
     this.bgError.set(null);
     this.bgUploading.set(true);
     try {
-      const probe = await this.uploads.probe(file);
-      const rec = await this.uploads.upload(file, probe);
+      // Reduz fotos grandes antes de subir: o fundo não precisa exceder o
+      // tamanho da arte e imagens grandes estouram o limite de CPU na geração.
+      const small = await downscaleImageFile(file);
+      const probe = await this.uploads.probe(small);
+      const rec = await this.uploads.upload(small, probe);
       this.transform.update((t) =>
         withBackgroundImage(t, {
           path: rec.path,

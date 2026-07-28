@@ -45,12 +45,16 @@ function links(root: HTMLElement): HTMLAnchorElement[] {
 }
 
 describe('ShellPage — menu superior', () => {
-  it('renderiza a nav rotulada com os dois links esperados', async () => {
+  it('renderiza a nav rotulada com os três links esperados', async () => {
     const root = await renderAt('/app/upload');
     const nav = root.querySelector('nav');
     expect(nav?.getAttribute('aria-label')).toBe('Navegação principal');
     const labels = links(root).map((a) => a.textContent?.trim());
-    expect(labels).toEqual(['Novo botton', 'Curadoria de mockups']);
+    expect(labels).toEqual([
+      'Novo botton',
+      'Curadoria de mockups',
+      'Curadoria de fundos',
+    ]);
   });
 
   it('marca aria-current="page" no link de Upload quando ativo', async () => {

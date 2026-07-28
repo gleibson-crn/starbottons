@@ -14,6 +14,7 @@ export {
   fallbackSpec,
 } from './print-spec-catalog';
 export { loadImage, safeFileName } from './image';
+export { downscaleImageFile, BACKGROUND_MAX_DIM } from './downscale-image';
 export { rovingNext } from './radiogroup';
 export { sniffImageMime } from './magic-bytes';
 export { withConfiguredHost } from './signed-url';

@@ -42,6 +42,8 @@ export class ShellPage {
   readonly contextualMode = signal(false);
   /** `true` na área curadora de mockups. */
   readonly manageMode = signal(false);
+  /** `true` na área curadora de fundos. */
+  readonly manageBackgroundsMode = signal(false);
 
   constructor() {
     this.syncContext();
@@ -64,5 +66,6 @@ export class ShellPage {
     this.batchMode.set(data?.['batch'] === true);
     this.contextualMode.set(data?.['contextual'] === true);
     this.manageMode.set(data?.['manage'] === true);
+    this.manageBackgroundsMode.set(data?.['manageBackgrounds'] === true);
   }
 }

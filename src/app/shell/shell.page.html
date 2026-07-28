@@ -16,18 +16,27 @@
         #mockupsLink="routerLinkActive"
         [attr.aria-current]="mockupsLink.isActive ? 'page' : null"
       >Curadoria de mockups</a>
+      <a
+        class="shell__nav-link"
+        routerLink="/app/backgrounds"
+        routerLinkActive="is-active"
+        #backgroundsLink="routerLinkActive"
+        [attr.aria-current]="backgroundsLink.isActive ? 'page' : null"
+      >Curadoria de fundos</a>
     </nav>
     <button type="button" class="btn btn--ghost" (click)="logout()">Sair</button>
   </header>
 
-  @if (batchMode() || contextualMode() || manageMode()) {
+  @if (batchMode() || contextualMode() || manageMode() || manageBackgroundsMode()) {
     <div class="shell__context">
       @if (batchMode()) {
         <p class="shell__batch-label">Processamento em lote</p>
       } @else if (contextualMode()) {
         <p class="shell__batch-label">Aplicar em cenário</p>
-      } @else {
+      } @else if (manageMode()) {
         <p class="shell__batch-label">Curadoria de mockups</p>
+      } @else {
+        <p class="shell__batch-label">Curadoria de fundos</p>
       }
     </div>
   }

@@ -41,6 +41,12 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/mockup/mockup-manager.routes'),
       },
+      {
+        path: 'backgrounds',
+        data: { manageBackgrounds: true },
+        loadChildren: () =>
+          import('./features/backgrounds/background-manager.routes'),
+      },
       // Redirects das paths do antigo fluxo single → fluxo único (upload).
       { path: 'selection', pathMatch: 'full', redirectTo: 'upload' },
       { path: 'editor', pathMatch: 'full', redirectTo: 'upload' },

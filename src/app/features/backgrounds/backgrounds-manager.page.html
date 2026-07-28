@@ -1,0 +1,98 @@
+<section aria-labelledby="bg-manager-title">
+  <div class="manager__head">
+    <div>
+      <h1 id="bg-manager-title">Curadoria de fundos</h1>
+      <p class="manager__intro">
+        Cadastre imagens de fundo (PNG ou JPEG) para reutilizar como plano de
+        fundo dos bottons no processamento em lote. A imagem é preservada como
+        está — vai direto para a impressão.
+      </p>
+    </div>
+  </div>
+
+  <form class="bgform" (submit)="save(); $event.preventDefault()">
+    <div class="bgform__field">
+      <label class="bgform__label" for="bg-name">Nome do fundo</label>
+      <input
+        id="bg-name"
+        class="bgform__input"
+        type="text"
+        maxlength="120"
+        placeholder="Ex.: Céu estrelado"
+        [value]="name()"
+        (input)="onNameInput($event)"
+      />
+    </div>
+
+    <app-file-dropzone
+      browseLabel="Escolher imagem de fundo"
+      (fileAccepted)="onFile($event)"
+      (fileRejected)="onFileRejected($event)"
+    />
+
+    @if (pendingPreview()) {
+      <div class="bgform__preview">
+        <img
+          class="bgform__thumb"
+          [src]="pendingPreview()"
+          [alt]="'Prévia do fundo ' + (name() || 'novo')"
+        />
+        <span class="bgform__filename">{{ pendingFile()?.name }}</span>
+      </div>
+    }
+
+    <button type="submit" class="btn btn--primary" [disabled]="!canSave()">
+      {{ saving() ? 'Salvando…' : 'Salvar fundo' }}
+    </button>
+  </form>
+
+  <h2 class="manager__subtitle">Fundos cadastrados</h2>
+
+  @switch (phase()) {
+    @case ('loading') {
+      <p class="grid__status" role="status">Carregando fundos…</p>
+    }
+    @case ('error') {
+      <div class="grid__status" role="status">
+        <p>Não foi possível carregar os fundos.</p>
+        <button type="button" class="btn btn--ghost" (click)="reload()">
+          Tentar novamente
+        </button>
+      </div>
+    }
+    @default {
+      @if (templates().length === 0) {
+        <p class="grid__status" role="status">
+          Nenhum fundo cadastrado ainda. Envie uma imagem acima para começar.
+        </p>
+      } @else {
+        <ul class="grid" aria-label="Fundos cadastrados">
+          @for (t of templates(); track t.id) {
+            <li class="bgcard">
+              <div class="bgcard__thumb">
+                @if (t.thumbUrl) {
+                  <img
+                    class="bgcard__img"
+                    [src]="t.thumbUrl"
+                    [alt]="'Fundo ' + t.name"
+                  />
+                } @else {
+                  <p class="bgcard__error" role="status">Prévia indisponível</p>
+                }
+              </div>
+              <p class="bgcard__name">{{ t.name }}</p>
+              <button
+                type="button"
+                class="btn btn--ghost"
+                [attr.aria-label]="'Excluir fundo ' + t.name"
+                (click)="removeTemplate(t)"
+              >
+                Excluir
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</section>

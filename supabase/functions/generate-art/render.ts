@@ -4,11 +4,10 @@
  * PDF físico → grava em renders/ → registra assets → assina URLs.
  */
 
-import { decodeImage, Image, type SupabaseClient } from "./deps.ts";
-import { encodeBase64 } from "@std/encoding/base64";
+import { type SupabaseClient } from "./deps.ts";
 import { composeArtwork } from "./image.ts";
 import { assertSafeSource } from "./image-header.ts";
-import { type BackgroundImage, buildLayoutSvg } from "./svg.ts";
+import { buildLayoutSvg } from "./svg.ts";
 import { rasterizeSvg } from "./raster.ts";
 import { buildPrintPdf } from "./pdf.ts";
 import { computeLayout } from "./geometry.ts";
@@ -48,27 +47,20 @@ async function storeAsset(
 }
 
 /**
- * Baixa a imagem de fundo (path no bucket uploads) e devolve base64 + mime,
- * SEMPRE como PNG: o resvg-wasm não decodifica JPEG no `<image href>` (a
- * rasterização travava), então um fundo JPEG é decodificado e reencodado em PNG
- * aqui. PNG segue direto (fast path). Fallback gracioso: qualquer falha
- * (download/assinatura/teto de MP/decode) loga e retorna null → a composição
- * cai só na cor de fundo, sem quebrar a geração.
+ * Baixa a imagem de fundo (path no bucket uploads) e devolve os BYTES crus
+ * (PNG/JPEG — o ImageScript decodifica ambos ao compor). Fallback gracioso:
+ * qualquer falha (download/validação/teto de MP) loga e retorna null → a
+ * composição cai só na cor de fundo, sem quebrar a geração.
  */
 async function loadBackgroundImage(
   db: SupabaseClient,
   path: string | null | undefined,
-): Promise<BackgroundImage | null> {
+): Promise<Uint8Array | null> {
   if (!path) return null;
   try {
     const bytes = await downloadSource(db, path);
-    const { mime } = assertSafeSource(bytes); // valida magic bytes + teto de MP
-    if (mime === "image/jpeg") {
-      const decoded = (await decodeImage(bytes)) as Image;
-      const png = await decoded.encode();
-      return { b64: encodeBase64(png), mime: "image/png" };
-    }
-    return { b64: encodeBase64(bytes), mime };
+    assertSafeSource(bytes); // valida magic bytes + teto de MP
+    return bytes;
   } catch (err) {
     console.error(
       "[generate-art] fundo de imagem indisponível, usando cor:",
@@ -78,24 +70,24 @@ async function loadBackgroundImage(
   }
 }
 
-/** Rasteriza o PNG da arte a partir da origem já baixada. */
+/** Rasteriza o PNG da arte a partir da origem já baixada (+ fundo opcional). */
 async function renderPrintPng(
   source: Uint8Array,
   layout: ArtLayout,
   req: GenerateRequest,
-  backgroundImage: BackgroundImage | null,
+  backgroundBytes: Uint8Array | null,
 ): Promise<Uint8Array> {
   const composedB64 = await composeArtwork(
     source,
     layout.artPx,
     layout.dpi,
     req.options,
+    backgroundBytes,
   );
   const svg = buildLayoutSvg(
     layout,
     composedB64,
     req.options.background ?? "#ffffff",
-    backgroundImage,
   );
   return await rasterizeSvg(svg, layout.dpi);
 }
@@ -110,11 +102,11 @@ export async function generateArtwork(
   const layout = computeLayout(spec);
   const sourcePath = await fetchUploadPath(db, req.upload_id);
   const source = await downloadSource(db, sourcePath);
-  const backgroundImage = await loadBackgroundImage(
+  const backgroundBytes = await loadBackgroundImage(
     db,
     req.options.backgroundImage,
   );
-  const printPng = await renderPrintPng(source, layout, req, backgroundImage);
+  const printPng = await renderPrintPng(source, layout, req, backgroundBytes);
   const printPdf = await buildPrintPdf(printPng, layout);
   return [
     await storeAsset(

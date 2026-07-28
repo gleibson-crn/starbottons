@@ -144,6 +144,69 @@
           @if (bgError()) {
             <p class="bgimg__error" role="alert">{{ bgError() }}</p>
           }
+
+          <section class="bggallery" aria-labelledby="bggallery-title">
+            <h3 id="bggallery-title" class="bggallery__title">
+              Templates de fundo
+            </h3>
+            @switch (bgGalleryPhase()) {
+              @case ('loading') {
+                <p class="bggallery__status" role="status">
+                  Carregando templates…
+                </p>
+              }
+              @case ('error') {
+                <div class="bggallery__status" role="status">
+                  <p>Não foi possível carregar os templates.</p>
+                  <button
+                    type="button"
+                    class="btn btn--ghost"
+                    (click)="loadBgTemplates(true)"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              }
+              @default {
+                @if (bgTemplates().length === 0) {
+                  <p class="bggallery__status" role="status">
+                    Nenhum template ainda — cadastre em Curadoria de fundos.
+                  </p>
+                } @else {
+                  <ul class="bggallery__grid" aria-label="Templates de fundo">
+                    @for (tpl of bgTemplates(); track tpl.id) {
+                      <li>
+                        <button
+                          type="button"
+                          class="bggallery__item"
+                          [class.bggallery__item--active]="
+                            transform().backgroundImage?.id === tpl.id
+                          "
+                          [attr.aria-pressed]="
+                            transform().backgroundImage?.id === tpl.id
+                          "
+                          [attr.aria-label]="'Usar fundo ' + tpl.name"
+                          [disabled]="!tpl.thumbUrl"
+                          (click)="pickTemplate(tpl)"
+                        >
+                          @if (tpl.thumbUrl) {
+                            <img
+                              class="bggallery__thumb"
+                              [src]="tpl.thumbUrl"
+                              [alt]="tpl.name"
+                            />
+                          } @else {
+                            <span class="bggallery__ph" aria-hidden="true">—</span>
+                          }
+                          <span class="bggallery__name">{{ tpl.name }}</span>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                }
+              }
+            }
+          </section>
         </div>
       }
     </div>
