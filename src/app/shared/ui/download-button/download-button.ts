@@ -32,11 +32,20 @@ export class DownloadButton {
   readonly url = input<string | null>(null);
   readonly filename = input<string>('star-botton');
 
-  /** URL com o parâmetro de download do Storage anexado (força "salvar"). */
+  /**
+   * URL de download. Para URLs http(s) (Storage do Supabase, cross-origin)
+   * anexa `download=<nome>` para forçar `Content-Disposition: attachment`. Para
+   * object/data URLs (`blob:`/`data:`, geradas localmente) devolve como está — o
+   * atributo `download` já basta e anexar query CORROMPERIA a URL (o navegador
+   * tentaria buscá-la e falharia com falso erro de rede).
+   */
   readonly href = computed<string | null>(() => {
     const url = this.url();
     if (!url) {
       return null;
+    }
+    if (url.startsWith('blob:') || url.startsWith('data:')) {
+      return url;
     }
     const sep = url.includes('?') ? '&' : '?';
     return `${url}${sep}download=${encodeURIComponent(this.filename())}`;

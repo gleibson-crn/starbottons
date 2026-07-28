@@ -409,3 +409,17 @@ describe('BatchStore — filtros por item (Abordagem A)', () => {
     expect(ctx.store.artesFalhas()).toBe(3);
   });
 });
+
+describe('BatchStore — reset (novo botton zera o lote)', () => {
+  it('reset esvazia os itens do lote', async () => {
+    const ctx = setup();
+    await addImage(ctx, { width: 4000, height: 4000 });
+    await addImage(ctx, { width: 4000, height: 4000 });
+    expect(ctx.store.items().length).toBe(2);
+
+    ctx.store.reset();
+
+    expect(ctx.store.items().length).toBe(0);
+    expect(ctx.store.totalArtes()).toBe(0);
+  });
+});

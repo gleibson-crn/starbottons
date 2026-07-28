@@ -23,6 +23,7 @@ function pngFile(name = 'a.png'): File {
 interface Fakes {
   probe: ReturnType<typeof vi.fn>;
   addFiles: ReturnType<typeof vi.fn>;
+  reset: ReturnType<typeof vi.fn>;
   navigate: ReturnType<typeof vi.fn>;
   error: ReturnType<typeof vi.fn>;
   warning: ReturnType<typeof vi.fn>;
@@ -32,6 +33,7 @@ function setup(addFilesReturn: string[] = []): { page: UploadPage; f: Fakes } {
   const f: Fakes = {
     probe: vi.fn().mockResolvedValue(PROBE),
     addFiles: vi.fn().mockReturnValue(addFilesReturn),
+    reset: vi.fn(),
     navigate: vi.fn().mockResolvedValue(true),
     error: vi.fn(),
     warning: vi.fn(),
@@ -40,7 +42,7 @@ function setup(addFilesReturn: string[] = []): { page: UploadPage; f: Fakes } {
     imports: [UploadPage],
     providers: [
       { provide: UploadService, useValue: { probe: f.probe } },
-      { provide: BatchStore, useValue: { addFiles: f.addFiles } },
+      { provide: BatchStore, useValue: { addFiles: f.addFiles, reset: f.reset } },
       { provide: Router, useValue: { navigate: f.navigate } },
       { provide: ToastService, useValue: { error: f.error, warning: f.warning } },
     ],
@@ -81,10 +83,12 @@ describe('UploadPage — lista acumulável (fluxo único)', () => {
     expect(revoke).toHaveBeenCalledWith(PROBE.previewUrl);
   });
 
-  it('Continuar com 1 item envia ao BatchStore e navega para /app/batch', async () => {
+  it('Continuar com 1 item ZERA o lote anterior, envia e navega', async () => {
     const { page, f } = setup();
     await page.onFilesAccepted([pngFile()]);
     await page.continue();
+    // Cada "Continuar" começa um lote novo (não acumula entre sessões).
+    expect(f.reset).toHaveBeenCalledTimes(1);
     expect(f.addFiles).toHaveBeenCalledTimes(1);
     expect(f.addFiles.mock.calls[0][0]).toHaveLength(1);
     expect(f.navigate).toHaveBeenCalledWith(['/app/batch']);
@@ -99,9 +103,10 @@ describe('UploadPage — lista acumulável (fluxo único)', () => {
     expect(f.navigate).toHaveBeenCalledWith(['/app/batch']);
   });
 
-  it('Continuar sem itens não envia nem navega', async () => {
+  it('Continuar sem itens não zera, não envia nem navega', async () => {
     const { page, f } = setup();
     await page.continue();
+    expect(f.reset).not.toHaveBeenCalled();
     expect(f.addFiles).not.toHaveBeenCalled();
     expect(f.navigate).not.toHaveBeenCalled();
   });

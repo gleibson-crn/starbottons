@@ -69,7 +69,7 @@ export class BatchStore {
 
   readonly items = signal<BatchItem[]>([]);
   readonly generating = signal(false);
-  private readonly batchId = crypto.randomUUID();
+  private batchId = crypto.randomUUID();
   private controller = new AbortController();
 
   readonly totalArtes = computed(() =>
@@ -110,6 +110,22 @@ export class BatchStore {
       !this.nameMissing() &&
       this.itemsSemTamanho() === 0,
   );
+
+  /**
+   * Zera o lote — começa um botton novo do zero. Cancela geração em voo, revoga
+   * os previews (object URLs) e renova o `batchId`. Chamado ao "Continuar" do
+   * upload para que cada envio produza um lote NOVO (sem acumular no anterior).
+   */
+  reset(): void {
+    this.cancel();
+    for (const item of this.items()) {
+      if (item.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+    }
+    this.items.set([]);
+    this.batchId = crypto.randomUUID();
+  }
 
   /** Adiciona imagens (respeita MAX_IMAGES); retorna motivos de recusa. */
   addFiles(files: File[]): string[] {

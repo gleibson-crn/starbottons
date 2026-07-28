@@ -42,16 +42,6 @@
           </button>
         </div>
 
-        @if (resultUrl(); as url) {
-          <app-download-button
-            label="Mockup em cenário (PNG)"
-            description="Botton aplicado sobre a foto"
-            icon="🖼️"
-            filename="star-botton-cenario.png"
-            [url]="url"
-          />
-        }
-
         <button type="button" class="btn btn--ghost" (click)="back()">Voltar ao lote</button>
       </aside>
     </div>

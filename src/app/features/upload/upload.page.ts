@@ -82,12 +82,17 @@ export class UploadPage {
     this.items.update((list) => list.filter((_, i) => i !== index));
   }
 
-  /** Envia todos os itens (1..N) ao lote e vai para o grid. */
+  /**
+   * Envia todos os itens (1..N) e vai para o grid. Cada "Continuar" começa um
+   * lote NOVO: zera o anterior (o dono não quer acúmulo entre sessões de
+   * "Novo botton") e então adiciona os itens escolhidos.
+   */
   async continue(): Promise<void> {
     const list = this.items();
     if (list.length === 0) {
       return;
     }
+    this.batch.reset();
     for (const reason of this.batch.addFiles(list.map((i) => i.file))) {
       this.toast.warning(reason);
     }

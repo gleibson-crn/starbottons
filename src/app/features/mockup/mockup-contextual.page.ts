@@ -13,7 +13,6 @@ import {
   type PrintSpec,
 } from '../../shared/types';
 import {
-  DownloadButton,
   mockupToBlob,
   renderMockupSprite,
   ToastService,
@@ -43,7 +42,7 @@ const PREVIEW_RADIUS = 640;
 @Component({
   selector: 'app-mockup-contextual-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SourcePicker, ScenePreview, SceneControls, SaveTemplateDialog, DownloadButton],
+  imports: [SourcePicker, ScenePreview, SceneControls, SaveTemplateDialog],
   templateUrl: './mockup-contextual.page.html',
   styleUrl: './mockup-contextual.page.scss',
 })
@@ -67,7 +66,6 @@ export class MockupContextualPage {
   readonly target = signal<SceneTarget>(DEFAULT_SCENE_TARGET);
   /** Alvo normalizado inicial ao restaurar um template (null em upload). */
   readonly seed = signal<SceneTarget | null>(null);
-  readonly resultUrl = signal<string | null>(null);
   readonly exporting = signal(false);
   readonly saving = signal(false);
   readonly showSave = signal(false);
@@ -94,6 +92,7 @@ export class MockupContextualPage {
     this.target.set(t);
   }
 
+  /** Compõe o mockup e BAIXA o PNG de imediato (sem passo intermediário). */
   async exportPng(): Promise<void> {
     const canvas = this.compose();
     if (!canvas) {
@@ -102,8 +101,8 @@ export class MockupContextualPage {
     this.exporting.set(true);
     try {
       const blob = await mockupToBlob(canvas);
-      this.replaceResult(URL.createObjectURL(blob));
-      this.toast.success('Mockup em cenário pronto para download.');
+      this.downloadBlob(blob, 'star-botton-cenario.png');
+      this.toast.success('Mockup em cenário baixado.');
     } catch (err) {
       this.toast.error((err as Error).message);
     } finally {
@@ -111,8 +110,20 @@ export class MockupContextualPage {
     }
   }
 
+  /** Dispara o download de um blob (object URL local; sem ida à rede). */
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
   changeScene(): void {
-    this.replaceResult(null);
     this.revokeScene();
     this.scene.set(null);
   }
@@ -206,7 +217,6 @@ export class MockupContextualPage {
   }
 
   private async loadScene(url: string): Promise<void> {
-    this.replaceResult(null);
     this.revokeScene();
     this.sceneUrl = url;
     this.seed.set(null);
@@ -215,19 +225,10 @@ export class MockupContextualPage {
   }
 
   private async loadTemplate(template: SceneTemplate): Promise<void> {
-    this.replaceResult(null);
     const img = await loadImage(template.thumbUrl as string);
     this.target.set(template.target);
     this.seed.set(template.target);
     this.scene.set(img);
-  }
-
-  private replaceResult(url: string | null): void {
-    const prev = this.resultUrl();
-    if (prev) {
-      URL.revokeObjectURL(prev);
-    }
-    this.resultUrl.set(url);
   }
 
   private revokeScene(): void {
