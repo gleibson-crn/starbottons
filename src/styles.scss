@@ -297,18 +297,29 @@ h2,
 
 /* Impressão — some com o "chrome" do app (Área de Impressão) ------------- */
 @media print {
+  /* Zera a margem padrão do body: senão a folha de 297mm + margem estoura a
+   * página e sai uma segunda folha em branco. */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   .shell__header,
   .shell__context {
     display: none !important;
   }
 
+  /* `!important` porque o estilo scoped do ShellPage (`.shell__main[_ngcontent]`)
+   * vence em especificidade; sem isto o padding do main (--sp-8 = 32px) empurra a
+   * folha de 297mm além da página e gera uma 2ª folha em branco. */
   .shell,
   .shell__main {
-    display: block;
-    inline-size: auto;
-    max-inline-size: none;
-    margin: 0;
-    padding: 0;
+    display: block !important;
+    inline-size: auto !important;
+    max-inline-size: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
 

@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
 import { BatchStore } from '../../core/batch';
 import { packSheet, type BottonSize, type PackedSheet, type PlacedPiece } from '../../core/print';
 import { SIZE_OPTIONS } from '../../shared/utils';
-import { FileDropzone } from '../../shared/ui';
+import { FileDropzone, ToastService } from '../../shared/ui';
 import { buildAvulsoLine } from './avulso-art';
 import { collectReadyArts, type ReadyArt } from './ready-arts';
 import { MIN_QTY, clampQty, mergeReadyLine, type SheetLine } from './sheet-line';
@@ -32,6 +32,7 @@ import { MIN_QTY, clampQty, mergeReadyLine, type SheetLine } from './sheet-line'
 })
 export class PrintPage implements OnDestroy {
   private readonly store = inject(BatchStore);
+  private readonly toast = inject(ToastService);
 
   /** Artes prontas disponíveis no lote (reativas ao BatchStore). */
   readonly readyArts = computed(() => collectReadyArts(this.store.items()));
@@ -82,11 +83,44 @@ export class PrintPage implements OnDestroy {
     this.draftQty.update((map) => ({ ...map, [key]: clampQty(value) }));
   }
 
-  /** Adiciona a arte do lote à folha (soma à quantidade se já presente). */
-  addToSheet(art: ReadyArt): void {
+  /**
+   * Adiciona a arte do lote à folha (soma à quantidade se já presente). A URL da
+   * arte é uma SIGNED URL cross-origin do Storage — o documento de impressão do
+   * navegador NÃO a carrega de forma confiável (expira / bloqueio cross-origin),
+   * saindo em branco. Por isso convertemos para um OBJECT URL de mesma origem no
+   * momento de adicionar (como as artes avulsas), garantindo a impressão.
+   */
+  async addToSheet(art: ReadyArt): Promise<void> {
     const qty = this.qtyFor(art.key);
-    this.lines.update((lines) => mergeReadyLine(lines, art, qty));
+    if (this.lines().some((l) => l.key === art.key)) {
+      this.lines.update((lines) => mergeReadyLine(lines, art, qty));
+    } else {
+      let url: string;
+      try {
+        url = await this.toLocalUrl(art.url);
+      } catch {
+        this.toast.error('Não foi possível carregar a arte do lote para impressão.');
+        return;
+      }
+      this.lines.update((lines) => [
+        ...lines,
+        { key: art.key, url, name: art.name, sizeMm: art.sizeMm, quantity: qty, origin: 'ready' },
+      ]);
+    }
     this.draftQty.update((map) => ({ ...map, [art.key]: MIN_QTY }));
+  }
+
+  /**
+   * Baixa uma URL (signed, cross-origin) e devolve um OBJECT URL de mesma origem
+   * (blob:), que imprime de forma confiável e não expira. Revogado ao remover a
+   * linha / destruir a página.
+   */
+  private async toLocalUrl(url: string): Promise<string> {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`fetch ${res.status}`);
+    }
+    return URL.createObjectURL(await res.blob());
   }
 
   /** Define o tamanho da próxima arte avulsa a partir do `<select>`. */
@@ -152,11 +186,11 @@ export class PrintPage implements OnDestroy {
     );
   }
 
-  /** Remove uma linha da folha (revoga o object URL se for arte avulsa). */
+  /** Remove uma linha da folha (revoga seu object URL — lote e avulso são blob:). */
   removeLine(key: string): void {
     this.lines.update((lines) => {
       const target = lines.find((l) => l.key === key);
-      if (target?.origin === 'avulso') {
+      if (target?.url.startsWith('blob:')) {
         URL.revokeObjectURL(target.url);
       }
       return lines.filter((l) => l.key !== key);
@@ -173,10 +207,10 @@ export class PrintPage implements OnDestroy {
     window.print();
   }
 
-  /** Revoga os object URLs de artes avulsas na folha e a prévia pendente. */
+  /** Revoga os object URLs das linhas (lote e avulso) e a prévia pendente. */
   ngOnDestroy(): void {
     for (const line of this.lines()) {
-      if (line.origin === 'avulso') {
+      if (line.url.startsWith('blob:')) {
         URL.revokeObjectURL(line.url);
       }
     }

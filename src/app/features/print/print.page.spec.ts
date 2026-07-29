@@ -6,6 +6,7 @@
 import { TestBed } from '@angular/core/testing';
 import { DEFAULT_FILTERS, DEFAULT_TRANSFORM } from '../../shared/types';
 import { IDLE_ART, BatchStore, type ArtState, type BatchItem, type BottonSize } from '../../core/batch';
+import { ToastService } from '../../shared/ui';
 import { PrintPage } from './print.page';
 
 function art(patch: Partial<ArtState>): ArtState {
@@ -36,7 +37,13 @@ function makeItem(id: string, name: string, arts: BatchItem['arts']): BatchItem 
 
 function build(items: BatchItem[]): PrintPage {
   TestBed.configureTestingModule({
-    providers: [{ provide: BatchStore, useValue: { items: () => items } }],
+    providers: [
+      { provide: BatchStore, useValue: { items: () => items } },
+      {
+        provide: ToastService,
+        useValue: { error: () => undefined, success: () => undefined, warning: () => undefined, show: () => undefined },
+      },
+    ],
   });
   return TestBed.createComponent(PrintPage).componentInstance;
 }
@@ -81,39 +88,55 @@ function makeCanvas(): HTMLCanvasElement {
 const READY = { 44: art({ status: 'ready', printPngUrl: 'blob:a44' }) };
 
 describe('PrintPage', () => {
+  beforeEach(() => {
+    // addToSheet baixa a signed URL da arte e a converte em object URL local.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, blob: async () => new Blob(['x'], { type: 'image/png' }) })),
+    );
+    (URL as unknown as { createObjectURL: unknown }).createObjectURL = vi.fn(() => 'blob:ready');
+    (URL as unknown as { revokeObjectURL: unknown }).revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it('expõe as artes prontas do lote', () => {
     const cmp = build([makeItem('a', 'Logo', READY)]);
     expect(cmp.readyArts().map((r) => r.key)).toEqual(['a:44']);
   });
 
-  it('adiciona uma arte à folha e monta a prévia', () => {
+  it('adiciona uma arte à folha e monta a prévia', async () => {
     const cmp = build([makeItem('a', 'Logo', READY)]);
-    cmp.addToSheet(cmp.readyArts()[0]);
+    await cmp.addToSheet(cmp.readyArts()[0]);
     expect(cmp.lines()).toHaveLength(1);
+    expect(cmp.lines()[0].url).toBe('blob:ready');
     expect(cmp.hasSheet()).toBe(true);
     expect(cmp.packed().totalPieces).toBe(1);
   });
 
-  it('usa a quantidade de rascunho ao adicionar', () => {
+  it('usa a quantidade de rascunho ao adicionar', async () => {
     const cmp = build([makeItem('a', 'Logo', READY)]);
     cmp.onDraftInput('a:44', qtyEvent(5));
-    cmp.addToSheet(cmp.readyArts()[0]);
+    await cmp.addToSheet(cmp.readyArts()[0]);
     expect(cmp.lines()[0].quantity).toBe(5);
     expect(cmp.packed().totalPieces).toBe(5);
   });
 
-  it('soma a quantidade quando a mesma arte é adicionada de novo', () => {
+  it('soma a quantidade quando a mesma arte é adicionada de novo', async () => {
     const cmp = build([makeItem('a', 'Logo', READY)]);
     const readyArt = cmp.readyArts()[0];
-    cmp.addToSheet(readyArt);
-    cmp.addToSheet(readyArt);
+    await cmp.addToSheet(readyArt);
+    await cmp.addToSheet(readyArt);
     expect(cmp.lines()).toHaveLength(1);
     expect(cmp.lines()[0].quantity).toBe(2);
   });
 
-  it('edita e remove a quantidade de uma linha', () => {
+  it('edita e remove a quantidade de uma linha', async () => {
     const cmp = build([makeItem('a', 'Logo', READY)]);
-    cmp.addToSheet(cmp.readyArts()[0]);
+    await cmp.addToSheet(cmp.readyArts()[0]);
     cmp.setLineQty('a:44', qtyEvent(9));
     expect(cmp.lines()[0].quantity).toBe(9);
     cmp.removeLine('a:44');
@@ -121,14 +144,14 @@ describe('PrintPage', () => {
     expect(cmp.hasSheet()).toBe(false);
   });
 
-  it('mistura tamanhos e reporta páginas/aproveitamento', () => {
+  it('mistura tamanhos e reporta páginas/aproveitamento', async () => {
     const cmp = build([
       makeItem('a', 'Logo', { 58: art({ status: 'ready', printPngUrl: 'blob:a58' }) }),
       makeItem('b', 'Selo', { 32: art({ status: 'ready', printPngUrl: 'blob:b32' }) }),
     ]);
     for (const readyArt of cmp.readyArts()) {
       cmp.onDraftInput(readyArt.key, qtyEvent(10));
-      cmp.addToSheet(readyArt);
+      await cmp.addToSheet(readyArt);
     }
     expect(cmp.packed().totalPieces).toBe(20);
     expect(cmp.pageCount()).toBeGreaterThanOrEqual(1);
