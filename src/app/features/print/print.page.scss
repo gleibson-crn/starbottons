@@ -223,6 +223,10 @@
 .sheet__piece {
   position: absolute;
   object-fit: contain;
+  /* Recorta a peça ao CÍRCULO: as artes são quadradas (círculo + cantos brancos).
+   * Com o empacotamento denso os quadrados podem se sobrepor nos cantos — recortar
+   * em círculo evita que o canto branco de uma peça cubra o círculo da vizinha. */
+  border-radius: 50%;
 }
 
 /* --- Impressão física --------------------------------------------------- */
