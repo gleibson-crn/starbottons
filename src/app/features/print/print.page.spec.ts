@@ -46,6 +46,38 @@ function qtyEvent(value: number): Event {
   return { target: { valueAsNumber: value } } as unknown as Event;
 }
 
+/** Evento sintético de `<select>` com o valor (string) dado. */
+function selectEvent(value: string): Event {
+  return { target: { value } } as unknown as Event;
+}
+
+/** `Image` falso: dispara `onload` assim que a `src` é atribuída. */
+class FakeImage {
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  crossOrigin = '';
+  decoding = '';
+  naturalWidth = 100;
+  naturalHeight = 100;
+  set src(_v: string) {
+    queueMicrotask(() => this.onload?.());
+  }
+}
+
+/** Canvas falso: ctx no-op + `toBlob` síncrono (jsdom não rasteriza). */
+function makeCanvas(): HTMLCanvasElement {
+  const ctx = new Proxy(
+    { fillStyle: '', strokeStyle: '', lineWidth: 0, filter: 'none' },
+    { get: (t, k) => (k in t ? (t as Record<string, unknown>)[k as string] : () => undefined) },
+  );
+  return {
+    width: 0,
+    height: 0,
+    getContext: () => ctx,
+    toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(['x'], { type: 'image/png' })),
+  } as unknown as HTMLCanvasElement;
+}
+
 const READY = { 44: art({ status: 'ready', printPngUrl: 'blob:a44' }) };
 
 describe('PrintPage', () => {
@@ -109,5 +141,95 @@ describe('PrintPage', () => {
     cmp.print();
     expect(spy).toHaveBeenCalledOnce();
     spy.mockRestore();
+  });
+});
+
+describe('PrintPage — imagem avulsa', () => {
+  let createObjectURL: ReturnType<typeof vi.fn>;
+  let revokeObjectURL: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    const realCreate = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+      tag === 'canvas' ? makeCanvas() : realCreate(tag as 'div'),
+    );
+    vi.stubGlobal('Image', FakeImage);
+    createObjectURL = vi.fn(() => 'blob:art');
+    revokeObjectURL = vi.fn();
+    (URL as unknown as { createObjectURL: unknown }).createObjectURL = createObjectURL;
+    (URL as unknown as { revokeObjectURL: unknown }).revokeObjectURL = revokeObjectURL;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  function file(): File {
+    return new File(['x'], 'logo.png', { type: 'image/png' });
+  }
+
+  it('segura o arquivo aceito e cria a prévia (object URL)', () => {
+    createObjectURL.mockReturnValueOnce('blob:preview');
+    const cmp = build([]);
+    cmp.onAvulsoFile(file());
+    expect(cmp.hasPending()).toBe(true);
+    expect(cmp.pendingFile()?.name).toBe('logo.png');
+    expect(cmp.pendingPreview()).toBe('blob:preview');
+    expect(createObjectURL).toHaveBeenCalledOnce();
+  });
+
+  it('adiciona a arte avulsa à folha com o tamanho/quantidade escolhidos', async () => {
+    createObjectURL.mockReturnValueOnce('blob:preview');
+    const cmp = build([]);
+    cmp.setAvulsoSize(selectEvent('58'));
+    cmp.onAvulsoQtyInput(qtyEvent(3));
+    cmp.onAvulsoFile(file());
+    await cmp.addAvulsoToSheet();
+    expect(cmp.lines()).toHaveLength(1);
+    expect(cmp.lines()[0].origin).toBe('avulso');
+    expect(cmp.lines()[0].sizeMm).toBe(58);
+    expect(cmp.lines()[0].name).toBe('logo.png');
+    expect(cmp.packed().totalPieces).toBe(3);
+    // Após adicionar, o pendente é limpo e a prévia revogada.
+    expect(cmp.hasPending()).toBe(false);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:preview');
+  });
+
+  it('remove a arte avulsa revogando o object URL da arte', async () => {
+    const cmp = build([]);
+    cmp.onAvulsoFile(file());
+    await cmp.addAvulsoToSheet();
+    const line = cmp.lines()[0];
+    cmp.removeLine(line.key);
+    expect(cmp.lines()).toHaveLength(0);
+    expect(revokeObjectURL).toHaveBeenCalledWith(line.url);
+  });
+
+  it('ngOnDestroy revoga as artes avulsas restantes na folha', async () => {
+    const cmp = build([]);
+    cmp.onAvulsoFile(file());
+    await cmp.addAvulsoToSheet();
+    const line = cmp.lines()[0];
+    cmp.ngOnDestroy();
+    expect(revokeObjectURL).toHaveBeenCalledWith(line.url);
+  });
+
+  it('reporta erro quando a renderização avulsa falha', async () => {
+    const cmp = build([]);
+    cmp.onAvulsoFile(file());
+    // Sem canvas 2D → buildAvulsoLine rejeita: getContext devolve null.
+    vi.spyOn(document, 'createElement').mockImplementation(
+      () =>
+        ({
+          width: 0,
+          height: 0,
+          getContext: () => null,
+          toBlob: () => undefined,
+        }) as unknown as HTMLCanvasElement,
+    );
+    await cmp.addAvulsoToSheet();
+    expect(cmp.avulsoError()).not.toBeNull();
+    expect(cmp.lines()).toHaveLength(0);
   });
 });

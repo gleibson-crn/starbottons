@@ -114,6 +114,59 @@
   text-align: center;
 }
 
+/* --- Upload avulso ------------------------------------------------------ */
+.avulso__pending {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-block-start: var(--sp-3);
+}
+
+.avulso__thumb {
+  inline-size: 48px;
+  block-size: 48px;
+  object-fit: cover;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+}
+
+.avulso__filename {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-inline-size: 0;
+}
+
+.avulso__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-block: var(--sp-4);
+}
+
+.avulso__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.avulso__label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.avulso__qty {
+  inline-size: 6rem;
+}
+
+.avulso__error {
+  margin: 0;
+  color: var(--color-danger, #b3261e);
+  font-size: var(--fs-sm);
+}
+
 .print__meta {
   display: flex;
   flex-direction: column;

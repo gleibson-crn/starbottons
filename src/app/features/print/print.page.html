@@ -8,16 +8,17 @@
     </p>
   </div>
 
-  @if (readyArts().length === 0) {
-    <div class="card print__empty" role="status">
-      <p>Você ainda não tem nenhuma arte pronta para imprimir.</p>
-      <a class="btn btn--primary" routerLink="/app/batch">Gerar artes no lote</a>
-    </div>
-  } @else {
-    <div class="print__layout">
+  <div class="print__layout">
       <div class="print__panel">
         <section class="card" aria-labelledby="ready-title">
           <h2 id="ready-title" class="print__h2">Artes prontas</h2>
+          @if (readyArts().length === 0) {
+            <p class="print__hint">
+              Nenhuma arte pronta no lote ainda —
+              <a routerLink="/app/batch">gere no lote</a> ou envie uma imagem
+              avulsa abaixo.
+            </p>
+          } @else {
           <ul class="print__ready" role="list">
             @for (art of readyArts(); track art.key) {
               <li class="ready-item">
@@ -56,6 +57,75 @@
               </li>
             }
           </ul>
+          }
+        </section>
+
+        <section class="card" aria-labelledby="avulso-title">
+          <h2 id="avulso-title" class="print__h2">Adicionar imagem avulsa</h2>
+          <p class="print__hint">
+            Envie uma imagem (PNG ou JPEG), escolha o tamanho e a quantidade. Ela
+            entra na mesma folha, com círculo e linha de corte como as artes do lote.
+          </p>
+
+          <app-file-dropzone
+            [accept]="['image/png', 'image/jpeg']"
+            browseLabel="Escolher imagem"
+            (fileAccepted)="onAvulsoFile($event)"
+            (fileRejected)="onAvulsoRejected($event)"
+          />
+
+          @if (hasPending()) {
+            <div class="avulso__pending">
+              <img
+                class="avulso__thumb"
+                [src]="pendingPreview()"
+                alt="Prévia da imagem avulsa selecionada"
+              />
+              <span class="avulso__filename">{{ pendingFile()?.name }}</span>
+            </div>
+          }
+
+          <div class="avulso__controls">
+            <label class="avulso__field">
+              <span class="avulso__label">Tamanho</span>
+              <select
+                class="field__control avulso__size"
+                [value]="avulsoSize()"
+                (change)="setAvulsoSize($event)"
+              >
+                @for (opt of sizeOptions; track opt.sizeMm) {
+                  <option [value]="opt.sizeMm">{{ opt.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="avulso__field">
+              <span class="avulso__label">Quantidade</span>
+              <input
+                class="field__control avulso__qty"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                max="999"
+                step="1"
+                [value]="avulsoQty()"
+                (input)="onAvulsoQtyInput($event)"
+              />
+            </label>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn--primary avulso__add"
+            (click)="addAvulsoToSheet()"
+            [disabled]="!hasPending()"
+          >
+            Adicionar à folha
+          </button>
+
+          @if (avulsoError()) {
+            <p class="avulso__error" role="alert">{{ avulsoError() }}</p>
+          }
         </section>
 
         <section class="card" aria-labelledby="added-title">
@@ -148,5 +218,4 @@
         }
       </div>
     </div>
-  }
 </section>
