@@ -1,0 +1,205 @@
+.manager__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: var(--sp-4);
+}
+
+.manager__intro {
+  margin: 0 0 var(--sp-6);
+  color: var(--color-text-muted);
+  max-inline-size: 60ch;
+}
+
+.manager__subtitle {
+  margin: var(--sp-6) 0 var(--sp-4);
+  font-size: var(--fs-md);
+}
+
+/* Form + grade à esquerda; editor de enquadramento à direita (empilha no estreito). */
+.manager__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sp-6);
+}
+
+.manager__col-main {
+  flex: 1 1 360px;
+  min-inline-size: 0;
+}
+
+.manager__col-editor {
+  flex: 1 1 440px;
+  min-inline-size: 0;
+  position: sticky;
+  inset-block-start: var(--sp-4);
+}
+
+.editor__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-block-end: var(--sp-3);
+}
+
+.editor__title {
+  margin: 0;
+  font-size: var(--fs-md);
+}
+
+.frameform {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-inline-size: 48ch;
+  margin-block-end: var(--sp-6);
+}
+
+.frameform__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.frameform__label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.frameform__input {
+  min-block-size: var(--tap-min);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.frameform__preview {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.frameform__thumb {
+  inline-size: 64px;
+  block-size: 64px;
+  object-fit: contain;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+
+.frameform__filename {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--sp-3);
+}
+
+.grid__status {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.framecard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-2);
+}
+
+.framecard__thumb {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  inline-size: 100%;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary, currentColor);
+    outline-offset: 2px;
+  }
+
+  &:hover .framecard__edit,
+  &:focus-visible .framecard__edit {
+    opacity: 1;
+  }
+}
+
+/* Chamada "Editar" que surge sobre a moldura ao passar o mouse / focar. */
+.framecard__edit {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.framecard__img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+}
+
+.framecard__error {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.framecard__name {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.framecard__badge {
+  position: absolute;
+  inset-block-start: var(--sp-1);
+  inset-inline-start: var(--sp-1);
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-sm);
+  background: var(--primary-500);
+  color: #fff;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 600;
+}

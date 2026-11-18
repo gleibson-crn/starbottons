@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../core/auth';
+import { AuthService, AutoLoginService } from '../../core/auth';
 
 /**
  * LoginPage — autenticação por e-mail/senha (sem cadastro público).
@@ -26,6 +26,9 @@ export class LoginPage {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+
+  /** `true` quando o login automático local falhou (Supabase fora / credencial inválida). */
+  readonly autoLoginFailed = inject(AutoLoginService).failed;
 
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);

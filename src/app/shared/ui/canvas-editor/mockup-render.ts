@@ -1,6 +1,14 @@
-import type { EditorTransform, Framing, ImageFilters, PrintSpec } from '../../types';
-import { computeLayout } from '../../utils';
-import { drawBottonFace } from './botton-face';
+import type {
+  EditorTransform,
+  Framing,
+  ImageFilters,
+  PrintSpec,
+  StyleEffect,
+} from '../../types';
+import { DEFAULT_FILTERS, DEFAULT_STYLE_EFFECT, isDefaultStyle } from '../../types';
+import { prepareArt } from '../../imaging';
+import { computeLayout, imageDrawSize, type EditorLayout } from '../../utils';
+import { drawBottonFace, type FrameLayer } from './botton-face';
 
 /** Parâmetros para compor o mockup (face visível) de um botton. */
 export interface MockupParams {
@@ -13,10 +21,14 @@ export interface MockupParams {
   readonly editorSide: number;
   /** Filtros aplicados APENAS à arte (ausência = sem filtro). */
   readonly filters?: ImageFilters;
+  /** Efeito de estilo por pixel (ADR-019; ausência/`none` = sem estilo). */
+  readonly style?: StyleEffect;
   /** Imagem de fundo (por cima da cor, por baixo da arte). */
   readonly backgroundImage?: HTMLImageElement | null;
   /** Enquadramento do fundo (ausente/`null` = neutro, cover centrado). */
   readonly backgroundTransform?: Framing | null;
+  /** Molduras decorativas EMPILHADAS (z-order), cada uma com seu enquadramento. */
+  readonly frames?: readonly FrameLayer[];
 }
 
 /**
@@ -51,22 +63,50 @@ function drawFace(
   center: number,
   cutR: number,
 ): void {
+  const layout = computeLayout(p.spec, p.side);
   ctx.save();
   ctx.beginPath();
   ctx.arc(center, center, cutR, 0, Math.PI * 2);
   ctx.clip();
+  // As molduras cobrem no círculo VISÍVEL (corte): `drawBottonFace` calcula o
+  // COVER em `cutR*2` por moldura, mantendo-as dentro do clip de corte.
   drawBottonFace({
     ctx,
     side: p.side,
     editorSide: p.editorSide,
-    layout: computeLayout(p.spec, p.side),
-    image: p.image,
+    layout,
+    ...faceArt(p, layout),
     transform: p.transform,
-    filters: p.filters,
     backgroundImage: p.backgroundImage,
     backgroundTransform: p.backgroundTransform,
+    frames: p.frames,
   });
   ctx.restore();
+}
+
+/**
+ * Resolve a arte a compor: sem estilo → imagem + `filters` (caminho tonal
+ * atual, `drawW/drawH` em COVER). Com estilo → `prepareArt` (MESMA função do
+ * editor/bake, garantindo paridade) devolve um canvas baked; nesse caso o tonal
+ * já foi aplicado, então `filters` é OMITIDO e `drawW/drawH` vão explícitos
+ * (canvas não tem `naturalWidth`).
+ */
+function faceArt(
+  p: MockupParams,
+  layout: EditorLayout,
+): Pick<Parameters<typeof drawBottonFace>[0], 'image' | 'filters' | 'drawW' | 'drawH'> {
+  const style = p.style ?? DEFAULT_STYLE_EFFECT;
+  if (isDefaultStyle(style)) {
+    return { image: p.image, filters: p.filters };
+  }
+  const styled = prepareArt(p.image, p.filters ?? DEFAULT_FILTERS, style, p.side);
+  const size = imageDrawSize(
+    p.image.naturalWidth,
+    p.image.naturalHeight,
+    layout.bleedR * 2,
+    p.transform.scale,
+  );
+  return { image: styled, drawW: size.drawW, drawH: size.drawH };
 }
 
 /** Converte o canvas do mockup em blob PNG (para download client-side). */
@@ -137,10 +177,14 @@ export interface SpriteParams {
   readonly targetRadiusPx: number;
   /** Filtros aplicados APENAS à arte (ausência = sem filtro). */
   readonly filters?: ImageFilters;
+  /** Efeito de estilo por pixel (ADR-019; ausência/`none` = sem estilo). */
+  readonly style?: StyleEffect;
   /** Imagem de fundo (por cima da cor, por baixo da arte). */
   readonly backgroundImage?: HTMLImageElement | null;
   /** Enquadramento do fundo (ausente/`null` = neutro, cover centrado). */
   readonly backgroundTransform?: Framing | null;
+  /** Molduras decorativas EMPILHADAS (z-order), cada uma com seu enquadramento. */
+  readonly frames?: readonly FrameLayer[];
 }
 
 /** Rende o sprite FIEL do botton dimensionado a partir do raio-alvo (reusa renderMockup). */
@@ -153,8 +197,10 @@ export function renderMockupSprite(p: SpriteParams): MockupSprite {
     side,
     editorSide: p.editorSide,
     filters: p.filters,
+    style: p.style,
     backgroundImage: p.backgroundImage,
     backgroundTransform: p.backgroundTransform,
+    frames: p.frames,
   });
   const layout = computeLayout(p.spec, side);
   return {

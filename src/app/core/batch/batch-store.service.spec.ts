@@ -63,7 +63,7 @@ interface FakeTreated {
 }
 
 const okResult = (): Promise<GenerationResult> =>
-  Promise.resolve({ jobId: 'srv', printPngUrl: 'png', printPdfUrl: 'pdf' });
+  Promise.resolve({ jobId: 'srv', printPngUrl: 'png' });
 
 function makeUpload(): FakeUpload {
   let n = 0;
@@ -165,6 +165,36 @@ async function addImage(ctx: Ctx, dims: { width: number; height: number }): Prom
   const items = ctx.store.items();
   return items[items.length - 1];
 }
+
+describe('BatchStore — reenvio de upload (retryUpload)', () => {
+  // Reenvia reusando o File original retido (ex.: após "JWT issued at future").
+  const okRecord = () => Promise.resolve({ id: 'up-1', path: 'p', fileName: 'logo.png', width: 400, height: 400, previewUrl: 'about:blank' });
+
+  it('falha no upload → retryUpload reenvia (upload OK, erro limpo)', async () => {
+    const ctx = setup();
+    ctx.upload.upload = () => Promise.reject(new Error('JWT issued at future'));
+    ctx.store.addFiles([pngFile()]);
+    await flush();
+    expect(ctx.store.items()[0].uploadError).toContain('JWT issued at future');
+
+    ctx.upload.upload = okRecord;
+    await ctx.store.retryUpload(ctx.store.items()[0].id);
+    const item = ctx.store.items()[0];
+    expect(item.upload).not.toBeNull();
+    expect(item.uploadError).toBeNull();
+  });
+
+  it('retryUpload é no-op após remover (File descartado)', async () => {
+    const ctx = setup();
+    ctx.upload.upload = () => Promise.reject(new Error('falhou'));
+    ctx.store.addFiles([pngFile()]);
+    await flush();
+    const id = ctx.store.items()[0].id;
+    ctx.store.removeItem(id);
+    await ctx.store.retryUpload(id);
+    expect(ctx.store.items()).toHaveLength(0);
+  });
+});
 
 describe('BatchStore — gating por tamanho', () => {
   it('imagem pequena: 58mm fica bloqueado e fora da seleção default', async () => {
@@ -328,7 +358,7 @@ describe('BatchStore — geração', () => {
     ctx.gen.behavior = (req) =>
       req.size_mm === 58
         ? Promise.reject(new Error('render quebrou'))
-        : Promise.resolve({ jobId: 'srv', printPngUrl: 'png', printPdfUrl: 'pdf' });
+        : Promise.resolve({ jobId: 'srv', printPngUrl: 'png' });
 
     await ctx.store.generateAll();
 
@@ -349,15 +379,28 @@ describe('BatchStore — filtros por item (Abordagem A)', () => {
     expect(ctx.store.items()[0].generationUpload).toBeNull();
   });
 
-  it('SEM filtros não reprocessa: usa o upload ORIGINAL na geração', async () => {
+  it('SEM filtros e DENTRO do teto: usa o upload ORIGINAL na geração', async () => {
     const ctx = setup();
-    await addImage(ctx, { width: 4000, height: 4000 });
+    // 1000×1000 ≤ TREATED_MAX_SIDE (1280) → não reprocessa.
+    await addImage(ctx, { width: 1000, height: 1000 });
 
     await ctx.store.generateAll();
 
     expect(ctx.treated.calls.length).toBe(0);
     expect(ctx.gen.calls).toBe(3);
     expect(new Set(ctx.gen.uploadIds)).toEqual(new Set(['up-1']));
+  });
+
+  it('SEM filtros mas ACIMA do teto: REDUZ (bake tratado) p/ não estourar a Edge', async () => {
+    const ctx = setup();
+    // Foto grande (4000×4000 = 16MP): sem esse bake, o original iria à Edge e
+    // estouraria o CPU hard limit (HTTP 546). O bake só reduz a resolução.
+    await addImage(ctx, { width: 4000, height: 4000 });
+
+    await ctx.store.generateAll();
+
+    expect(ctx.treated.calls.length).toBe(1);
+    expect(new Set(ctx.gen.uploadIds)).toEqual(new Set(['treated-1']));
   });
 
   it('COM filtros cria UM upload tratado (novo) e usa ele em todos os tamanhos', async () => {
@@ -383,7 +426,7 @@ describe('BatchStore — filtros por item (Abordagem A)', () => {
     ctx.gen.behavior = (req) =>
       req.size_mm === 58
         ? Promise.reject(new Error('falhou'))
-        : Promise.resolve({ jobId: 'srv', printPngUrl: 'png', printPdfUrl: 'pdf' });
+        : Promise.resolve({ jobId: 'srv', printPngUrl: 'png' });
 
     await ctx.store.generateAll();
     expect(ctx.treated.calls.length).toBe(1);
@@ -407,6 +450,38 @@ describe('BatchStore — filtros por item (Abordagem A)', () => {
 
     expect(ctx.gen.calls).toBe(0);
     expect(ctx.store.artesFalhas()).toBe(3);
+  });
+});
+
+describe('BatchStore — estilo por IA (Trilha 2, ADR-021)', () => {
+  it('item aiStyled usa o upload estilizado mesmo com imagem PEQUENA', async () => {
+    const ctx = setup();
+    // 1000×1000 ≤ TREATED_MAX_SIDE: sem IA iria direto o original.
+    const item = await addImage(ctx, { width: 1000, height: 1000 });
+
+    // Simula o retorno do diálogo: upload estilizado já materializado.
+    ctx.store.setItemAiStyle(item.id, ctx.treated.record);
+    expect(ctx.store.items()[0].aiStyled).toBe(true);
+    expect(ctx.store.items()[0].generationUpload?.id).toBe('treated-1');
+
+    await ctx.store.generateAll();
+
+    // needsTreated true (aiStyled) → geração usa o tratado estilizado, NÃO o
+    // original, e NÃO reprocessa (generationUpload já estava setado).
+    expect(new Set(ctx.gen.uploadIds)).toEqual(new Set(['treated-1']));
+    expect(ctx.treated.calls.length).toBe(0);
+    expect(ctx.store.artesProntas()).toBe(3);
+  });
+
+  it('mexer nos filtros depois da IA reseta aiStyled e reprocessa', async () => {
+    const ctx = setup();
+    const item = await addImage(ctx, { width: 1000, height: 1000 });
+    ctx.store.setItemAiStyle(item.id, ctx.treated.record);
+
+    ctx.store.setItemFilters(item.id, VIVID);
+
+    expect(ctx.store.items()[0].aiStyled).toBe(false);
+    expect(ctx.store.items()[0].generationUpload).toBeNull();
   });
 });
 

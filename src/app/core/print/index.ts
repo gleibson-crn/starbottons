@@ -11,3 +11,12 @@ export type {
   PlacedPiece,
   PackedSheet,
 } from './sheet-packer';
+export {
+  MIN_QTY,
+  MAX_QTY,
+  clampQty,
+  mergeReadyLine,
+} from './sheet-line';
+export type { SheetLine, ReadyLineInput } from './sheet-line';
+export { toLocalUrl } from './local-url';
+export { PrintStore } from './print-store.service';

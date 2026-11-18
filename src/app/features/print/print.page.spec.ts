@@ -1,51 +1,30 @@
 /**
- * PrintPage — testes de comportamento: lê as artes prontas do BatchStore
- * (stubado), adiciona/edita/remove linhas e monta a prévia via `packSheet`.
- * `window.print` é espiado (jsdom não implementa impressão).
+ * PrintPage — testes de comportamento. A folha agora vem da FILA da PrintStore
+ * (não mais do BatchStore): começa VAZIA e recebe artes só via `enqueue`.
+ * A página monta a prévia via `packSheet`, edita/remove linhas (delegando à
+ * store) e imprime. `window.print` é espiado (jsdom não imprime).
  */
 import { TestBed } from '@angular/core/testing';
-import { DEFAULT_FILTERS, DEFAULT_TRANSFORM } from '../../shared/types';
-import { IDLE_ART, BatchStore, type ArtState, type BatchItem, type BottonSize } from '../../core/batch';
-import { ToastService } from '../../shared/ui';
+import { PrintStore, type SheetLine } from '../../core/print';
 import { PrintPage } from './print.page';
 
-function art(patch: Partial<ArtState>): ArtState {
-  return { ...IDLE_ART, ...patch };
-}
-
-function makeItem(id: string, name: string, arts: BatchItem['arts']): BatchItem {
-  const dpi: Record<BottonSize, number> = { 32: 300, 44: 300, 58: 300 };
+function readyLine(patch: Partial<SheetLine> = {}): SheetLine {
   return {
-    id,
-    name,
-    upload: null,
-    fileName: `${id}.png`,
-    previewUrl: `blob:${id}`,
-    width: 2000,
-    height: 2000,
-    transform: DEFAULT_TRANSFORM,
-    editorSide: 512,
-    filters: DEFAULT_FILTERS,
-    generationUpload: null,
-    selectedSizes: new Set<BottonSize>([32, 44, 58]),
-    perSizeDpi: dpi,
-    perSizeTier: { 32: 'ok', 44: 'ok', 58: 'ok' },
-    arts,
-    uploadError: null,
+    key: 'a:44',
+    url: 'blob:a44',
+    name: 'Logo',
+    sizeMm: 44,
+    quantity: 1,
+    origin: 'ready',
+    ...patch,
   };
 }
 
-function build(items: BatchItem[]): PrintPage {
-  TestBed.configureTestingModule({
-    providers: [
-      { provide: BatchStore, useValue: { items: () => items } },
-      {
-        provide: ToastService,
-        useValue: { error: () => undefined, success: () => undefined, warning: () => undefined, show: () => undefined },
-      },
-    ],
-  });
-  return TestBed.createComponent(PrintPage).componentInstance;
+function build(): { cmp: PrintPage; store: PrintStore } {
+  TestBed.configureTestingModule({});
+  const store = TestBed.inject(PrintStore);
+  const cmp = TestBed.createComponent(PrintPage).componentInstance;
+  return { cmp, store };
 }
 
 /** Evento sintético de `<input type="number">` com o valor dado. */
@@ -85,16 +64,8 @@ function makeCanvas(): HTMLCanvasElement {
   } as unknown as HTMLCanvasElement;
 }
 
-const READY = { 44: art({ status: 'ready', printPngUrl: 'blob:a44' }) };
-
-describe('PrintPage', () => {
+describe('PrintPage — fila da PrintStore', () => {
   beforeEach(() => {
-    // addToSheet baixa a signed URL da arte e a converte em object URL local.
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({ ok: true, blob: async () => new Blob(['x'], { type: 'image/png' }) })),
-    );
-    (URL as unknown as { createObjectURL: unknown }).createObjectURL = vi.fn(() => 'blob:ready');
     (URL as unknown as { revokeObjectURL: unknown }).revokeObjectURL = vi.fn();
   });
 
@@ -103,40 +74,33 @@ describe('PrintPage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('expõe as artes prontas do lote', () => {
-    const cmp = build([makeItem('a', 'Logo', READY)]);
-    expect(cmp.readyArts().map((r) => r.key)).toEqual(['a:44']);
+  it('começa com a folha VAZIA (fila vazia por padrão)', () => {
+    const { cmp } = build();
+    expect(cmp.lines()).toEqual([]);
+    expect(cmp.hasSheet()).toBe(false);
+    expect(cmp.packed().totalPieces).toBe(0);
   });
 
-  it('adiciona uma arte à folha e monta a prévia', async () => {
-    const cmp = build([makeItem('a', 'Logo', READY)]);
-    await cmp.addToSheet(cmp.readyArts()[0]);
+  it('monta a prévia a partir das artes enfileiradas', () => {
+    const { cmp, store } = build();
+    store.enqueue(readyLine());
     expect(cmp.lines()).toHaveLength(1);
-    expect(cmp.lines()[0].url).toBe('blob:ready');
+    expect(cmp.lines()[0].url).toBe('blob:a44');
     expect(cmp.hasSheet()).toBe(true);
     expect(cmp.packed().totalPieces).toBe(1);
   });
 
-  it('usa a quantidade de rascunho ao adicionar', async () => {
-    const cmp = build([makeItem('a', 'Logo', READY)]);
-    cmp.onDraftInput('a:44', qtyEvent(5));
-    await cmp.addToSheet(cmp.readyArts()[0]);
-    expect(cmp.lines()[0].quantity).toBe(5);
-    expect(cmp.packed().totalPieces).toBe(5);
-  });
-
-  it('soma a quantidade quando a mesma arte é adicionada de novo', async () => {
-    const cmp = build([makeItem('a', 'Logo', READY)]);
-    const readyArt = cmp.readyArts()[0];
-    await cmp.addToSheet(readyArt);
-    await cmp.addToSheet(readyArt);
+  it('soma a quantidade quando a mesma arte é enfileirada de novo', () => {
+    const { cmp, store } = build();
+    store.enqueue(readyLine({ quantity: 2 }));
+    store.enqueue(readyLine({ url: 'blob:dup', quantity: 3 }));
     expect(cmp.lines()).toHaveLength(1);
-    expect(cmp.lines()[0].quantity).toBe(2);
+    expect(cmp.lines()[0].quantity).toBe(5);
   });
 
-  it('edita e remove a quantidade de uma linha', async () => {
-    const cmp = build([makeItem('a', 'Logo', READY)]);
-    await cmp.addToSheet(cmp.readyArts()[0]);
+  it('edita e remove a quantidade de uma linha', () => {
+    const { cmp, store } = build();
+    store.enqueue(readyLine());
     cmp.setLineQty('a:44', qtyEvent(9));
     expect(cmp.lines()[0].quantity).toBe(9);
     cmp.removeLine('a:44');
@@ -144,15 +108,10 @@ describe('PrintPage', () => {
     expect(cmp.hasSheet()).toBe(false);
   });
 
-  it('mistura tamanhos e reporta páginas/aproveitamento', async () => {
-    const cmp = build([
-      makeItem('a', 'Logo', { 58: art({ status: 'ready', printPngUrl: 'blob:a58' }) }),
-      makeItem('b', 'Selo', { 32: art({ status: 'ready', printPngUrl: 'blob:b32' }) }),
-    ]);
-    for (const readyArt of cmp.readyArts()) {
-      cmp.onDraftInput(readyArt.key, qtyEvent(10));
-      await cmp.addToSheet(readyArt);
-    }
+  it('mistura tamanhos e reporta páginas/aproveitamento', () => {
+    const { cmp, store } = build();
+    store.enqueue(readyLine({ key: 'a:58', url: 'blob:a58', sizeMm: 58, quantity: 10 }));
+    store.enqueue(readyLine({ key: 'b:32', url: 'blob:b32', sizeMm: 32, quantity: 10 }));
     expect(cmp.packed().totalPieces).toBe(20);
     expect(cmp.pageCount()).toBeGreaterThanOrEqual(1);
     expect(cmp.packed().utilizationPct).toBeGreaterThan(0);
@@ -160,7 +119,7 @@ describe('PrintPage', () => {
 
   it('chama window.print ao imprimir', () => {
     const spy = vi.spyOn(window, 'print').mockImplementation(() => undefined);
-    const cmp = build([makeItem('a', 'Logo', READY)]);
+    const { cmp } = build();
     cmp.print();
     expect(spy).toHaveBeenCalledOnce();
     spy.mockRestore();
@@ -194,7 +153,7 @@ describe('PrintPage — imagem avulsa', () => {
 
   it('segura o arquivo aceito e cria a prévia (object URL)', () => {
     createObjectURL.mockReturnValueOnce('blob:preview');
-    const cmp = build([]);
+    const { cmp } = build();
     cmp.onAvulsoFile(file());
     expect(cmp.hasPending()).toBe(true);
     expect(cmp.pendingFile()?.name).toBe('logo.png');
@@ -202,9 +161,9 @@ describe('PrintPage — imagem avulsa', () => {
     expect(createObjectURL).toHaveBeenCalledOnce();
   });
 
-  it('adiciona a arte avulsa à folha com o tamanho/quantidade escolhidos', async () => {
+  it('enfileira a arte avulsa com o tamanho/quantidade escolhidos', async () => {
     createObjectURL.mockReturnValueOnce('blob:preview');
-    const cmp = build([]);
+    const { cmp } = build();
     cmp.setAvulsoSize(selectEvent('58'));
     cmp.onAvulsoQtyInput(qtyEvent(3));
     cmp.onAvulsoFile(file());
@@ -214,13 +173,13 @@ describe('PrintPage — imagem avulsa', () => {
     expect(cmp.lines()[0].sizeMm).toBe(58);
     expect(cmp.lines()[0].name).toBe('logo.png');
     expect(cmp.packed().totalPieces).toBe(3);
-    // Após adicionar, o pendente é limpo e a prévia revogada.
+    // Após enfileirar, o pendente é limpo e a prévia revogada.
     expect(cmp.hasPending()).toBe(false);
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:preview');
   });
 
-  it('remove a arte avulsa revogando o object URL da arte', async () => {
-    const cmp = build([]);
+  it('remove a arte avulsa revogando o object URL da arte (via store)', async () => {
+    const { cmp } = build();
     cmp.onAvulsoFile(file());
     await cmp.addAvulsoToSheet();
     const line = cmp.lines()[0];
@@ -229,17 +188,16 @@ describe('PrintPage — imagem avulsa', () => {
     expect(revokeObjectURL).toHaveBeenCalledWith(line.url);
   });
 
-  it('ngOnDestroy revoga as artes avulsas restantes na folha', async () => {
-    const cmp = build([]);
+  it('ngOnDestroy revoga só a prévia pendente (a fila persiste na store)', () => {
+    createObjectURL.mockReturnValueOnce('blob:preview');
+    const { cmp } = build();
     cmp.onAvulsoFile(file());
-    await cmp.addAvulsoToSheet();
-    const line = cmp.lines()[0];
     cmp.ngOnDestroy();
-    expect(revokeObjectURL).toHaveBeenCalledWith(line.url);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:preview');
   });
 
   it('reporta erro quando a renderização avulsa falha', async () => {
-    const cmp = build([]);
+    const { cmp } = build();
     cmp.onAvulsoFile(file());
     // Sem canvas 2D → buildAvulsoLine rejeita: getContext devolve null.
     vi.spyOn(document, 'createElement').mockImplementation(

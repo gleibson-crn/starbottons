@@ -2,26 +2,38 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
+  ElementRef,
   inject,
   type OnDestroy,
   signal,
+  viewChild,
+  viewChildren,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { BatchStore } from '../../core/batch';
-import { packSheet, type BottonSize, type PackedSheet, type PlacedPiece } from '../../core/print';
+import {
+  MIN_QTY,
+  PrintStore,
+  clampQty,
+  packSheet,
+  type BottonSize,
+  type PackedSheet,
+  type PlacedPiece,
+} from '../../core/print';
 import { SIZE_OPTIONS } from '../../shared/utils';
-import { FileDropzone, ToastService } from '../../shared/ui';
+import { FileDropzone } from '../../shared/ui';
 import { buildAvulsoLine } from './avulso-art';
-import { collectReadyArts, type ReadyArt } from './ready-arts';
-import { MIN_QTY, clampQty, mergeReadyLine, type SheetLine } from './sheet-line';
 
 /**
- * PrintPage — "Área de Impressão" (Estágio 2). Monta uma folha A4 otimizada
- * (`packSheet`) a partir de DUAS fontes: as artes JÁ geradas no lote
- * (BatchStore) e imagens AVULSAS enviadas aqui (upload → arte redonda no mesmo
- * estilo, via `buildAvulsoLine`). Imprime direto da tela com `window.print()`.
- * Zoneless/OnPush: todo estado é signal/computed. Object URLs de artes avulsas
- * são revogados ao remover a linha e no `ngOnDestroy`.
+ * PrintPage — "Área de Impressão". Monta uma folha A4 otimizada (`packSheet`) a
+ * partir da FILA da `PrintStore`: começa VAZIA (abrir pelo menu mostra a folha
+ * em branco) e recebe artes do lote só pelo botão "Levar para impressão" do
+ * cartão (via `enqueue`). Também aceita imagens AVULSAS enviadas aqui (upload →
+ * arte redonda no mesmo estilo, via `buildAvulsoLine`), que entram na mesma
+ * fila. Imprime direto da tela com `window.print()`. Zoneless/OnPush: todo
+ * estado é signal/computed. Os object URLs das linhas pertencem à store (é ela
+ * que os revoga em remover/limpar, pois a fila sobrevive à página); aqui só o
+ * object URL da PRÉVIA do arquivo avulso pendente é revogado no `ngOnDestroy`.
  */
 @Component({
   selector: 'app-print-page',
@@ -31,17 +43,10 @@ import { MIN_QTY, clampQty, mergeReadyLine, type SheetLine } from './sheet-line'
   styleUrl: './print.page.scss',
 })
 export class PrintPage implements OnDestroy {
-  private readonly store = inject(BatchStore);
-  private readonly toast = inject(ToastService);
+  private readonly printStore = inject(PrintStore);
 
-  /** Artes prontas disponíveis no lote (reativas ao BatchStore). */
-  readonly readyArts = computed(() => collectReadyArts(this.store.items()));
-
-  /** Quantidade "de rascunho" por arte, antes de adicionar à folha. */
-  private readonly draftQty = signal<Record<string, number>>({});
-
-  /** Linhas já adicionadas à folha (artes do lote e/ou avulsas). */
-  readonly lines = signal<SheetLine[]>([]);
+  /** Linhas da folha (fonte única: a fila da PrintStore). */
+  readonly lines = this.printStore.queue;
 
   /** Opções de tamanho para a arte avulsa (32/44/58 mm). */
   readonly sizeOptions = SIZE_OPTIONS;
@@ -72,55 +77,56 @@ export class PrintPage implements OnDestroy {
   readonly pageCount = computed(() => this.packed().pages.length);
   readonly hasSheet = computed(() => this.packed().totalPieces > 0);
 
-  /** Quantidade de rascunho corrente de uma arte (default 1). */
-  qtyFor(key: string): number {
-    return this.draftQty()[key] ?? MIN_QTY;
-  }
+  /** Folha atualmente em foco na prévia (1-based) — dirige o pager flutuante. */
+  readonly currentPage = signal(1);
+  /** Contêiner rolável da prévia (root do IntersectionObserver). */
+  private readonly previewScroll = viewChild<ElementRef<HTMLElement>>('previewScroll');
+  /** Molduras de cada folha (para observar visibilidade e navegar). */
+  private readonly sheetFrames = viewChildren<ElementRef<HTMLElement>>('sheetFrame');
+  private observer?: IntersectionObserver;
 
-  /** Atualiza o rascunho a partir do `<input type="number">`. */
-  onDraftInput(key: string, event: Event): void {
-    const value = (event.target as HTMLInputElement).valueAsNumber;
-    this.draftQty.update((map) => ({ ...map, [key]: clampQty(value) }));
-  }
-
-  /**
-   * Adiciona a arte do lote à folha (soma à quantidade se já presente). A URL da
-   * arte é uma SIGNED URL cross-origin do Storage — o documento de impressão do
-   * navegador NÃO a carrega de forma confiável (expira / bloqueio cross-origin),
-   * saindo em branco. Por isso convertemos para um OBJECT URL de mesma origem no
-   * momento de adicionar (como as artes avulsas), garantindo a impressão.
-   */
-  async addToSheet(art: ReadyArt): Promise<void> {
-    const qty = this.qtyFor(art.key);
-    if (this.lines().some((l) => l.key === art.key)) {
-      this.lines.update((lines) => mergeReadyLine(lines, art, qty));
-    } else {
-      let url: string;
-      try {
-        url = await this.toLocalUrl(art.url);
-      } catch {
-        this.toast.error('Não foi possível carregar a arte do lote para impressão.');
+  constructor() {
+    // Observa qual folha está mais visível na prévia rolável e reflete no
+    // `currentPage`. Reconfigura quando as molduras mudam (nº de páginas varia).
+    effect((onCleanup) => {
+      const frames = this.sheetFrames().map((r) => r.nativeElement);
+      const root = this.previewScroll()?.nativeElement;
+      this.observer?.disconnect();
+      if (!frames.length || !root || typeof IntersectionObserver === 'undefined') {
         return;
       }
-      this.lines.update((lines) => [
-        ...lines,
-        { key: art.key, url, name: art.name, sizeMm: art.sizeMm, quantity: qty, origin: 'ready' },
-      ]);
-    }
-    this.draftQty.update((map) => ({ ...map, [art.key]: MIN_QTY }));
+      const ratios = new Map<Element, number>();
+      this.observer = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            ratios.set(e.target, e.intersectionRatio);
+          }
+          let best = -1;
+          let bestIdx = 0;
+          frames.forEach((f, i) => {
+            const r = ratios.get(f) ?? 0;
+            if (r > best) {
+              best = r;
+              bestIdx = i;
+            }
+          });
+          this.currentPage.set(bestIdx + 1);
+        },
+        { root, threshold: [0, 0.25, 0.5, 0.75, 1] },
+      );
+      frames.forEach((f) => this.observer!.observe(f));
+      onCleanup(() => this.observer?.disconnect());
+    });
   }
 
-  /**
-   * Baixa uma URL (signed, cross-origin) e devolve um OBJECT URL de mesma origem
-   * (blob:), que imprime de forma confiável e não expira. Revogado ao remover a
-   * linha / destruir a página.
-   */
-  private async toLocalUrl(url: string): Promise<string> {
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`fetch ${res.status}`);
-    }
-    return URL.createObjectURL(await res.blob());
+  /** Rola a prévia até a folha `page` (1-based), deixando ver a anterior. */
+  goToPage(page: number): void {
+    const n = Math.min(this.pageCount(), Math.max(1, page));
+    this.sheetFrames()[n - 1]?.nativeElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+    this.currentPage.set(n);
   }
 
   /** Define o tamanho da próxima arte avulsa a partir do `<select>`. */
@@ -147,7 +153,7 @@ export class PrintPage implements OnDestroy {
     this.avulsoError.set(reason);
   }
 
-  /** Renderiza a arte avulsa pendente e a adiciona à folha. */
+  /** Renderiza a arte avulsa pendente e a enfileira na folha. */
   async addAvulsoToSheet(): Promise<void> {
     const file = this.pendingFile();
     if (!file) {
@@ -155,7 +161,7 @@ export class PrintPage implements OnDestroy {
     }
     try {
       const line = await buildAvulsoLine(file, this.avulsoSize(), this.avulsoQty());
-      this.lines.update((lines) => [...lines, line]);
+      this.printStore.enqueue(line);
       this.clearPending();
       this.avulsoQty.set(MIN_QTY);
     } catch {
@@ -178,23 +184,14 @@ export class PrintPage implements OnDestroy {
     this.pendingPreview.set(null);
   }
 
-  /** Redefine a quantidade de uma linha já adicionada. */
+  /** Redefine a quantidade de uma linha já na folha. */
   setLineQty(key: string, event: Event): void {
-    const qty = clampQty((event.target as HTMLInputElement).valueAsNumber);
-    this.lines.update((lines) =>
-      lines.map((l) => (l.key === key ? { ...l, quantity: qty } : l)),
-    );
+    this.printStore.setQuantity(key, (event.target as HTMLInputElement).valueAsNumber);
   }
 
-  /** Remove uma linha da folha (revoga seu object URL — lote e avulso são blob:). */
+  /** Remove uma linha da folha (a store revoga seu object URL). */
   removeLine(key: string): void {
-    this.lines.update((lines) => {
-      const target = lines.find((l) => l.key === key);
-      if (target?.url.startsWith('blob:')) {
-        URL.revokeObjectURL(target.url);
-      }
-      return lines.filter((l) => l.key !== key);
-    });
+    this.printStore.remove(key);
   }
 
   /** Texto alternativo de uma peça posicionada na folha. */
@@ -207,13 +204,8 @@ export class PrintPage implements OnDestroy {
     window.print();
   }
 
-  /** Revoga os object URLs das linhas (lote e avulso) e a prévia pendente. */
+  /** Revoga só a prévia pendente (as linhas pertencem à store persistente). */
   ngOnDestroy(): void {
-    for (const line of this.lines()) {
-      if (line.url.startsWith('blob:')) {
-        URL.revokeObjectURL(line.url);
-      }
-    }
     this.revokePreview();
   }
 }

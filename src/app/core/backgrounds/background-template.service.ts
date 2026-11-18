@@ -6,6 +6,7 @@ import {
   downscaleImageFile,
   loadImage,
   safeFileName,
+  sniffImageMime,
   withConfiguredHost,
 } from '../../shared/utils';
 
@@ -75,6 +76,13 @@ export class BackgroundTemplateService {
 
   /** Sobe o arquivo (PNG/JPEG) ao bucket `uploads` e registra a linha. */
   async save(input: SaveBackgroundInput): Promise<BackgroundTemplate> {
+    // Defesa extra (BL-002): confere os magic bytes REAIS (o `file.type` é
+    // forjável). O fundo aceita PNG ou JPEG; qualquer outra assinatura é
+    // recusada cedo. A Edge também revalida por assinatura antes de compor.
+    const head = new Uint8Array(await input.file.slice(0, 8).arrayBuffer());
+    if (sniffImageMime(head) === null) {
+      throw new Error('O arquivo não é uma imagem PNG/JPEG válida.');
+    }
     // Reduz fotos grandes: o fundo nunca precisa exceder o tamanho da arte
     // (827px) e imagens grandes estouram o limite de CPU do worker na geração.
     const file = await downscaleImageFile(input.file);

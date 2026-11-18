@@ -12,6 +12,19 @@ O app é Angular + Supabase local (via Docker).
 
 ## Primeira vez (setup)
 
+**Um comando** (recomendado, após instalar os pré-requisitos acima):
+
+```bash
+npm run setup               # confere pré-requisitos, instala deps, sobe o Supabase,
+                            # aplica migrations+seed, baixa o modelo do "Remover fundo"
+                            # (~86MB) e cria o atalho na área de trabalho. Idempotente.
+```
+
+> `npm run setup` **não** instala Docker/Node/Supabase CLI — ele avisa o que falta e para.
+> Se o banco já tiver dados, ele pergunta antes de recriar (`npm run setup -- --yes` força).
+
+Ou manualmente, passo a passo:
+
 ```bash
 npm install                 # dependências do app
 npm run db:start            # sobe o Supabase local (baixa imagens Docker na 1a vez — demora)
@@ -23,33 +36,47 @@ do Supabase local — que são **fixas/padrão do Supabase CLI**, então valem s
 que o `db:start` sobe. Ele é `skip-worktree` (suas edições locais não entram no git).
 Se algum dia precisar reeditar: `git update-index --no-skip-worktree src/environments/environment.ts`.
 
-### Criar um usuário para entrar
+### Login (automático)
 
-O cadastro público é **desligado** (ferramenta interna). Crie usuários assim:
+Como é uma ferramenta local de uso próprio, o app faz **login invisível**: ao abrir,
+entra sozinho com o usuário fixo local (`teste@starbottons.local`) e cai direto no app —
+**sem tela de login**. A tela de login só aparece como **fallback** se o auto-login falhar
+(ex.: Supabase fora do ar). As credenciais ficam em `src/app/core/auth/local-credentials.ts`.
 
-- **Pelo Supabase Studio** (mais fácil): abra `http://127.0.0.1:54323` →
-  *Authentication* → *Users* → *Add user* → marque **Auto Confirm User**.
-- Já existe um de teste: **teste@starbottons.local** / **teste123456**.
+Se precisar de outro usuário (opcional), crie **pelo Supabase Studio**
+(`http://127.0.0.1:54323` → *Authentication* → *Users* → *Add user* → **Auto Confirm User**).
 
-## Dia a dia (rodar o app)
-
-Com o Docker aberto:
+## Dia a dia (rodar o app) — UM comando
 
 ```bash
-npm run db:start   # se o Supabase ainda não estiver de pé (idempotente)
-npm run dev        # sobe a Edge Function + o app juntos (um comando)
+npm run up
 ```
 
-Depois abra **http://localhost:4200**.
+Esse é **o** comando: sobe a aplicação **100%**, na ordem certa, mesmo depois que
+a máquina reinicia. Ele faz tudo sozinho:
 
-> `npm run dev` roda, em paralelo, o `supabase functions serve generate-art`
-> (gera a arte de impressão) e o `ng serve` (o app). Encerre com `Ctrl+C`.
+1. **Docker Desktop** — se o engine estiver desligado, inicia e espera ficar pronto;
+2. **Supabase local** (`supabase start`, idempotente);
+3. **Relógio da VM** (`fix:clock`) — evita o erro "JWT issued at future" no login/upload;
+4. **Edge + Web** (`npm run dev`) — com **auto-restart do edge** (que às vezes cai
+   com "unexpected EOF") sem derrubar o app.
 
-Se preferir separado (2 terminais):
+Quando terminar de subir, abra **http://localhost:4200**. Encerre com `Ctrl+C`.
+
+> ⚠️ `npm start` sozinho sobe **só o front** (`ng serve`) — a geração/exportação
+> falha porque a Edge e o Supabase não estão no ar. Use `npm run up`.
+
+### Variações (quando já tem Docker/Supabase de pé)
 
 ```bash
-npm run edge       # Edge Function generate-art  (http://127.0.0.1:54321/functions/v1)
-npm start          # app Angular                 (http://localhost:4200)
+npm run dev        # só edge + app juntos (não mexe em Docker/Supabase/relógio)
+```
+
+Ou separado, em 2 terminais:
+
+```bash
+npm run edge       # Edge Functions  (http://127.0.0.1:54321/functions/v1)
+npm start          # app Angular     (http://localhost:4200)
 ```
 
 ## Endereços úteis
@@ -61,6 +88,13 @@ npm start          # app Angular                 (http://localhost:4200)
 | API / Storage / Auth | http://127.0.0.1:54321 |
 
 ## Parar tudo
+
+**Pelo atalho (recomendado):** clique no botão **⏻ Sair** dentro do app (ou feche a janela
+do Chrome). Isso encerra o servidor (Edge + web) **e** roda `supabase stop` só deste projeto,
+liberando RAM. O **Docker Desktop e os outros projetos** (Controle Fitness, Nexgency) ficam
+intactos — o Sair **nunca** desliga o Docker inteiro.
+
+**Manual** (quando subiu com `npm run up`/`npm run dev` no terminal):
 
 ```bash
 # Ctrl+C encerra o `npm run dev` (Edge + app)

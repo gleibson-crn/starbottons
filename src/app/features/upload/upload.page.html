@@ -44,6 +44,19 @@
       }
     </ul>
 
+    <label class="upload__numbered">
+      <input
+        type="checkbox"
+        [checked]="numbered()"
+        (change)="onNumberedChange($event)"
+      />
+      Numerar bottons (para eventos)
+    </label>
+    <p class="upload__hint">
+      O número (1, 2, 3…, na ordem do envio) é impresso na sangria, na parte
+      traseira do botton.
+    </p>
+
     <div class="upload__actions">
       <button
         class="btn btn--primary"

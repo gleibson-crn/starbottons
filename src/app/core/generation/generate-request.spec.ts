@@ -6,7 +6,7 @@
  * resolução do canvas. O server reconstrói o mesmo offset via a matemática
  * mm↔px compartilhada, então esta conversão precisa estar exata.
  */
-import type { EditorTransform, PrintSpec } from '../../shared/types';
+import type { EditorTransform, FrameImageRef, PrintSpec } from '../../shared/types';
 import { computeLayout } from '../../shared/utils';
 import { buildGenerateRequest } from './generate-request';
 
@@ -26,7 +26,20 @@ const TRANSFORM: EditorTransform = {
   rotation: 30,
   background: '#112233',
   backgroundImage: null,
+  frameImages: [],
 };
+
+function frameRef(path: string, patch: Partial<FrameImageRef> = {}): FrameImageRef {
+  return {
+    path,
+    url: 'blob:preview',
+    source: 'upload',
+    offset: { x: 0, y: 0 },
+    scale: 1,
+    rotation: 0,
+    ...patch,
+  };
+}
 
 describe('buildGenerateRequest', () => {
   it('produz o shape de contrato esperado pela Edge', () => {
@@ -49,10 +62,15 @@ describe('buildGenerateRequest', () => {
       'backgroundRotation',
       'backgroundScale',
       'fit',
+      'flipH',
+      'flipV',
+      'frames',
       'offset',
       'rotation',
       'scale',
+      'sequenceLabel',
     ]);
+    expect(body.options.sequenceLabel).toBeNull();
     expect(body.options.fit).toBe('cover');
   });
 
@@ -68,6 +86,70 @@ describe('buildGenerateRequest', () => {
     expect(body.options.scale).toBe(1.5);
     expect(body.options.rotation).toBe(30);
     expect(body.options.background).toBe('#112233');
+  });
+
+  it('envia flipH/flipV (false por padrão; true quando espelhado)', () => {
+    const base = { uploadId: 'up-1', sizeMm: 32, spec: SPEC_32, editorSide: 440 };
+    const off = buildGenerateRequest({ ...base, transform: TRANSFORM });
+    expect(off.options.flipH).toBe(false);
+    expect(off.options.flipV).toBe(false);
+    const on = buildGenerateRequest({
+      ...base,
+      transform: { ...TRANSFORM, flipH: true, flipV: true },
+    });
+    expect(on.options.flipH).toBe(true);
+    expect(on.options.flipV).toBe(true);
+  });
+
+  it('serializa frames como [] quando não há moldura', () => {
+    const body = buildGenerateRequest({
+      uploadId: 'up-1',
+      sizeMm: 32,
+      spec: SPEC_32,
+      transform: TRANSFORM,
+      editorSide: 440,
+    });
+
+    expect(body.options.frames).toEqual([]);
+  });
+
+  it('serializa 1 moldura com o PATH do Storage e enquadramento neutro', () => {
+    const body = buildGenerateRequest({
+      uploadId: 'up-1',
+      sizeMm: 32,
+      spec: SPEC_32,
+      transform: { ...TRANSFORM, frameImages: [frameRef('user/frame-123.png')] },
+      editorSide: 440,
+    });
+
+    expect(body.options.frames).toEqual([
+      { path: 'user/frame-123.png', offset: { x: 0, y: 0 }, scale: 1, rotation: 0 },
+    ]);
+  });
+
+  it('serializa 3 molduras na ordem (z-order) com offset px→mm', () => {
+    const editorSide = 440;
+    const { pxPerMm } = computeLayout(SPEC_32, editorSide);
+    const body = buildGenerateRequest({
+      uploadId: 'up-1',
+      sizeMm: 32,
+      spec: SPEC_32,
+      transform: {
+        ...TRANSFORM,
+        frameImages: [
+          frameRef('a.png'),
+          frameRef('b.png', { offset: { x: 60, y: -24 }, scale: 2, rotation: 45 }),
+          frameRef('c.png'),
+        ],
+      },
+      editorSide,
+    });
+
+    expect(body.options.frames.map((f) => f.path)).toEqual(['a.png', 'b.png', 'c.png']);
+    expect(body.options.frames[1].offset.x).toBeCloseTo(60 / pxPerMm, 10);
+    expect(body.options.frames[1].offset.y).toBeCloseTo(-24 / pxPerMm, 10);
+    expect(body.options.frames[1].scale).toBe(2);
+    expect(body.options.frames[1].rotation).toBe(45);
   });
 
   it('serializa backgroundImage como null quando não há imagem de fundo', () => {
@@ -172,5 +254,12 @@ describe('buildGenerateRequest', () => {
     });
 
     expect((body as unknown as Record<string, unknown>)['job_id']).toBeUndefined();
+  });
+
+  it('sequenceLabel: repassa o texto quando informado; null/ausente → null', () => {
+    const base = { uploadId: 'u', sizeMm: 32, spec: SPEC_32, transform: TRANSFORM, editorSide: 440 };
+    expect(buildGenerateRequest({ ...base, sequenceLabel: '7' }).options.sequenceLabel).toBe('7');
+    expect(buildGenerateRequest({ ...base, sequenceLabel: null }).options.sequenceLabel).toBeNull();
+    expect(buildGenerateRequest(base).options.sequenceLabel).toBeNull();
   });
 });

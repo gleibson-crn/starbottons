@@ -23,6 +23,7 @@ const REQUEST: GenerateOptionsBody = {
     backgroundOffset: { x: 0, y: 0 },
     backgroundScale: 1,
     backgroundRotation: 0,
+    frames: [],
   },
 };
 
@@ -79,10 +80,7 @@ describe('GenerationService', () => {
         body: {
           job_id: 'J',
           status: 'done',
-          assets: [
-            { kind: 'print_png', signed_url: 'png-url' },
-            { kind: 'print_pdf', signed_url: 'pdf-url' },
-          ],
+          assets: [{ kind: 'print_png', signed_url: 'png-url' }],
         },
       });
     const svc = setup(fake);
@@ -90,7 +88,6 @@ describe('GenerationService', () => {
     const result = await svc.generate(REQUEST, NO_SLEEP);
 
     expect(result.printPngUrl).toBe('png-url');
-    expect(result.printPdfUrl).toBe('pdf-url');
     expect(fake.fetchCalls).toBe(0);
   });
 
@@ -113,16 +110,12 @@ describe('GenerationService', () => {
       { id: 'J', status: 'processing' },
       { id: 'J', status: 'done' },
     ];
-    fake.assets = [
-      { kind: 'print_png', storagePath: 'renders/J/print.png' },
-      { kind: 'print_pdf', storagePath: 'renders/J/print.pdf' },
-    ];
+    fake.assets = [{ kind: 'print_png', storagePath: 'renders/J/print.png' }];
     const svc = setup(fake);
 
     const result = await svc.generate(REQUEST, NO_SLEEP);
 
     expect(result.printPngUrl).toBe('signed:renders/J/print.png');
-    expect(result.printPdfUrl).toBe('signed:renders/J/print.pdf');
     expect(fake.fetchCalls).toBe(2);
     expect(fake.assetCalls).toBe(1);
   });
@@ -137,7 +130,6 @@ describe('GenerationService', () => {
     const result = await svc.generate(REQUEST, NO_SLEEP);
 
     expect(result.printPngUrl).toBe('signed:renders/J/print.png');
-    expect(result.printPdfUrl).toBeNull();
   });
 
   it('propaga job status=error como falha terminal (sem retry)', async () => {
@@ -180,5 +172,63 @@ describe('GenerationService', () => {
 
     expect(result.printPngUrl).toBe('ok.png');
     expect(fake.invokeCalls).toBe(3);
+  });
+
+  it('retenta HTTP 546 (CPU da Edge) com backoff exponencial e conclui', async () => {
+    const fake = new FakeGateway();
+    let calls = 0;
+    fake.invoke = () => {
+      calls++;
+      if (calls < 3) {
+        return Promise.resolve({ status: 546, body: {} });
+      }
+      return Promise.resolve({
+        status: 200,
+        body: { assets: [{ kind: 'print_png', signed_url: 'ok.png' }] },
+      });
+    };
+    const waits: number[] = [];
+    const svc = setup(fake);
+
+    const result = await svc.generate(REQUEST, {
+      sleep: (ms) => {
+        waits.push(ms);
+        return Promise.resolve();
+      },
+    });
+
+    expect(result.printPngUrl).toBe('ok.png');
+    expect(fake.invokeCalls).toBe(3);
+    // Backoff entre as tentativas: 800ms, depois 1600ms (dobra a cada retry).
+    expect(waits).toEqual([800, 1600]);
+  });
+});
+
+describe('GenerationService.freshPrintUrl', () => {
+  it('re-assina o print_png a partir do jobId', async () => {
+    const fake = new FakeGateway();
+    fake.assets = [{ kind: 'print_png', storagePath: 'u/j1/print.png' }];
+    const svc = setup(fake);
+    expect(await svc.freshPrintUrl('j1')).toBe('signed:u/j1/print.png');
+  });
+
+  it('retorna null sem jobId (sem tocar no gateway)', async () => {
+    const fake = new FakeGateway();
+    const svc = setup(fake);
+    expect(await svc.freshPrintUrl(null)).toBeNull();
+    expect(fake.assetCalls).toBe(0);
+  });
+
+  it('retorna null quando não há asset print_png', async () => {
+    const fake = new FakeGateway();
+    const svc = setup(fake);
+    expect(await svc.freshPrintUrl('j1')).toBeNull();
+  });
+
+  it('retorna null quando o gateway falha', async () => {
+    const fake = new FakeGateway();
+    fake.fetchAssets = () => Promise.reject(new Error('boom'));
+    const svc = setup(fake);
+    expect(await svc.freshPrintUrl('j1')).toBeNull();
   });
 });

@@ -2,6 +2,7 @@ export type { PrintSpec } from './print-spec';
 export type {
   EditorTransform,
   BackgroundImageRef,
+  FrameImageRef,
   Framing,
   ResolutionTier,
   ImageFilters,
@@ -14,7 +15,15 @@ export {
   filterString,
   filtersEqual,
   isDefaultFilters,
+  normalizeFrameImages,
+  migrateTransform,
 } from './editor';
+export type { StyleEffect, StyleKind } from './style-effect';
+export {
+  DEFAULT_STYLE_EFFECT,
+  isDefaultStyle,
+  styleEffectEqual,
+} from './style-effect';
 export type { ModelOption, SizeOption } from './catalog';
 export type { UploadRecord } from './upload';
 export type {

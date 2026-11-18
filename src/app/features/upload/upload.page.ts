@@ -6,7 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { FileDropzone, ToastService, type RejectedFile } from '../../shared/ui';
+import { FileDropzone, ModalService, ToastService, type RejectedFile } from '../../shared/ui';
 import { BatchStore, MAX_IMAGES } from '../../core/batch';
 import type { ImageProbe } from '../../core/upload';
 import { UploadService } from '../../core/upload';
@@ -38,14 +38,21 @@ export class UploadPage {
   private readonly service = inject(UploadService);
   private readonly batch = inject(BatchStore);
   private readonly toast = inject(ToastService);
+  private readonly modal = inject(ModalService);
   private readonly router = inject(Router);
 
   readonly items = signal<UploadItem[]>([]);
+  /** Numerar bottons (eventos): imprime o nº sequencial na sangria. */
+  readonly numbered = signal(false);
 
   readonly canContinue = computed(() => this.items().length >= 1);
   readonly browseLabel = computed(() =>
     this.items().length >= 1 ? 'Adicionar arquivo' : 'Procurar arquivo',
   );
+
+  onNumberedChange(event: Event): void {
+    this.numbered.set((event.target as HTMLInputElement).checked);
+  }
 
   /** Marca resolução baixa (menor lado < limite) para heads-up por item. */
   isLowRes(probe: ImageProbe): boolean {
@@ -92,7 +99,19 @@ export class UploadPage {
     if (list.length === 0) {
       return;
     }
+    if (this.batch.hasWork()) {
+      const ok = await this.modal.showConfirm({
+        title: 'Descartar o lote atual?',
+        message: `Há ${this.batch.items().length} botton(s) em andamento. Continuar apaga esse lote e começa um novo.`,
+        confirmLabel: 'Descartar e continuar',
+        danger: true,
+      });
+      if (!ok) {
+        return;
+      }
+    }
     this.batch.reset();
+    this.batch.numbered.set(this.numbered());
     for (const reason of this.batch.addFiles(list.map((i) => i.file))) {
       this.toast.warning(reason);
     }

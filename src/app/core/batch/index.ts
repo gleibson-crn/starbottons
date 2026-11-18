@@ -10,6 +10,13 @@
 // Estado do lote
 export { BatchStore } from './batch-store.service';
 
+export { EventTallyService } from './event-tally.service';
+
+// Persistência do lote entre sessões (BL-008)
+export { BatchPersistenceService } from './batch-persistence.service';
+export { toSnapshot, fromSnapshot, parseSnapshot, summarize, SNAPSHOT_TTL_MS } from './batch-snapshot';
+export type { Snapshot, PersistedItem } from './batch-snapshot';
+
 // Exportação em ZIP
 export { ZipExportService, collectReadyArts, countFailures } from './zip-export.service';
 export type { ZipResult } from './zip-export.service';
@@ -32,6 +39,7 @@ export {
   MAX_IMAGES,
   MAX_TOTAL_ARTES,
   POOL_CONCURRENCY,
+  GENERATION_CONCURRENCY,
   SIGNED_URL_TTL,
   BATCH_EDITOR_SIDE,
   MODEL_LABEL,
@@ -48,6 +56,7 @@ export {
   withTransform,
   withFilters,
   withGenerationUpload,
+  withCutout,
   withArt,
 } from './batch-item';
 

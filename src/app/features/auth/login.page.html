@@ -3,6 +3,13 @@
     <h1 id="login-title" class="login__title hero__title">Star Bottons</h1>
     <p class="login__subtitle">Entre para criar suas artes.</p>
 
+    @if (autoLoginFailed()) {
+      <p class="login__alert" role="alert">
+        Não foi possível entrar automaticamente. Verifique se o Supabase local
+        está no ar (<code>npm run up</code>) ou entre manualmente.
+      </p>
+    }
+
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <div class="field">
         <label class="field__label" for="email">E-mail</label>

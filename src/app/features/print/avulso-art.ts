@@ -1,9 +1,8 @@
-import type { BottonSize } from '../../core/print';
+import { clampQty, type BottonSize, type SheetLine } from '../../core/print';
 import { DEFAULT_TRANSFORM } from '../../shared/types';
 import { drawBottonFace } from '../../shared/ui/canvas-editor/botton-face';
 import { DEFAULT_DPI, fallbackSpec, loadImage, mmToPx } from '../../shared/utils';
 import type { EditorLayout } from '../../shared/utils';
-import { clampQty, type SheetLine } from './sheet-line';
 
 /** Cor da linha de corte — idêntica à arte da Edge (`svg.ts`). */
 const CUT_STROKE = '#111827';

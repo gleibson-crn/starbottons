@@ -23,6 +23,7 @@ function makeMockCtx(): { ctx: CanvasRenderingContext2D; ops: Op[] } {
     restore: () => undefined,
     translate: (x: number, y: number) => rec('translate', [x, y]),
     rotate: (r: number) => rec('rotate', [r]),
+    scale: (x: number, y: number) => rec('scale', [x, y]),
     fillRect: () => rec('fillRect'),
     drawImage: (_i: unknown, dx: number, dy: number, dw: number, dh: number) =>
       rec('drawImage', [dx, dy, dw, dh]),
@@ -111,5 +112,99 @@ describe('drawBottonFace (face fiel — fonte única)', () => {
     const { ctx, ops } = makeMockCtx();
     drawBottonFace(params(ctx, { backgroundImage: BG }));
     expect(ops.every((o) => o.filter === 'none')).toBe(true);
+  });
+});
+
+describe('drawBottonFace — espelhar arte (flip)', () => {
+  const order = (ops: Op[]): string[] =>
+    ops
+      .filter((o) => ['translate', 'rotate', 'scale', 'drawImage'].includes(o.op))
+      .map((o) => o.op);
+
+  it('sem flip NÃO chama scale (no-op)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawBottonFace(params(ctx));
+    expect(order(ops)).toEqual(['translate', 'rotate', 'drawImage']);
+  });
+
+  it('flipH aplica scale(-1,1) após rotate e antes de drawImage', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawBottonFace(params(ctx, { transform: { ...RED, flipH: true } }));
+    expect(order(ops)).toEqual(['translate', 'rotate', 'scale', 'drawImage']);
+    expect(ops.find((o) => o.op === 'scale')?.args).toEqual([-1, 1]);
+  });
+
+  it('flipV aplica scale(1,-1)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawBottonFace(params(ctx, { transform: { ...RED, flipV: true } }));
+    expect(ops.find((o) => o.op === 'scale')?.args).toEqual([1, -1]);
+  });
+});
+
+describe('drawBottonFace — molduras (empilhadas, no TOPO)', () => {
+  it('sem molduras desenha só a arte (1 drawImage)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawBottonFace(params(ctx));
+    expect(ops.filter((o) => o.op === 'drawImage').length).toBe(1);
+  });
+
+  it('frames vazio desenha só a arte', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawBottonFace(params(ctx, { frames: [] }));
+    expect(ops.filter((o) => o.op === 'drawImage').length).toBe(1);
+  });
+
+  it('com 1 moldura: arte primeiro, moldura DEPOIS (por cima)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawBottonFace(params(ctx, { frames: [{ image: BG }] }));
+    const draws = ops.filter((o) => o.op === 'drawImage');
+    expect(draws.length).toBe(2);
+    expect(draws[0].args).toEqual([-60, -60, 120, 120]);
+  });
+
+  it('cor → fundo → arte → moldura (moldura é o último drawImage)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawBottonFace(params(ctx, { backgroundImage: BG, frames: [{ image: BG }] }));
+    const draws = ops.filter((o) => o.op === 'drawImage');
+    expect(draws.length).toBe(3);
+    const fillRect = ops.findIndex((o) => o.op === 'fillRect');
+    const lastDrawIdx = ops.map((o) => o.op).lastIndexOf('drawImage');
+    expect(fillRect).toBeLessThan(lastDrawIdx);
+  });
+
+  it('moldura sem enquadramento é COVER no círculo visível, centrada e sem filtro', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawBottonFace(params(ctx, { image: null, frames: [{ image: BG }] }));
+    // COVER de 200×100 no diâmetro visível 140 (cutR*2): 280×140 centrado em 100.
+    expect(ops.find((o) => o.op === 'translate')?.args).toEqual([100, 100]);
+    expect(ops.find((o) => o.op === 'drawImage')?.args).toEqual([-140, -70, 280, 140]);
+    expect(ops.find((o) => o.op === 'drawImage')?.filter).toBe('none');
+  });
+
+  it('aplica offset, rotação e escala do enquadramento da moldura', () => {
+    const { ctx, ops } = makeMockCtx();
+    const framing = { offset: { x: 10, y: -20 }, scale: 2, rotation: 90 };
+    drawBottonFace(params(ctx, { image: null, frames: [{ image: BG, framing }] }));
+    expect(ops.find((o) => o.op === 'translate')?.args).toEqual([110, 80]);
+    expect(ops.find((o) => o.op === 'rotate')?.args?.[0]).toBeCloseTo(Math.PI / 2, 10);
+    expect(ops.find((o) => o.op === 'drawImage')?.args).toEqual([-280, -140, 560, 280]);
+  });
+
+  it('respeita drawW/drawH da moldura quando informados (preset)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawBottonFace(
+      params(ctx, { image: null, frames: [{ image: BG, drawW: 240, drawH: 120 }] }),
+    );
+    expect(ops.find((o) => o.op === 'drawImage')?.args).toEqual([-120, -60, 240, 120]);
+  });
+
+  it('várias molduras: desenha todas na ordem do array (última por cima)', () => {
+    const { ctx, ops } = makeMockCtx();
+    const low = { image: BG, drawW: 100, drawH: 100 };
+    const mid = { image: BG, drawW: 200, drawH: 200 };
+    const top = { image: BG, drawW: 300, drawH: 300 };
+    drawBottonFace(params(ctx, { image: null, frames: [low, mid, top] }));
+    const draws = ops.filter((o) => o.op === 'drawImage');
+    expect(draws.map((d) => d.args?.[2])).toEqual([100, 200, 300]);
   });
 });

@@ -1,11 +1,11 @@
-import type { BottonSize } from '../../core/print';
+import type { BottonSize } from './sheet-packer';
 
 /**
  * Uma linha da folha em montagem: uma arte (do LOTE ou AVULSA) com sua
  * quantidade. `origin` distingue a fonte. Em AMBAS a `url` é um OBJECT URL de
  * mesma origem (blob:) — a arte do lote é baixada da signed URL e convertida ao
- * adicionar (senão a impressão sai em branco), e a avulsa é renderizada no
- * cliente. Os dois PRECISAM ser revogados ao remover a linha / destruir a página.
+ * enfileirar (senão a impressão sai em branco), e a avulsa é renderizada no
+ * cliente. Os dois PRECISAM ser revogados ao remover a linha / limpar a fila.
  */
 export interface SheetLine {
   readonly key: string;

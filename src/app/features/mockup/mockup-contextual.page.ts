@@ -16,6 +16,7 @@ import {
   mockupToBlob,
   renderMockupSprite,
   ToastService,
+  type FrameLayer,
   type MockupSprite,
 } from '../../shared/ui';
 import { BatchStore, largestReadySize, type BatchItem } from '../../core/batch';
@@ -57,6 +58,8 @@ export class MockupContextualPage {
   private bottonImage: HTMLImageElement | null = null;
   private bgImage: HTMLImageElement | null = null;
   private bgTransform: Framing | null = null;
+  /** Molduras (empilhadas, com enquadramento) carregadas p/ o mockup. */
+  private frames: FrameLayer[] = [];
   private spec: PrintSpec | null = null;
   private sceneUrl: string | null = null;
 
@@ -172,8 +175,10 @@ export class MockupContextualPage {
       spec: this.spec,
       target: this.target(),
       filters: this.item.filters,
+      style: this.item.style,
       backgroundImage: this.bgImage,
       backgroundTransform: this.bgTransform,
+      frames: this.frames,
     });
   }
 
@@ -191,6 +196,7 @@ export class MockupContextualPage {
     this.bgTransform = bgFraming(item.transform.backgroundImage);
     this.bottonImage = await loadImage(item.previewUrl);
     this.bgImage = await this.loadBackground(item);
+    this.frames = await this.loadFrames(item);
     this.sprite.set(
       renderMockupSprite({
         image: this.bottonImage,
@@ -199,8 +205,10 @@ export class MockupContextualPage {
         editorSide: item.editorSide,
         targetRadiusPx: PREVIEW_RADIUS,
         filters: item.filters,
+        style: item.style,
         backgroundImage: this.bgImage,
         backgroundTransform: this.bgTransform,
+        frames: this.frames,
       }),
     );
   }
@@ -216,6 +224,26 @@ export class MockupContextualPage {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Carrega as molduras EMPILHADAS (na ordem/z-order), cada uma com seu
+   * enquadramento. Molduras que falharem ao carregar são puladas (fiel ao resto).
+   */
+  private async loadFrames(item: BatchItem): Promise<FrameLayer[]> {
+    const out: FrameLayer[] = [];
+    for (const ref of item.transform.frameImages) {
+      try {
+        const image = await loadImage(ref.url);
+        out.push({
+          image,
+          framing: { offset: ref.offset, scale: ref.scale, rotation: ref.rotation },
+        });
+      } catch {
+        // moldura indisponível → pula, sem derrubar o mockup
+      }
+    }
+    return out;
   }
 
   private async loadScene(url: string): Promise<void> {

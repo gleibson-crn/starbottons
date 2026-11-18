@@ -2,6 +2,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
@@ -11,9 +12,23 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import type { EditorTransform, Framing, ImageFilters, PrintSpec } from '../../types';
+import type {
+  EditorTransform,
+  Framing,
+  ImageFilters,
+  PrintSpec,
+  StyleEffect,
+} from '../../types';
+import {
+  DEFAULT_BACKGROUND_FRAMING,
+  DEFAULT_FILTERS,
+  DEFAULT_STYLE_EFFECT,
+  isDefaultStyle,
+} from '../../types';
+import { prepareArt, type PreparedArt } from '../../imaging';
 import { computeLayout, imageDrawSize, isBleedCovered } from '../../utils';
 import { applyKey } from './editor-keymap';
+import type { FrameLayer } from './botton-face';
 import { drawScene } from './editor-render';
 import { withOffset, withZoom } from './editor-transform';
 
@@ -37,16 +52,44 @@ export class CanvasEditor implements AfterViewInit {
   readonly image = input<HTMLImageElement | null>(null);
   /** Imagem de fundo já carregada (COVER fixo sob a arte); `null` = só cor. */
   readonly backgroundImage = input<HTMLImageElement | null>(null);
+  /**
+   * Molduras decorativas já carregadas, EMPILHADAS por CIMA da arte na ordem do
+   * array (z-order). Entradas `null` (ainda carregando) são ignoradas no
+   * desenho; os índices permanecem alinhados a `frameFramings`/`activeFrameIndex`.
+   */
+  readonly frameImages = input<readonly (HTMLImageElement | null)[]>([]);
+  /**
+   * Enquadramento de CADA moldura (alinhado por índice a `frameImages`). One-way:
+   * os gestos na camada `'frame'` NÃO mutam aqui; emitem `frameFramingChange` com
+   * o índice + novo enquadramento e o pai persiste (fonte única = `transform`).
+   */
+  readonly frameFramings = input<readonly Framing[]>([]);
+  /** Gesto moveu/escalou/girou a moldura ATIVA: índice + novo enquadramento. */
+  readonly frameFramingChange = output<{ index: number; framing: Framing }>();
+  /**
+   * Índice da moldura ATIVA (alvo dos gestos na camada `'frame'`). `-1` = nenhuma
+   * (gestos inertes). Definido pela seleção na lista de camadas da aba Moldura.
+   */
+  readonly activeFrameIndex = input<number>(-1);
   readonly spec = input.required<PrintSpec>();
   readonly transform = model.required<EditorTransform>();
   /** Filtros aplicados só à imagem no preview (paralelo ao transform). */
   readonly filters = input<ImageFilters | null>(null);
   /**
+   * Efeito de estilo por pixel (ADR-019). `none` (default) mantém o caminho
+   * tonal atual (`ctx.filter`) intocado; qualquer outro estilo é baked por
+   * `prepareArt` num canvas MEMOIZADO por (image, filters, style, side) — assim
+   * arrastar/zoom/girar NÃO recomputam o pixel pass, só o `drawImage`.
+   */
+  readonly style = input<StyleEffect>(DEFAULT_STYLE_EFFECT);
+  /**
    * Camada-alvo dos gestos: `'art'` (padrão) muta o `transform`; `'background'`
    * muta o `backgroundTransform` (quando não-nulo), reusando as MESMAS funções
-   * de gesto. Permite reposicionar o fundo pela prévia sem sair da arte.
+   * de gesto. `'frame'` = aba Moldura ativa: a moldura é COVER fixo (sem gestos),
+   * então os gestos ficam INERTES (não movem a arte por engano). Permite
+   * reposicionar o fundo pela prévia sem sair da arte.
    */
-  readonly layer = input<'art' | 'background'>('art');
+  readonly layer = input<'art' | 'background' | 'frame'>('art');
   /**
    * Enquadramento do fundo (posição/zoom/rotação). `null` = sem imagem de fundo
    * (gestos caem sempre na arte). Two-way: os gestos na camada `'background'`
@@ -59,6 +102,20 @@ export class CanvasEditor implements AfterViewInit {
     viewChild<ElementRef<HTMLCanvasElement>>('canvas');
   readonly side = signal(MAX_SIDE);
   private dragFrom: { x: number; y: number } | null = null;
+
+  /**
+   * Arte pronta para composição, MEMOIZADA por (image, filters, style, side).
+   * Sem estilo → devolve a própria imagem (caminho tonal via `ctx.filter`). Com
+   * estilo → o pixel pass roda SÍNCRONO (preview ≤520px) e só reexecuta quando
+   * uma dessas chaves muda; gestos de enquadramento não a invalidam.
+   */
+  private readonly prepared = computed<PreparedArt | null>(() => {
+    const img = this.image();
+    if (!img || isDefaultStyle(this.style())) {
+      return img;
+    }
+    return prepareArt(img, this.filters() ?? DEFAULT_FILTERS, this.style(), this.side());
+  });
 
   constructor() {
     effect(() => this.render());
@@ -112,6 +169,11 @@ export class CanvasEditor implements AfterViewInit {
    * tecla não reconhecida). As MESMAS funções servem às duas camadas.
    */
   private mutate(fn: (t: Framing) => Framing | null): boolean {
+    // Aba Moldura: os gestos movem/escalam/giram a moldura ATIVA (selecionada na
+    // lista). Sem moldura ativa (índice fora de faixa) → inerte (não mexe na arte).
+    if (this.layer() === 'frame') {
+      return this.mutateActiveFrame(fn);
+    }
     if (this.bgActive()) {
       const next = fn(this.backgroundTransform() as Framing);
       if (!next) {
@@ -125,6 +187,25 @@ export class CanvasEditor implements AfterViewInit {
       return false;
     }
     this.transform.set(next as EditorTransform);
+    return true;
+  }
+
+  /**
+   * Muta o enquadramento da moldura ATIVA (`activeFrameIndex`) com a MESMA função
+   * de gesto; escreve de volta no `frameFramings` (two-way → o diálogo persiste
+   * no `EditorTransform.frameImages`). Fora de faixa (nenhuma ativa) → no-op.
+   */
+  private mutateActiveFrame(fn: (t: Framing) => Framing | null): boolean {
+    const i = this.activeFrameIndex();
+    const framings = this.frameFramings();
+    if (i < 0 || i >= framings.length) {
+      return false;
+    }
+    const next = fn(framings[i] ?? DEFAULT_BACKGROUND_FRAMING);
+    if (!next) {
+      return false;
+    }
+    this.frameFramingChange.emit({ index: i, framing: next });
     return true;
   }
 
@@ -145,6 +226,9 @@ export class CanvasEditor implements AfterViewInit {
     const layout = computeLayout(spec, side);
     const t = this.transform();
     const img = this.image();
+    // O tamanho de desenho deriva SEMPRE da imagem ORIGINAL (o canvas estilizado
+    // mantém o mesmo aspecto, então escala igual). Com estilo, `filters` é
+    // OMITIDO — o tonal já está baked em `prepared`.
     const size = this.drawSize(img, layout.bleedR * 2, t.scale);
     const bgImg = this.backgroundImage();
     const bgT = this.backgroundTransform();
@@ -153,18 +237,46 @@ export class CanvasEditor implements AfterViewInit {
       ctx,
       side,
       layout,
-      image: img,
+      image: this.prepared(),
       transform: t,
-      filters: this.filters() ?? undefined,
+      filters: this.artFilters(),
       backgroundImage: bgImg,
       backgroundTransform: bgT,
       bgDrawW: bgSize.drawW,
       bgDrawH: bgSize.drawH,
+      frames: this.buildFrames(),
       ...size,
     });
     this.coverageChange.emit(
       img ? isBleedCovered({ transform: t, ...size, bleedR: layout.bleedR }) : false,
     );
+  }
+
+  /**
+   * Molduras EMPILHADAS (z-order = ordem do array), cada uma com seu
+   * enquadramento; o COVER no círculo VISÍVEL (cutR) é calculado em botton-face.
+   * Entradas `null` (ainda carregando) são puladas, mantendo o alinhamento.
+   */
+  private buildFrames(): FrameLayer[] {
+    const framings = this.frameFramings();
+    const frames: FrameLayer[] = [];
+    this.frameImages().forEach((frameImg, i) => {
+      if (frameImg) {
+        frames.push({ image: frameImg, framing: framings[i] });
+      }
+    });
+    return frames;
+  }
+
+  /**
+   * Filtros tonais para o `drawScene`: OMITIDOS quando há estilo (o tonal já
+   * foi baked em `prepared` por `prepareArt`, para não reaplicar via ctx.filter).
+   */
+  private artFilters(): ImageFilters | undefined {
+    if (!isDefaultStyle(this.style())) {
+      return undefined;
+    }
+    return this.filters() ?? undefined;
   }
 
   private drawSize(

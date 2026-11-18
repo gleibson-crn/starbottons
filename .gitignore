@@ -56,3 +56,10 @@ Thumbs.db
 supabase/.temp
 supabase/.branches
 .branches
+
+# Remover fundo: binarios baixados por `npm run models:fetch` (nao entram no git)
+/public/models/*.onnx
+/public/ort/*.wasm
+
+# Perfil dedicado do Chrome (start-app.ps1)
+scripts/.chrome-profile/

@@ -7,7 +7,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { ToastService } from '../../../shared/ui';
+import { ModalService, ToastService } from '../../../shared/ui';
 import {
   ContextualTemplateService,
   type SceneTemplate,
@@ -31,6 +31,7 @@ type GridPhase = 'loading' | 'ready' | 'error';
 export class TemplateGrid implements OnInit {
   private readonly service = inject(ContextualTemplateService);
   private readonly toast = inject(ToastService);
+  private readonly modal = inject(ModalService);
 
   /** Rótulo da ação primária de cada card (default "Usar"). */
   readonly actionLabel = input('Usar');
@@ -50,7 +51,7 @@ export class TemplateGrid implements OnInit {
   }
 
   async onRemove(template: SceneTemplate): Promise<void> {
-    if (this.confirmRemove() && !this.confirmDelete(template.name)) {
+    if (this.confirmRemove() && !(await this.confirmDelete(template.name))) {
       return;
     }
     try {
@@ -68,8 +69,13 @@ export class TemplateGrid implements OnInit {
   }
 
   /** Confirmação nativa (bloqueante e acessível) antes de excluir. */
-  private confirmDelete(name: string): boolean {
-    return globalThis.confirm(`Excluir o mockup "${name}"? Esta ação não pode ser desfeita.`);
+  private confirmDelete(name: string): Promise<boolean> {
+    return this.modal.showConfirm({
+      title: 'Excluir mockup?',
+      message: `Excluir o mockup "${name}"? Esta ação não pode ser desfeita.`,
+      confirmLabel: 'Excluir',
+      danger: true,
+    });
   }
 
   private async load(): Promise<void> {

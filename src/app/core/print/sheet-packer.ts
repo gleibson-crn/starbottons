@@ -28,8 +28,17 @@ export interface PageSpec {
   readonly gapMm: number;
 }
 
-/** Folha A4 retrato: margem de segurança 5mm, folga entre peças 4mm. */
-export const A4: PageSpec = { widthMm: 210, heightMm: 297, marginMm: 5, gapMm: 4 };
+/**
+ * Folha A4 retrato em FULL-BLEED (margem 0, folga 0) — DENSIDADE MÁXIMA de
+ * bottons. O diâmetro impresso (ex.: 58→70mm) já inclui o anel de corte/dobra,
+ * então os círculos podem se TOCAR (a linha de corte é compartilhada, como nas
+ * folhas de botton padrão). Isso é o que permite 3 colunas de 70mm = 210mm
+ * exatos → 12 bottons de 58mm por A4 (3×4). Qualquer margem/folga > 0 derruba a
+ * 3ª coluna (3×70 já é a folha inteira) e cairia para 8. As peças de borda ficam
+ * flush ao papel; o centro útil (58mm) fica ~6mm da borda — imprima em
+ * "sem margem"/borderless para não cortar o anel externo.
+ */
+export const A4: PageSpec = { widthMm: 210, heightMm: 297, marginMm: 0, gapMm: 0 };
 
 /** Uma peça já posicionada: canto do quadrado (bbox) em (xMm,yMm), lado = artMm. */
 export interface PlacedPiece {
@@ -258,27 +267,82 @@ function toPiece(s: Slot): PlacedPiece {
   return { url: s.url, sizeMm: s.sizeMm, artMm: s.artMm, xMm: s.xMm, yMm: s.yMm };
 }
 
+/** Todas as peças têm a MESMA bbox (mesmo artMm e forma)? → habilita a grade. */
+function isUniform(pieces: readonly Piece[]): boolean {
+  const first = pieces[0];
+  return pieces.every((p) => p.artMm === first.artMm && p.shape === first.shape);
+}
+
+/** Colunas × linhas por página de uma bbox uniforme (com margem/folga). */
+function gridDims(params: ShapeParams, page: PageSpec): { cols: number; rows: number } {
+  const usableW = page.widthMm - 2 * page.marginMm;
+  const usableH = page.heightMm - 2 * page.marginMm;
+  // `+gapMm` no numerador: a última coluna/linha não tem folga à direita.
+  const cols = Math.max(0, Math.floor((usableW + page.gapMm) / (params.wMm + page.gapMm)));
+  const rows = Math.max(0, Math.floor((usableH + page.gapMm) / (params.hMm + page.gapMm)));
+  return { cols, rows };
+}
+
 /**
- * Empacota artes em folha(s) via **bottom-left guloso agnóstico de forma**:
- * expande por quantidade, ordena por `artMm` DESC (maiores primeiro, deixando
- * vãos p/ menores) e, peça a peça, ocupa a 1ª posição válida (varredura em grade)
- * da página atual; overflow abre página nova. Determinístico. Invariantes: sem
- * colisão (respeita `gapMm`, densa p/ círculo) e tudo dentro da margem.
- * `utilizationPct` = Σ(área da forma) ÷ (área útil × nº páginas) × 100.
+ * Empacota peças UNIFORMES numa GRADE quadrada — o ótimo numa página finita (o
+ * guloso por distância de centros aninharia em hexágono, que rende MENOS por
+ * página apesar de "mais denso" em espaço infinito). Ex.: 58mm→70mm em A4
+ * full-bleed = 3 col × 4 lin = 12/página.
+ */
+function packGrid(pieces: readonly Piece[], page: PageSpec): Slot[][] {
+  const params = paramsFor(pieces[0]);
+  const { cols, rows } = gridDims(params, page);
+  const perPage = cols * rows;
+  const pages: Slot[][] = [];
+  if (perPage <= 0) {
+    return pages;
+  }
+  const stepX = params.wMm + page.gapMm;
+  const stepY = params.hMm + page.gapMm;
+  pieces.forEach((piece, i) => {
+    const pageIdx = Math.floor(i / perPage);
+    const pos = i % perPage;
+    if (!pages[pageIdx]) {
+      pages.push([]);
+    }
+    pages[pageIdx].push({
+      url: piece.url,
+      sizeMm: piece.sizeMm,
+      artMm: piece.artMm,
+      xMm: page.marginMm + (pos % cols) * stepX,
+      yMm: page.marginMm + Math.floor(pos / cols) * stepY,
+      params,
+    });
+  });
+  return pages;
+}
+
+/** Empacota peças (mistas) via bottom-left guloso agnóstico de forma. */
+function packGreedy(pieces: readonly Piece[], page: PageSpec): Slot[][] {
+  const pages: Slot[][] = [];
+  for (const piece of pieces) {
+    placeOne(pages, piece, page);
+  }
+  return pages;
+}
+
+/**
+ * Empacota artes em folha(s). Peças UNIFORMES (mesmo tamanho/forma — o caso
+ * comum: N do mesmo botton) usam uma GRADE quadrada (ótimo em página finita);
+ * tamanhos MISTOS usam o bottom-left guloso (ordena por `artMm` DESC e aninha os
+ * menores nos vãos). Determinístico. Invariantes: sem colisão (respeita `gapMm`,
+ * densa p/ círculo) e tudo dentro da margem. `utilizationPct` = Σ(área da forma)
+ * ÷ (área útil × nº páginas) × 100.
  */
 export function packSheet(items: readonly SheetInput[], page: PageSpec = A4): PackedSheet {
   const pieces = expand(items).sort((a, b) => b.artMm - a.artMm);
   if (pieces.length === 0) {
     return { pages: [], totalPieces: 0, utilizationPct: 0 };
   }
-  const pages: Slot[][] = [];
-  let filledMm2 = 0;
-  for (const piece of pieces) {
-    const slot = placeOne(pages, piece, page);
-    if (slot) {
-      filledMm2 += SHAPE_GEOMETRY[slot.params.kind].area(slot.params);
-    }
-  }
+  const pages = isUniform(pieces) ? packGrid(pieces, page) : packGreedy(pieces, page);
+  const filledMm2 = pages
+    .flat()
+    .reduce((sum, slot) => sum + SHAPE_GEOMETRY[slot.params.kind].area(slot.params), 0);
   const usableW = page.widthMm - 2 * page.marginMm;
   const usableH = page.heightMm - 2 * page.marginMm;
   const usableArea = usableW * usableH * pages.length;

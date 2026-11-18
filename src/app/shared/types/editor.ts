@@ -30,6 +30,34 @@ export interface BackgroundImageRef {
 }
 
 /**
+ * Referência a uma MOLDURA do botton (camada decorativa PNG por cima da arte).
+ * Espelho EXATO de `BackgroundImageRef`: carrega enquadramento próprio
+ * (offset/scale/rotation), pois cada moldura é reposicionável/redimensionável/
+ * girável (arrastar/zoom/rodar). Nasce em COVER (offset {0,0}, scale 1, 0°) e o
+ * gesto ajusta a partir daí. O mesmo objeto serve ao preview (via `url`, um
+ * object URL) e à Edge (via `path`, o caminho no Storage bucket `uploads`).
+ */
+export interface FrameImageRef {
+  /** Caminho no Storage bucket `uploads`. */
+  readonly path: string;
+  /** URL para preview (object URL do upload ou signed URL do template). */
+  readonly url: string;
+  /** Origem da moldura. */
+  readonly source: 'upload' | 'template';
+  /** Id do template (ausente em uploads). */
+  readonly id?: string;
+  /**
+   * Deslocamento do centro da moldura, em px de tela do editor (mesma unidade do
+   * `offset` da arte/fundo). `{0,0}` = centrada (COVER).
+   */
+  readonly offset: { x: number; y: number };
+  /** Fator de zoom da moldura (1 = "cover" exato do círculo visível). */
+  readonly scale: number;
+  /** Rotação livre da moldura em graus (−180..+180). */
+  readonly rotation: number;
+}
+
+/**
  * Enquadramento genérico de uma camada (posição/zoom/rotação). Compartilhado
  * pelas mesmas funções de gesto usadas pela arte (`EditorTransform`) e pela
  * imagem de fundo. O canvas-editor muta um `Framing` do fundo ou o transform da
@@ -55,6 +83,10 @@ export interface EditorTransform {
   readonly scale: number;
   /** Rotação livre em graus (−180..+180). */
   readonly rotation: number;
+  /** Espelhar a arte na horizontal (eixo local da imagem). Ausente = false. */
+  readonly flipH?: boolean;
+  /** Espelhar a arte na vertical (eixo local da imagem). Ausente = false. */
+  readonly flipV?: boolean;
   /** Cor sólida de fundo para área vazia (hex, default branco). */
   readonly background: string;
   /**
@@ -63,6 +95,13 @@ export interface EditorTransform {
    * usuário).
    */
   readonly backgroundImage: BackgroundImageRef | null;
+  /**
+   * Molduras decorativas EMPILHADAS (camadas PNG por cima da arte, no TOPO). Até
+   * 3. A ORDEM do array é o z-order: índice 0 = mais ao fundo, última = topo.
+   * `[]` = sem moldura. Cada moldura tem enquadramento próprio e cobre o círculo
+   * VISÍVEL. Ordem de composição: cor → fundo → arte → molduras (0..n).
+   */
+  readonly frameImages: readonly FrameImageRef[];
 }
 
 /** Estado default seguro do editor (sem ajuste, fundo branco, sem imagem). */
@@ -70,9 +109,61 @@ export const DEFAULT_TRANSFORM: EditorTransform = {
   offset: { x: 0, y: 0 },
   scale: 1,
   rotation: 0,
+  flipH: false,
+  flipV: false,
   background: '#ffffff',
   backgroundImage: null,
+  frameImages: [],
 };
+
+/**
+ * Forma LEGADA do transform: UMA moldura `frameImage` COVER fixo (antes do
+ * empilhamento). Usada só pela migração `normalizeFrameImages`.
+ */
+interface LegacyFrameImageRef {
+  readonly path: string;
+  readonly url: string;
+  readonly source: 'upload' | 'template';
+  readonly id?: string;
+}
+
+/**
+ * Lista de molduras de um transform, TOLERANTE ao formato antigo. Se já houver
+ * `frameImages`, retorna-a; senão converte um `frameImage` legado (único, COVER
+ * fixo) para uma lista de 1 em enquadramento neutro; senão `[]`. Garante
+ * retrocompat de itens salvos antes do empilhamento.
+ */
+export function normalizeFrameImages(
+  t: EditorTransform,
+): readonly FrameImageRef[] {
+  const raw = t as unknown as {
+    frameImages?: readonly FrameImageRef[];
+    frameImage?: LegacyFrameImageRef | null;
+  };
+  if (raw.frameImages) {
+    return raw.frameImages;
+  }
+  if (raw.frameImage) {
+    return [
+      { ...raw.frameImage, offset: { x: 0, y: 0 }, scale: 1, rotation: 0 },
+    ];
+  }
+  return [];
+}
+
+/**
+ * Devolve `t` com `frameImages` SEMPRE presente (migrando o `frameImage` legado
+ * quando preciso). Idempotente — útil ao hidratar um item possivelmente antigo.
+ */
+export function migrateTransform(t: EditorTransform): EditorTransform {
+  const raw = t as unknown as { frameImages?: readonly FrameImageRef[] };
+  if (raw.frameImages) {
+    return t;
+  }
+  const { ...rest } = t as unknown as Record<string, unknown>;
+  delete rest['frameImage'];
+  return { ...(rest as unknown as EditorTransform), frameImages: normalizeFrameImages(t) };
+}
 
 /** Faixa de gating de resolução do editor (semáforo). */
 export type ResolutionTier = 'ok' | 'warn' | 'blocked';

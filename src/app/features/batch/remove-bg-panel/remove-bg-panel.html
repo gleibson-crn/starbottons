@@ -1,0 +1,87 @@
+<section class="rb" aria-labelledby="rb-title">
+  <h3 id="rb-title" class="rb__title">Remover fundo</h3>
+  <p class="rb__hint">
+    Recorta a(s) pessoa(s) da foto e deixa o resto transparente, para aparecer
+    sobre o fundo do botton. Tudo é processado neste computador — a foto não
+    sai do PC.
+  </p>
+
+  <div class="rb__actions">
+    @if (busy()) {
+      <button type="button" class="btn btn--ghost" (click)="cancel()">
+        <span aria-hidden="true">✕</span> Cancelar
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!sourceImage()"
+        (click)="remove()"
+      >
+        <span aria-hidden="true">✂</span>
+        {{ mode() === 'none' ? 'Remover fundo' : 'Refazer o recorte' }}
+      </button>
+    }
+    @if (mode() !== 'none' && !busy()) {
+      <button type="button" class="btn btn--ghost" (click)="undo()">
+        <span aria-hidden="true">↺</span> Desfazer recorte
+      </button>
+    }
+  </div>
+
+  @if (busy()) {
+    <p class="rb__status" role="status">
+      <span class="rb__spinner" aria-hidden="true"></span>{{ statusText() }}
+    </p>
+  }
+
+  @if (mode() === 'saved') {
+    <p class="rb__status" role="status">
+      Recorte aplicado. Use “Refazer o recorte” para ajustar a sensibilidade.
+    </p>
+  }
+
+  @if (canAdjust()) {
+    <div class="rb__slider">
+      <label for="rb-threshold">Sensibilidade da borda</label>
+      <input
+        id="rb-threshold"
+        type="range"
+        [min]="thresholdMin"
+        [max]="thresholdMax"
+        [value]="threshold()"
+        [attr.aria-valuetext]="percent() + '%'"
+        (input)="onThreshold($any($event.target).value)"
+      />
+      <span class="rb__value" aria-hidden="true">{{ percent() }}%</span>
+    </div>
+    <p class="rb__hint">
+      Mantém só o(s) objeto(s) principal(is) e remove pedaços soltos
+      (reflexos). Se sobrar algo solto grudado, arraste para a DIREITA; se
+      sumir parte da pessoa, arraste para a ESQUERDA.
+    </p>
+  }
+
+  @if (previewUrl(); as url) {
+    <div class="rb__previews">
+      <figure class="rb__fig">
+        <div class="rb__checker">
+          <img [src]="url" alt="Recorte sobre fundo xadrez (transparência)" />
+        </div>
+        <figcaption>Xadrez = transparente</figcaption>
+      </figure>
+      <figure class="rb__fig">
+        <div
+          class="rb__botton"
+          [style.background-color]="bottonColor()"
+          [style.background-image]="
+            bottonImageUrl() ? 'url(' + bottonImageUrl() + ')' : null
+          "
+        >
+          <img [src]="url" alt="Recorte sobre o fundo atual do botton" />
+        </div>
+        <figcaption>Sobre o fundo do botton</figcaption>
+      </figure>
+    </div>
+  }
+</section>

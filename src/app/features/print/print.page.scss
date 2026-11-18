@@ -180,11 +180,76 @@
 }
 
 /* --- Prévia da folha ---------------------------------------------------- */
+/* Wrapper STICKY: a prévia acompanha a rolagem da página (fica sempre à vista
+ * enquanto o usuário mexe nos controles à esquerda). Ancora o pager flutuante. */
+.print__preview-wrap {
+  position: sticky;
+  inset-block-start: var(--sp-4);
+  align-self: start;
+}
+
+/* Contêiner ROLÁVEL das folhas: rola por dentro (scroll-snap) para navegar entre
+ * as páginas. `scroll-padding-block-start` faz cada folha "encaixar" um pouco
+ * abaixo do topo, deixando à mostra um pedacinho da folha anterior (sinal de que
+ * é uma nova folha). Altura limitada à viewport. */
 .print__preview {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-6);
+  gap: var(--sp-5);
   align-items: center;
+  max-block-size: calc(100vh - 2 * var(--sp-8));
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scroll-padding-block-start: 44px;
+  padding-block: var(--sp-2);
+  overscroll-behavior: contain;
+}
+
+/* Pager flutuante (contador + setas) — sobre a prévia, canto inferior direito. */
+.print__pager {
+  position: absolute;
+  inset-block-end: var(--sp-4);
+  inset-inline-end: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2);
+  border-radius: var(--radius-full);
+  background: var(--color-overlay);
+  color: #fff;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(6px);
+}
+
+.print__pager-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: hsl(0 0% 100% / 12%);
+  color: inherit;
+  font-size: var(--fs-md);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease);
+}
+
+.print__pager-btn:hover:not(:disabled) {
+  background: hsl(0 0% 100% / 26%);
+}
+
+.print__pager-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.print__pager-count {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Escala visual (NÃO afeta o tamanho impresso): a moldura tem o tamanho já
@@ -197,6 +262,8 @@
   box-shadow: var(--shadow-md);
   border-radius: var(--radius-sm);
   background: #fff;
+  scroll-snap-align: start;
+  flex: 0 0 auto;
 }
 
 @media (min-width: 640px) {
@@ -247,9 +314,22 @@
     display: block;
   }
 
+  /* Neutraliza sticky/scroll/snap: na impressão todas as folhas fluem normalmente
+   * (uma por página física). O pager flutuante não deve sair no papel. */
+  .print__preview-wrap {
+    position: static;
+  }
+
+  .print__pager {
+    display: none !important;
+  }
+
   .print__preview {
     display: block;
     gap: 0;
+    max-block-size: none;
+    overflow: visible;
+    padding-block: 0;
   }
 
   /* A folha volta ao tamanho real, uma por página, sem moldura/sombra. */

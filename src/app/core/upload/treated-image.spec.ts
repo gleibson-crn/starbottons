@@ -37,21 +37,37 @@ function makeCtx(): FakeCtx {
   return ctx;
 }
 
-const source = { naturalWidth: 2000, naturalHeight: 1500 } as unknown as
+const source = { naturalWidth: 1000, naturalHeight: 750 } as unknown as
   CanvasImageSource & FilterSource;
 
 describe('renderFilteredBlob', () => {
-  it('desenha em resolução NATURAL com o filterString aplicado', async () => {
+  it('desenha até o teto de resolução com o filterString aplicado', async () => {
     const ctx = makeCtx();
     const canvas = fakeCanvas(ctx, new Blob(['png'], { type: 'image/png' }));
 
+    // 1000×750 está abaixo do teto (1280) → resolução preservada.
     const blob = await renderFilteredBlob(source, VIVID, () => canvas);
 
-    expect(canvas.width).toBe(2000);
-    expect(canvas.height).toBe(1500);
+    expect(canvas.width).toBe(1000);
+    expect(canvas.height).toBe(750);
     expect(ctx.filter).toBe('brightness(1) contrast(1.15) saturate(1.4)');
-    expect(ctx.drawArgs).toEqual([source, 0, 0]);
+    expect(ctx.drawArgs).toEqual([source, 0, 0, 1000, 750]);
     expect(blob.type).toBe('image/png');
+  });
+
+  it('LIMITA o lado maior a 1280 (evita 24MP → CPU 546 e halftone embolado)', async () => {
+    const ctx = makeCtx();
+    const canvas = fakeCanvas(ctx, new Blob(['png'], { type: 'image/png' }));
+    // Foto grande (4000×6000 = 24MP), como a que estourava a Edge.
+    const big = { naturalWidth: 4000, naturalHeight: 6000 } as unknown as
+      CanvasImageSource & FilterSource;
+
+    await renderFilteredBlob(big, VIVID, () => canvas);
+
+    // Lado maior (6000) cai para 1280; o menor escala proporcionalmente.
+    expect(canvas.height).toBe(1280);
+    expect(canvas.width).toBe(Math.round(4000 * (1280 / 6000)));
+    expect(ctx.drawArgs).toEqual([big, 0, 0, canvas.width, canvas.height]);
   });
 
   it('rejeita quando toBlob não produz um blob', async () => {

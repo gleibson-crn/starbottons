@@ -52,6 +52,12 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/backgrounds/background-manager.routes'),
       },
+      {
+        path: 'frames',
+        data: { manageFrames: true },
+        loadChildren: () =>
+          import('./features/frames/frame-manager.routes'),
+      },
       // Redirects das paths do antigo fluxo single → fluxo único (upload).
       { path: 'selection', pathMatch: 'full', redirectTo: 'upload' },
       { path: 'editor', pathMatch: 'full', redirectTo: 'upload' },

@@ -68,6 +68,7 @@ function makeItem(arts: BatchItem['arts']): BatchItem {
     perSizeTier: { 32: 'ok', 44: 'ok', 58: 'ok' },
     arts,
     uploadError: null,
+    seqLabel: '',
   };
 }
 

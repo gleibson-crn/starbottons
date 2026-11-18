@@ -1,9 +1,18 @@
 import { DEFAULT_FILTERS } from '../../types';
-import { activePresetId, FILTER_PRESETS } from './filter-presets';
+import { activePresetId, ALL_PRESETS, FILTER_PRESETS } from './filter-presets';
 
 describe('filter-presets', () => {
   it('expõe os 4 chips na ordem Original → P&B → Sépia → Vívido', () => {
     expect(FILTER_PRESETS.map((p) => p.id)).toEqual([
+      'original',
+      'grayscale',
+      'sepia',
+      'vivid',
+    ]);
+  });
+
+  it('ALL_PRESETS contém apenas os presets tonais (sem estilos por pixel)', () => {
+    expect(ALL_PRESETS.map((p) => p.id)).toEqual([
       'original',
       'grayscale',
       'sepia',
@@ -30,5 +39,9 @@ describe('filter-presets', () => {
   it('activePresetId retorna null quando o usuário sai da assinatura (custom)', () => {
     const vivid = FILTER_PRESETS.find((p) => p.id === 'vivid')!.filters;
     expect(activePresetId({ ...vivid, brightness: 1.2 })).toBeNull();
+  });
+
+  it('reconhece os filtros neutros como o preset Original', () => {
+    expect(activePresetId(DEFAULT_FILTERS)).toBe('original');
   });
 });

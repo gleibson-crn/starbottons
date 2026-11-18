@@ -4,20 +4,18 @@ import {
   computed,
   model,
 } from '@angular/core';
-import type { ImageFilters } from '../../types';
-import { DEFAULT_FILTERS, isDefaultFilters } from '../../types';
+import type { ImageFilters, StyleEffect } from '../../types';
+import { DEFAULT_FILTERS, DEFAULT_STYLE_EFFECT, isDefaultFilters } from '../../types';
 import { FilterSlider } from '../filter-slider/filter-slider';
-import {
-  activePresetId,
-  FILTER_PRESETS,
-  type PresetId,
-} from './filter-presets';
+import { activePresetId, FILTER_PRESETS, type PresetId } from './filter-presets';
 
 /**
- * TreatPanel — aba "Tratar" do editor. Reúne os chips de preset (seleção única,
- * `aria-pressed`) e três sliders de fator (brilho/contraste/saturação). Mover um
- * slider fora da assinatura de um preset deixa todos os chips inativos e mostra
- * a legenda "Personalizado". Não altera o enquadramento nem chama a Edge.
+ * TreatPanel — aba "Tratar" do editor. Reúne os chips de preset TONAL (seleção
+ * única, `aria-pressed`: Original/P&B/Sépia/Vívido) e três sliders de fator
+ * (brilho/contraste/saturação). Mover um controle fora da assinatura de um
+ * preset deixa os chips inativos ("Personalizado"). O `model` `style` existe só
+ * por compatibilidade de binding e permanece SEMPRE em `DEFAULT_STYLE_EFFECT`.
+ * Não altera o enquadramento nem chama a Edge.
  */
 @Component({
   selector: 'app-treat-panel',
@@ -28,6 +26,7 @@ import {
 })
 export class TreatPanel {
   readonly filters = model.required<ImageFilters>();
+  readonly style = model<StyleEffect>(DEFAULT_STYLE_EFFECT);
 
   readonly presets = FILTER_PRESETS;
   readonly activeId = computed(() => activePresetId(this.filters()));
@@ -38,10 +37,12 @@ export class TreatPanel {
     return this.activeId() === id;
   }
 
+  /** Aplica um preset tonal; o estilo permanece neutro. */
   selectPreset(id: PresetId): void {
-    const preset = this.presets.find((p) => p.id === id);
+    const preset = FILTER_PRESETS.find((p) => p.id === id);
     if (preset) {
       this.filters.set(preset.filters);
+      this.style.set(DEFAULT_STYLE_EFFECT);
     }
   }
 
@@ -59,5 +60,6 @@ export class TreatPanel {
 
   reset(): void {
     this.filters.set(DEFAULT_FILTERS);
+    this.style.set(DEFAULT_STYLE_EFFECT);
   }
 }

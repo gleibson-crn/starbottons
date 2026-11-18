@@ -32,16 +32,29 @@ interface ResolvedOptions {
   pollIntervalMs: number;
   pollTimeoutMs: number;
   maxRetries: number;
+  /** Espera-base do backoff entre tentativas (dobra a cada retry). */
+  retryBackoffMs: number;
   onProgress: (pct: number | null) => void;
   sleep: (ms: number) => Promise<void>;
   signal?: AbortSignal;
 }
 
 const DEFAULTS: ResolvedOptions = {
-  syncTimeoutMs: 8000,
+  // DEVE ser MAIOR que o TIME_BUDGET_MS (25s) da Edge (generate-art): a Edge só
+  // degrada para 202 (assíncrono + waitUntil) ao atingir esse orçamento. Se o
+  // cliente abortar ANTES disso (o antigo 8s), o supervisor CANCELA a invocação
+  // no meio do pipeline → o job fica preso em "processing", nunca marca "done",
+  // e o polling estoura ("Tempo esgotado"). Com 30s o cliente sempre recebe 200
+  // (pronto) ou 202 (segue em background) antes de abortar. Ver ADR-005.
+  syncTimeoutMs: 30000,
   pollIntervalMs: 2000,
   pollTimeoutMs: 60000,
   maxRetries: 3,
+  // Backoff entre tentativas (0.8s, 1.6s, 3.2s). Erros 546 (CPU hard limit) e
+  // 503 da Edge local são TRANSITÓRIOS (worker sobrecarregado/recuperando);
+  // retentar na hora bate na mesma Edge ocupada e falha de novo. Esperar deixa
+  // o worker se recuperar antes do reenvio (mesmo job_id, UPSERT idempotente).
+  retryBackoffMs: 800,
   onProgress: () => undefined,
   sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
 };
@@ -72,6 +85,11 @@ export class GenerationService {
           throw err;
         }
         lastError = err;
+        // Backoff antes da próxima tentativa (não após a última): dá tempo à
+        // Edge se recuperar de um 546/503 transitório.
+        if (attempt < cfg.maxRetries) {
+          await cfg.sleep(cfg.retryBackoffMs * 2 ** (attempt - 1));
+        }
       }
     }
     throw lastError instanceof Error
@@ -128,6 +146,22 @@ export class GenerationService {
     }
   }
 
+  /**
+   * Re-assina SOB DEMANDA a URL do `print_png` de um job (a signed URL guardada
+   * no estado expira). `null` sem `jobId`, sem asset ou em qualquer falha —
+   * o chamador cai no fallback (URL antiga).
+   */
+  async freshPrintUrl(jobId: string | null): Promise<string | null> {
+    if (!jobId) {
+      return null;
+    }
+    try {
+      return await this.signKind(await this.gateway.fetchAssets(jobId), 'print_png');
+    } catch {
+      return null;
+    }
+  }
+
   /** Monta o resultado a partir da resposta 200 (assets já com signed_url). */
   private fromEdge(body: unknown, jobId: string): GenerationResult {
     const b = (body ?? {}) as { job_id?: string; assets?: EdgeAsset[] };
@@ -138,7 +172,6 @@ export class GenerationService {
     return {
       jobId: b.job_id ?? jobId,
       printPngUrl: url('print_png'),
-      printPdfUrl: url('print_pdf'),
     };
   }
 
@@ -148,7 +181,6 @@ export class GenerationService {
     return {
       jobId,
       printPngUrl: await this.signKind(assets, 'print_png'),
-      printPdfUrl: await this.signKind(assets, 'print_pdf'),
     };
   }
 

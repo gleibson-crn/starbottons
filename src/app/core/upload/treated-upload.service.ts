@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import type { ImageFilters, UploadRecord } from '../../shared/types';
+import type { ImageFilters, StyleEffect, UploadRecord } from '../../shared/types';
+import { DEFAULT_STYLE_EFFECT } from '../../shared/types';
 import { loadImage } from '../../shared/utils';
 import { UploadService } from './upload.service';
 import {
@@ -29,8 +30,9 @@ export class TreatedUploadService {
     filters: ImageFilters,
     sourceName: string,
     createCanvas?: CanvasFactory,
+    style: StyleEffect = DEFAULT_STYLE_EFFECT,
   ): Promise<UploadRecord> {
-    const blob = await renderFilteredBlob(image, filters, createCanvas);
+    const blob = await renderFilteredBlob(image, filters, createCanvas, style);
     const file = new File([blob], treatedFileName(sourceName), {
       type: 'image/png',
     });
@@ -51,8 +53,9 @@ export class TreatedUploadService {
     previewUrl: string,
     filters: ImageFilters,
     sourceName: string,
+    style: StyleEffect = DEFAULT_STYLE_EFFECT,
   ): Promise<UploadRecord> {
     const image = await loadImage(previewUrl);
-    return this.createTreatedUpload(image, filters, sourceName);
+    return this.createTreatedUpload(image, filters, sourceName, undefined, style);
   }
 }

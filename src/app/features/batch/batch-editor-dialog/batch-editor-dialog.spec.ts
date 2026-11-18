@@ -16,6 +16,10 @@ import {
   BackgroundTemplateService,
   type BackgroundTemplate,
 } from '../../../core/backgrounds';
+import {
+  FrameTemplateService,
+  type FrameTemplate,
+} from '../../../core/frames';
 import { BatchEditorDialog, type BatchEditResult } from './batch-editor-dialog';
 
 const TPL: BackgroundTemplate = {
@@ -32,6 +36,24 @@ const TPL: BackgroundTemplate = {
 /** BackgroundTemplateService de teste: não toca em rede/Storage. */
 const fakeBgTemplates: Pick<BackgroundTemplateService, 'list'> = {
   list: async (): Promise<BackgroundTemplate[]> => [TPL],
+};
+
+const FRAME_TPL: FrameTemplate = {
+  id: 'fr1',
+  name: 'Borda dourada',
+  storagePath: 'user/borda.png',
+  mime: 'image/png',
+  width: 1000,
+  height: 1000,
+  createdAt: '2026-08-20T10:00:00Z',
+  thumbUrl: 'https://app/borda.png?token=x',
+  defaultFraming: { offset: { x: 0, y: 0 }, scale: 1, rotation: 0 },
+  isComposite: false,
+};
+
+/** FrameTemplateService de teste: não toca em rede/Storage. */
+const fakeFrameTemplates: Pick<FrameTemplateService, 'list'> = {
+  list: async (): Promise<FrameTemplate[]> => [FRAME_TPL],
 };
 
 const FAKE_REC: UploadRecord = {
@@ -81,6 +103,7 @@ function makeItem(filters: ImageFilters = DEFAULT_FILTERS): BatchItem {
     perSizeTier: { 32: 'ok', 44: 'ok', 58: 'ok' },
     arts: {},
     uploadError: null,
+    seqLabel: '',
   };
 }
 
@@ -89,6 +112,7 @@ function fixtureWith(item: BatchItem) {
     providers: [
       { provide: UploadService, useValue: fakeUploads },
       { provide: BackgroundTemplateService, useValue: fakeBgTemplates },
+      { provide: FrameTemplateService, useValue: fakeFrameTemplates },
     ],
   });
   const fixture = TestBed.createComponent(BatchEditorDialog);

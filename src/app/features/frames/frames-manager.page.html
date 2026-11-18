@@ -1,0 +1,132 @@
+<section aria-labelledby="frame-manager-title">
+  <div class="manager__body">
+  <div class="manager__col-main">
+
+  <div class="manager__head">
+    <div>
+      <h1 id="frame-manager-title">Curadoria de molduras</h1>
+      <p class="manager__intro">
+        Cadastre molduras (PNG com transparência) para aplicar como camada
+        decorativa por cima da arte dos bottons no processamento em lote. Monte
+        a moldura com uma ou mais imagens em camadas — clique numa moldura para
+        editar suas camadas.
+      </p>
+    </div>
+  </div>
+
+  <form class="frameform" (submit)="save(); $event.preventDefault()">
+    <div class="frameform__field">
+      <label class="frameform__label" for="frame-name">Nome da moldura</label>
+      <input
+        id="frame-name"
+        class="frameform__input"
+        type="text"
+        maxlength="120"
+        placeholder="Ex.: Borda dourada"
+        [value]="name()"
+        (input)="onNameInput($event)"
+      />
+    </div>
+
+    <app-file-dropzone
+      [accept]="accept"
+      browseLabel="Escolher moldura PNG"
+      (fileAccepted)="onFile($event)"
+      (fileRejected)="onFileRejected($event)"
+    />
+
+    @if (pendingPreview()) {
+      <div class="frameform__preview">
+        <img
+          class="frameform__thumb"
+          [src]="pendingPreview()"
+          [alt]="'Prévia da moldura ' + (name() || 'nova')"
+        />
+        <span class="frameform__filename">{{ pendingFile()?.name }}</span>
+      </div>
+    }
+
+    <button type="submit" class="btn btn--primary" [disabled]="!canSave()">
+      {{ saving() ? 'Salvando…' : 'Salvar moldura' }}
+    </button>
+  </form>
+
+  <h2 class="manager__subtitle">Molduras cadastradas</h2>
+
+  @switch (phase()) {
+    @case ('loading') {
+      <p class="grid__status" role="status">Carregando molduras…</p>
+    }
+    @case ('error') {
+      <div class="grid__status" role="status">
+        <p>Não foi possível carregar as molduras.</p>
+        <button type="button" class="btn btn--ghost" (click)="reload()">
+          Tentar novamente
+        </button>
+      </div>
+    }
+    @default {
+      @if (templates().length === 0) {
+        <p class="grid__status" role="status">
+          Nenhuma moldura cadastrada ainda. Envie um PNG acima para começar.
+        </p>
+      } @else {
+        <ul class="grid" aria-label="Molduras cadastradas">
+          @for (t of templates(); track t.id) {
+            <li class="framecard">
+              <button
+                type="button"
+                class="framecard__thumb"
+                [attr.aria-label]="'Editar moldura ' + t.name"
+                (click)="edit(t)"
+              >
+                @if (t.thumbUrl) {
+                  <img
+                    class="framecard__img"
+                    [src]="t.thumbUrl"
+                    alt=""
+                  />
+                } @else {
+                  <span class="framecard__error">Prévia indisponível</span>
+                }
+                @if (t.isComposite) {
+                  <span class="framecard__badge">composta</span>
+                }
+                <span class="framecard__edit" aria-hidden="true">Editar</span>
+              </button>
+              <p class="framecard__name">{{ t.name }}</p>
+              <button
+                type="button"
+                class="btn btn--ghost"
+                [attr.aria-label]="'Excluir moldura ' + t.name"
+                (click)="removeTemplate(t)"
+              >
+                Excluir
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+
+  </div>
+
+  @if (editing()) {
+    <div class="manager__col-editor">
+      <div class="editor__head">
+        <h2 class="editor__title">Editando: {{ editing()!.name }}</h2>
+        <button type="button" class="btn btn--ghost" (click)="closeEditor()">
+          Fechar
+        </button>
+      </div>
+      <app-frame-composer
+        [template]="editing()!"
+        [library]="templates()"
+        (saved)="onComposed($event)"
+      />
+    </div>
+  }
+
+  </div>
+</section>

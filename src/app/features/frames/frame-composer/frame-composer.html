@@ -1,0 +1,136 @@
+<section class="fcomp" aria-labelledby="fcomp-title">
+  <h3 id="fcomp-title" class="fcomp__title">Camadas da moldura</h3>
+  <p class="fcomp__hint" role="status">
+    Monte a moldura empilhando até {{ max }} PNGs. Selecione uma camada na lista
+    e arraste na prévia para mover; role para dar zoom; [ e ] giram.
+  </p>
+
+  <div class="fcomp__stage">
+    <app-canvas-editor
+      [image]="sampleArt()"
+      [spec]="spec"
+      layer="frame"
+      [frameImages]="frames.imageEls()"
+      [frameFramings]="frames.framings()"
+      [activeFrameIndex]="frames.activeIndex()"
+      [(transform)]="artTransform"
+      (frameFramingChange)="onFramingChange($event)"
+    />
+  </div>
+
+  <h4 id="fcomp-list-title" class="fcomp__sub">
+    Camadas (fundo → topo): {{ frames.refs().length }}/{{ max }}
+  </h4>
+  @if (loading()) {
+    <p class="fcomp__hint" role="status">Carregando camadas…</p>
+  } @else if (frames.refs().length === 0) {
+    <p class="fcomp__hint" role="status">Nenhuma camada. Adicione um PNG abaixo.</p>
+  } @else {
+    <ol class="fcomp__list" aria-labelledby="fcomp-list-title">
+      @for (ref of frames.refs(); track $index; let i = $index) {
+        <li class="layer" [class.layer--active]="frames.activeIndex() === i">
+          <button
+            type="button"
+            class="layer__pick"
+            [attr.aria-pressed]="frames.activeIndex() === i"
+            [attr.aria-label]="'Selecionar camada ' + (i + 1)"
+            (click)="frames.select(i)"
+          >
+            <img class="layer__thumb" [src]="ref.url" alt="" />
+            <span>Camada {{ i + 1 }}</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn--ghost"
+            [disabled]="i === frames.refs().length - 1"
+            [attr.aria-label]="'Subir camada ' + (i + 1)"
+            (click)="moveUp(i)"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            class="btn btn--ghost"
+            [disabled]="i === 0"
+            [attr.aria-label]="'Descer camada ' + (i + 1)"
+            (click)="moveDown(i)"
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            class="btn btn--ghost"
+            [attr.aria-label]="'Redefinir enquadramento da camada ' + (i + 1)"
+            (click)="reset(i)"
+          >
+            Redefinir
+          </button>
+          <button
+            type="button"
+            class="btn btn--ghost layer__remove"
+            [attr.aria-label]="'Remover camada ' + (i + 1)"
+            (click)="remove(i)"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
+        </li>
+      }
+    </ol>
+  }
+
+  <div class="fcomp__add">
+    <h4 class="fcomp__sub">Adicionar camada</h4>
+    @if (frames.canAdd()) {
+      <app-file-dropzone
+        [accept]="accept"
+        browseLabel="Subir PNG"
+        (fileAccepted)="onFile($event)"
+        (fileRejected)="frames.reject($event)"
+      />
+    } @else {
+      <p class="fcomp__hint" role="status">Limite de {{ max }} camadas atingido.</p>
+    }
+    @if (library().length > 0) {
+      <p class="fcomp__label" id="fcomp-lib-title">Usar moldura cadastrada</p>
+      <ul class="fcomp__lib" aria-labelledby="fcomp-lib-title">
+        @for (t of library(); track t.id) {
+          <li>
+            <button
+              type="button"
+              class="btn btn--ghost"
+              [disabled]="!frames.canAdd() || busy()"
+              [attr.aria-label]="'Usar moldura cadastrada ' + t.name"
+              (click)="addFromLibrary(t)"
+            >
+              @if (t.thumbUrl) {
+                <img class="layer__thumb" [src]="t.thumbUrl" alt="" />
+              }
+              {{ t.name }}
+            </button>
+          </li>
+        }
+      </ul>
+    }
+    @if (frames.uploading() || busy()) {
+      <p class="fcomp__hint" role="status">Adicionando camada…</p>
+    }
+  </div>
+
+  @if (error() ?? frames.error()) {
+    <p class="fcomp__error" role="alert">{{ error() ?? frames.error() }}</p>
+  }
+  @if (notice()) {
+    <p class="fcomp__hint" role="status">{{ notice() }}</p>
+  }
+
+  <div class="fcomp__actions">
+    <button
+      type="button"
+      class="btn btn--primary"
+      [disabled]="saving() || loading() || frames.refs().length === 0"
+      (click)="save()"
+    >
+      {{ saving() ? 'Salvando…' : 'Salvar composição' }}
+    </button>
+  </div>
+</section>

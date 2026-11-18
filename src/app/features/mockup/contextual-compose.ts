@@ -1,7 +1,14 @@
-import type { EditorTransform, Framing, ImageFilters, PrintSpec } from '../../shared/types';
+import type {
+  EditorTransform,
+  Framing,
+  ImageFilters,
+  PrintSpec,
+  StyleEffect,
+} from '../../shared/types';
 import {
   renderContextualMockup,
   renderMockupSprite,
+  type FrameLayer,
   type MockupSprite,
 } from '../../shared/ui';
 import { denormalizeTarget, type SceneTarget } from './scene-target';
@@ -18,10 +25,14 @@ export interface ComposeInput {
   readonly lighting?: 'none' | 'multiply-soft';
   /** Filtros aplicados APENAS à arte (fiel ao editor). */
   readonly filters?: ImageFilters;
+  /** Efeito de estilo por pixel (ADR-019; fiel ao editor). */
+  readonly style?: StyleEffect;
   /** Imagem de fundo já carregada (por baixo da arte). */
   readonly backgroundImage?: HTMLImageElement | null;
   /** Enquadramento do fundo (offset/scale/rotation). */
   readonly backgroundTransform?: Framing | null;
+  /** Molduras já carregadas (por cima da arte, empilhadas com seu enquadramento). */
+  readonly frames?: readonly FrameLayer[];
 }
 
 function naturalDims(scene: HTMLImageElement): { width: number; height: number } {
@@ -38,7 +49,7 @@ function naturalDims(scene: HTMLImageElement): { width: number; height: number }
 export function spriteForRadius(
   input: Pick<
     ComposeInput,
-    'bottonImage' | 'bottonTransform' | 'editorSide' | 'spec' | 'filters' | 'backgroundImage' | 'backgroundTransform'
+    'bottonImage' | 'bottonTransform' | 'editorSide' | 'spec' | 'filters' | 'style' | 'backgroundImage' | 'backgroundTransform' | 'frames'
   >,
   targetRadiusPx: number,
 ): MockupSprite {
@@ -49,8 +60,10 @@ export function spriteForRadius(
     editorSide: input.editorSide,
     targetRadiusPx,
     filters: input.filters,
+    style: input.style,
     backgroundImage: input.backgroundImage,
     backgroundTransform: input.backgroundTransform,
+    frames: input.frames,
   });
 }
 

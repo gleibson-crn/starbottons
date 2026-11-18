@@ -1,14 +1,16 @@
 /** Rasteriza o SVG de layout → PNG (RGBA) via resvg-wasm e marca a DPI (pHYs). */
 
-import { initWasm, Resvg, RESVG_WASM_URL } from "./deps.ts";
+import { initWasm, Resvg } from "./deps.ts";
+import { resvgWasm } from "./wasm-local.ts";
 import { withDpi } from "./png.ts";
 
 let wasmReady: Promise<void> | null = null;
 
-/** Inicializa o WASM do resvg uma única vez por instância (idempotente). */
+/** Inicializa o WASM do resvg uma única vez por instância (idempotente).
+ * Usa os bytes LOCAIS (wasm-local.ts) — sem fetch em runtime (self-contained). */
 function ensureWasm(): Promise<void> {
   if (!wasmReady) {
-    wasmReady = initWasm(fetch(RESVG_WASM_URL));
+    wasmReady = initWasm(resvgWasm);
   }
   return wasmReady;
 }

@@ -37,6 +37,15 @@
         >
           {{ zipping() ? 'Compactando…' : 'Baixar tudo (ZIP)' }}
         </button>
+        @if (printCount() > 0) {
+          <button
+            type="button"
+            class="btn btn--primary"
+            (click)="goToPrint()"
+          >
+            Impressão ({{ printCount() }})
+          </button>
+        }
       </div>
     }
   </header>
@@ -44,6 +53,12 @@
   @if (nameMissing()) {
     <p class="batch__blocked" role="status">
       Há imagens sem nome. Dê um nome a cada imagem para gerar as artes.
+    </p>
+  }
+
+  @if (seqMissing()) {
+    <p class="batch__blocked" role="status">
+      Informe o número (senha) de cada botton para gerar as artes.
     </p>
   }
 
@@ -55,6 +70,18 @@
     </p>
   }
 
+  <p class="batch__tally" role="status">
+    <strong>{{ tally.count() }} bottons produzidos (evento)</strong>
+    <button
+      type="button"
+      class="btn btn--ghost"
+      [disabled]="tally.count() === 0"
+      (click)="resetTally()"
+    >
+      Zerar
+    </button>
+  </p>
+
   <p class="sr-only" role="status" aria-live="polite">{{ liveStatus() }}</p>
 
   @if (hasItems()) {
@@ -65,11 +92,15 @@
             [item]="item"
             [capped]="capped()"
             [busy]="generating()"
+            [numbered]="numbered()"
             (sizeToggled)="onToggle(item.id, $event)"
             (removed)="onRemove(item.id)"
+            [duplicate]="duplicates().has(item.seqLabel)"
             (nameChanged)="onName(item.id, $event)"
+            (seqChanged)="onSeq(item.id, $event)"
             (transformChanged)="onTransform(item.id, $event)"
             (retried)="onRetry(item.id)"
+            (uploadRetried)="onReupload(item.id)"
             (applyScene)="onApplyScene(item.id)"
           />
         </li>

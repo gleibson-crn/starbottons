@@ -1,5 +1,18 @@
 /** Contratos de tipo da Edge Function generate-art. */
 
+/**
+ * UMA moldura empilhável: PNG decorativo (path no bucket `uploads`) com seu
+ * próprio enquadramento (offset em MM + scale + rotation), espelhando o fundo.
+ * No array `ArtOptions.frames`, a ORDEM é o z-order: índice 0 compõe primeiro
+ * (mais ao fundo das molduras) e o último fica no topo (por cima das demais).
+ */
+export interface Frame {
+  readonly path: string;
+  readonly offset: { x: number; y: number }; // MM
+  readonly scale: number;
+  readonly rotation: number;
+}
+
 /** Linha da tabela print_specs (ADR-003). */
 export interface PrintSpec {
   readonly id?: number;
@@ -31,6 +44,9 @@ export interface ArtOptions {
   readonly offset: { x: number; y: number };
   readonly scale: number;
   readonly rotation: number;
+  /** Espelha SÓ a arte (eixo local, ANTES do rotate). Ausente → false. */
+  readonly flipH?: boolean;
+  readonly flipV?: boolean;
   readonly background: string;
   /**
    * Camada opcional de IMAGEM de fundo (path no bucket 'uploads') composta SOB a
@@ -46,6 +62,16 @@ export interface ArtOptions {
   readonly backgroundOffset?: { x: number; y: number }; // MM (default {x:0,y:0})
   readonly backgroundScale?: number; // default 1
   readonly backgroundRotation?: number; // default 0
+  /**
+   * ATÉ 3 MOLDURAS empilhadas (PNG com alfa) compostas SOBRE a arte do usuário,
+   * cada uma com enquadramento PRÓPRIO (offset MM + scale + rotation), tal como
+   * o fundo. A ordem do array é o z-order: índice 0 = mais ao fundo, último =
+   * topo. Ausente/vazio → sem moldura (comportamento atual). O parser clampa a
+   * ≤3 e sanitiza cada item.
+   */
+  readonly frames?: Frame[];
+  /** Número de controle (só dígitos, ≤8) desenhado na SANGRIA. Ausente → sem número. */
+  readonly sequenceLabel?: string;
 }
 
 /** Corpo esperado no POST /generate-art. */

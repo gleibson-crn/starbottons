@@ -5,59 +5,80 @@
     aria-modal="true"
     aria-labelledby="batch-edit-title"
   >
-    <h2 id="batch-edit-title" class="dialog__title">
-      Ajustar “{{ item().name }}”
-    </h2>
-    <p class="dialog__hint">
-      O ajuste e os filtros valem para todos os tamanhos selecionados desta
-      imagem.
-    </p>
+    <!-- TOPO FIXO: título + prévia persistente + badge + dica + abas. Fica
+         imóvel enquanto os controles (abaixo) rolam, para que a prévia
+         permaneça visível ao ajustar Tratar/Fundo. -->
+    <div class="dialog__top">
+      <!-- Cabeçalho compacto: título (truncado) + status de resolução ao LADO,
+           economizando altura para a área de controles das abas. -->
+      <div class="dialog__header">
+        <h2 id="batch-edit-title" class="dialog__title">
+          Ajustar “{{ item().name }}”
+        </h2>
+        <app-resolution-badge [dpi]="dpi()" [dense]="true" />
+      </div>
 
-    <!-- Prévia PERSISTENTE (fora das abas): sempre visível para que o usuário
-         veja ao vivo o efeito do enquadramento, dos filtros e do fundo,
-         independentemente da aba de controles ativa. -->
-    <div class="dialog__stage">
-      <app-canvas-editor
-        [image]="image()"
-        [backgroundImage]="bgImageEl()"
-        [spec]="spec()"
-        [filters]="filters()"
-        [layer]="bgLayer()"
-        [(transform)]="transform"
-        [(backgroundTransform)]="bgTransform"
-      />
-    </div>
-    <app-resolution-badge [dpi]="dpi()" [dense]="true" />
+      <!-- Prévia PERSISTENTE (fora das abas): sempre visível para que o usuário
+           veja ao vivo o efeito do enquadramento, dos filtros e do fundo,
+           independentemente da aba de controles ativa. -->
+      <div class="dialog__stage">
+        <app-canvas-editor
+          [image]="image()"
+          [backgroundImage]="bgImageEl()"
+          [frameImages]="frames.imageEls()"
+          [frameFramings]="frames.framings()"
+          [activeFrameIndex]="frames.activeIndex()"
+          [spec]="spec()"
+          [filters]="filters()"
+          [style]="style()"
+          [layer]="bgLayer()"
+          [(transform)]="transform"
+          [(backgroundTransform)]="bgTransform"
+          (frameFramingChange)="frames.applyFraming($event)"
+        />
+      </div>
 
-    <!-- Dica de posicionamento do FUNDO, em destaque logo abaixo da prévia,
-         quando a aba "Fundo" está ativa e os gestos movem o fundo. -->
-    @if (bgLayer() === 'background') {
-      <p class="dialog__poshint" role="status">
-        Arraste na prévia para posicionar o fundo; role para dar zoom; colchetes
-        giram.
-      </p>
-    }
-
-    <div class="dialog__tabs" role="tablist" aria-label="Modo de edição">
-      @for (t of tabs; track t.id) {
-        <button
-          #tabBtn
-          type="button"
-          role="tab"
-          class="tab"
-          [id]="'batch-tab-' + t.id"
-          [class.tab--active]="activeTab() === t.id"
-          [attr.aria-selected]="activeTab() === t.id"
-          [attr.aria-controls]="'batch-panel-' + t.id"
-          [tabindex]="activeTab() === t.id ? 0 : -1"
-          (click)="selectTab(t.id)"
-          (keydown)="onTabKeydown($event)"
-        >
-          {{ t.label }}
-        </button>
+      <!-- Dica de posicionamento do FUNDO, em destaque logo abaixo da prévia,
+           quando a aba "Fundo" está ativa e os gestos movem o fundo. -->
+      @if (bgLayer() === 'background') {
+        <p class="dialog__poshint" role="status">
+          Arraste na prévia para posicionar o fundo; role para dar zoom;
+          colchetes giram.
+        </p>
       }
+
+      <!-- Aba Moldura: os gestos movem a moldura ATIVA (selecionada na lista). -->
+      @if (bgLayer() === 'frame' && frames.activeIndex() >= 0) {
+        <p class="dialog__poshint" role="status">
+          Arraste na prévia para mover a moldura ativa; role para dar zoom;
+          colchetes giram.
+        </p>
+      }
+
+      <div class="dialog__tabs" role="tablist" aria-label="Modo de edição">
+        @for (t of tabs; track t.id) {
+          <button
+            #tabBtn
+            type="button"
+            role="tab"
+            class="tab"
+            [id]="'batch-tab-' + t.id"
+            [class.tab--active]="activeTab() === t.id"
+            [attr.aria-selected]="activeTab() === t.id"
+            [attr.aria-controls]="'batch-panel-' + t.id"
+            [tabindex]="activeTab() === t.id ? 0 : -1"
+            (click)="selectTab(t.id)"
+            (keydown)="onTabKeydown($event)"
+          >
+            {{ t.label }}
+          </button>
+        }
+      </div>
     </div>
 
+    <!-- ÁREA ROLÁVEL: só os controles das abas + ações rolam; a prévia acima
+         continua fixa e visível. -->
+    <div class="dialog__scroll">
     <!-- A prévia (canvas) é persistente acima; a aba "Ajustar" traz só as
          instruções de enquadramento e o botão de redefinir. -->
     <div
@@ -71,6 +92,26 @@
         Arraste na prévia acima para posicionar e role para dar zoom. Pelo
         teclado: setas movem, + e − ampliam, colchetes giram e R redefine.
       </p>
+      <div class="dialog__flips">
+        <button
+          type="button"
+          class="btn btn--ghost"
+          [class.btn--toggled]="transform().flipH"
+          [attr.aria-pressed]="!!transform().flipH"
+          (click)="toggleFlipH()"
+        >
+          <span aria-hidden="true">⇆</span> Espelhar horizontal
+        </button>
+        <button
+          type="button"
+          class="btn btn--ghost"
+          [class.btn--toggled]="transform().flipV"
+          [attr.aria-pressed]="!!transform().flipV"
+          (click)="toggleFlipV()"
+        >
+          <span aria-hidden="true">⇅</span> Espelhar vertical
+        </button>
+      </div>
       <button type="button" class="btn btn--ghost" (click)="resetFraming()">
         Redefinir enquadramento
       </button>
@@ -83,7 +124,30 @@
       tabindex="0"
       [hidden]="activeTab() !== 'treat'"
     >
-      <app-treat-panel [(filters)]="filters" />
+      <app-treat-panel [(filters)]="filters" [(style)]="style" />
+
+      <!-- Trilha 2 (ADR-021) — Estilo com IA, extraído para AiStylePanel
+           (BL-001). O painel se auto-gate por `aiStyleAvailable` (não renderiza
+           nada quando a feature está OFF, o default) e altera a prévia do
+           diálogo via `resultChange`; a prévia (canvas) permanece aqui. -->
+      <app-ai-style-panel
+        [sourceImage]="originalImage()"
+        [fileName]="item().fileName"
+        [originalFilters]="originalFilters()"
+        [originalStyle]="originalStyle()"
+        (resultChange)="onAiResult($event)"
+      />
+
+      <!-- Remover fundo (ISNet local, Web Worker): recorta a pessoa da foto
+           ORIGINAL; filtros/estilo seguem valendo sobre o recorte. -->
+      <app-remove-bg-panel
+        [sourceImage]="originalImage()"
+        [fileName]="item().fileName"
+        [existing]="savedCutout()"
+        [bottonColor]="transform().background"
+        [bottonImageUrl]="transform().backgroundImage?.url ?? null"
+        (resultChange)="onCutoutResult($event)"
+      />
     </div>
 
     <div
@@ -221,13 +285,167 @@
       </section>
     </div>
 
+    <div
+      role="tabpanel"
+      id="batch-panel-frame"
+      aria-labelledby="batch-tab-frame"
+      tabindex="0"
+      [hidden]="activeTab() !== 'frame'"
+    >
+      <!-- MOLDURAS: camadas decorativas PNG por CIMA da arte (até 3), empilháveis
+           e cada uma reposicionável/redimensionável. A transparência revela a
+           arte/moldura abaixo. Selecionar na lista define o alvo dos gestos. -->
+      <section class="bgsection frameimg" aria-labelledby="frameimg-title">
+        <h3 class="bgsection__title" id="frameimg-title">
+          Molduras (opcional)
+        </h3>
+        <p class="bgsection__hint">
+          Camadas decorativas por cima da sua arte (até 3). Envie PNGs com
+          transparência; selecione uma na lista para arrastar, dar zoom (roda) e
+          girar (colchetes) na prévia.
+        </p>
+
+        @if (frames.refs().length > 0) {
+          <ul class="framelist" aria-label="Molduras empilhadas (topo da lista = na frente)">
+            @for (fr of frames.refs(); track $index; let i = $index) {
+              <li
+                class="framelist__item"
+                [class.framelist__item--active]="frames.activeIndex() === i"
+              >
+                <button
+                  type="button"
+                  class="framelist__select"
+                  [attr.aria-pressed]="frames.activeIndex() === i"
+                  [attr.aria-label]="'Selecionar moldura ' + (i + 1)"
+                  (click)="frames.select(i)"
+                >
+                  <img class="framelist__thumb" [src]="fr.url" [alt]="'Moldura ' + (i + 1)" />
+                  <span class="framelist__name">Moldura {{ i + 1 }}</span>
+                </button>
+                <div class="framelist__actions">
+                  <button
+                    type="button"
+                    class="btn btn--ghost framelist__btn"
+                    [disabled]="i >= frames.refs().length - 1"
+                    [attr.aria-label]="'Trazer moldura ' + (i + 1) + ' para a frente'"
+                    (click)="frames.moveUp(i)"
+                  >▲</button>
+                  <button
+                    type="button"
+                    class="btn btn--ghost framelist__btn"
+                    [disabled]="i <= 0"
+                    [attr.aria-label]="'Enviar moldura ' + (i + 1) + ' para trás'"
+                    (click)="frames.moveDown(i)"
+                  >▼</button>
+                  <button
+                    type="button"
+                    class="btn btn--ghost framelist__btn"
+                    [attr.aria-label]="'Remover moldura ' + (i + 1)"
+                    (click)="frames.removeAt(i)"
+                  >✕</button>
+                </div>
+              </li>
+            }
+          </ul>
+          @if (frames.activeIndex() >= 0) {
+            <button type="button" class="btn btn--ghost" (click)="frames.resetActive()">
+              Centralizar moldura ativa
+            </button>
+          }
+        }
+
+        @if (frames.canAdd()) {
+          <app-file-dropzone
+            [accept]="frameAccept"
+            browseLabel="Enviar moldura PNG"
+            (fileAccepted)="frames.addUpload($event)"
+            (fileRejected)="frames.reject($event)"
+          />
+        } @else {
+          <p class="bgsection__hint" role="status">
+            Limite de 3 molduras atingido — remova uma para adicionar outra.
+          </p>
+        }
+
+        @if (frames.uploading()) {
+          <p class="frameimg__status" role="status">Enviando moldura…</p>
+        }
+        @if (frames.error()) {
+          <p class="frameimg__error" role="alert">{{ frames.error() }}</p>
+        }
+
+        <section class="bggallery" aria-labelledby="framegallery-title">
+          <h3 id="framegallery-title" class="bggallery__title">
+            Templates de moldura
+          </h3>
+          @switch (frameGalleryPhase()) {
+            @case ('loading') {
+              <p class="bggallery__status" role="status">
+                Carregando templates…
+              </p>
+            }
+            @case ('error') {
+              <div class="bggallery__status" role="status">
+                <p>Não foi possível carregar os templates.</p>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  (click)="loadFrameTemplates(true)"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            }
+            @default {
+              @if (frameTemplates().length === 0) {
+                <p class="bggallery__status" role="status">
+                  Nenhum template ainda — cadastre em Curadoria de molduras.
+                </p>
+              } @else {
+                <ul class="bggallery__grid" aria-label="Templates de moldura">
+                  @for (tpl of frameTemplates(); track tpl.id) {
+                    <li>
+                      <button
+                        type="button"
+                        class="bggallery__item"
+                        [attr.aria-label]="'Empilhar moldura ' + tpl.name"
+                        [disabled]="!tpl.thumbUrl || !frames.canAdd()"
+                        (click)="frames.addTemplate(tpl)"
+                      >
+                        @if (tpl.thumbUrl) {
+                          <img
+                            class="bggallery__thumb"
+                            [src]="tpl.thumbUrl"
+                            [alt]="tpl.name"
+                          />
+                        } @else {
+                          <span class="bggallery__ph" aria-hidden="true">—</span>
+                        }
+                        <span class="bggallery__name">{{ tpl.name }}</span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          }
+        </section>
+      </section>
+    </div>
+
     <div class="dialog__actions">
       <button type="button" class="btn btn--ghost" (click)="onClose()">
         Cancelar
       </button>
-      <button type="button" class="btn btn--primary" (click)="onSave()">
+      <button
+        type="button"
+        class="btn btn--primary"
+        [disabled]="saving()"
+        (click)="onSave()"
+      >
         Salvar ajuste
       </button>
+    </div>
     </div>
   </div>
 </div>

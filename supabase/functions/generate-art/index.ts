@@ -7,6 +7,9 @@
  * plano (EdgeRuntime.waitUntil); o client faz polling em generation_jobs (ADR-005).
  */
 
+// DEVE ser o 1º import: instala o carregamento LOCAL dos WASMs (patch do fetch
+// do font.wasm) ANTES de qualquer módulo que importe `imagescript`. Ver wasm-local.ts.
+import "./wasm-local.ts";
 import { fetchSpec, requireUser, serviceClient } from "./db.ts";
 import { markJobDone, markJobError, upsertProcessingJob } from "./jobs.ts";
 import { generateArtwork } from "./render.ts";

@@ -8,9 +8,9 @@ import { ArtError, internalError, type PrintSpec } from "./types.ts";
 
 const UPLOADS_BUCKET = "uploads";
 const RENDERS_BUCKET = "renders";
-// F-008 (AUDIT-2026-07-25): TTL curto (10min) — signed URL é bearer de arquivo;
-// encurta a janela de vazamento. O polling reassina sob demanda.
-const SIGNED_URL_TTL_SECONDS = 600;
+// TTL de 4h (era 10min: expirava com o app aberto); a UI re-assina sob demanda.
+// Signed URL é bearer de arquivo — mantenha a janela limitada.
+const SIGNED_URL_TTL_SECONDS = 14400;
 
 /** Cliente service_role para I/O interno. */
 export function serviceClient(): SupabaseClient {

@@ -1,0 +1,49 @@
+.modal {
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-md);
+  inline-size: min(92vw, 460px);
+  max-block-size: 90vh;
+}
+
+.modal::backdrop {
+  background: var(--color-overlay);
+}
+
+.modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-6);
+}
+
+.modal__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-title);
+}
+
+.modal__message {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+  white-space: pre-line; /* respeita quebras de linha (listas de novidades) */
+}
+
+.modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-block-start: var(--sp-3);
+}
+
+/* Perigo: vermelho escuro p/ contraste >= 4,5:1 com texto branco (AA). */
+.modal__actions .btn--danger {
+  background: hsl(2 70% 40%);
+}

@@ -33,6 +33,37 @@
   min-inline-size: 0;
 }
 
+/* 3ª coluna do head: ações empilhadas (Reenviar — só em falha de upload — + Remover). */
+.bcard__head-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  align-items: stretch;
+}
+
+.bcard__seq {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1, 4px);
+}
+
+.bcard__seq-hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+/* Duplicata: borda de aviso + texto no tom do texto principal (contraste ≥4,5:1). */
+.bcard__seq--dup .field__control {
+  border-color: var(--warning-500);
+  border-width: 2px;
+}
+
+.bcard__seq--dup .bcard__seq-hint {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
 .bcard__dims {
   margin: 0;
   font-size: var(--fs-sm);
@@ -87,6 +118,22 @@
   gap: var(--sp-3);
 }
 
+/* "Tentar novamente" em DESTAQUE quando há falha: âmbar de atenção (distinto do
+ * roxo do "Levar para impressão" e do vermelho de perigo), texto escuro para
+ * contraste AA e leve realce. Chama o olho para a ação de recuperar a falha. */
+.bcard__retry {
+  background: var(--warning-500);
+  color: hsl(38 95% 12%);
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+}
+
+.bcard__retry:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow: var(--shadow-lg);
+}
+
 .bcard__downloads {
   list-style: none;
   margin: 0;
@@ -107,4 +154,8 @@
   font-weight: 600;
   font-size: var(--fs-sm);
   min-inline-size: 3.5rem;
+}
+
+.bcard__to-print {
+  align-self: flex-start;
 }

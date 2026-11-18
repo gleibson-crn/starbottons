@@ -1,13 +1,15 @@
 import type { EditorTransform, Framing, ImageFilters } from '../../types';
+import type { PreparedArt } from '../../imaging';
 import type { EditorLayout } from '../../utils';
-import { drawBottonFace } from './botton-face';
+import { drawBottonFace, type FrameLayer } from './botton-face';
 
 /** Parâmetros de uma cena completa do editor. */
 export interface SceneParams {
   readonly ctx: CanvasRenderingContext2D;
   readonly side: number;
   readonly layout: EditorLayout;
-  readonly image: HTMLImageElement | null;
+  /** Arte: imagem original (tonal) OU canvas já estilizado (`prepareArt`). */
+  readonly image: PreparedArt | null;
   readonly transform: EditorTransform;
   readonly drawW: number;
   readonly drawH: number;
@@ -27,6 +29,12 @@ export interface SceneParams {
   /** Tamanho de desenho do fundo (px). Se ausente, calculado em COVER. */
   readonly bgDrawW?: number;
   readonly bgDrawH?: number;
+  /**
+   * Molduras decorativas já carregadas, EMPILHADAS por CIMA da arte (no topo) na
+   * ordem do array (z-order). Cada uma tem seu enquadramento e cobre o círculo
+   * VISÍVEL. A transparência revela a arte/moldura abaixo.
+   */
+  readonly frames?: readonly FrameLayer[];
 }
 
 /** Desenha a cena inteira: fundo, imagem, escurecimento e guias. */
@@ -40,7 +48,7 @@ export function drawScene(p: SceneParams): void {
 
 /**
  * Recorta ao círculo de sangria e delega a composição da face (cor → fundo →
- * arte com filtros) ao helper compartilhado `drawBottonFace` — a MESMA
+ * arte com filtros → moldura) ao helper compartilhado `drawBottonFace` — a MESMA
  * matemática usada pelo sprite do mockup contextual. Guias/sangria/escurecimento
  * ficam FORA do clip da face (nunca são filtrados).
  */
@@ -58,6 +66,7 @@ function drawImageLayer(p: SceneParams): void {
     filters: p.filters,
     backgroundImage: p.backgroundImage,
     backgroundTransform: p.backgroundTransform,
+    frames: p.frames,
     drawW: p.drawW,
     drawH: p.drawH,
     bgDrawW: p.bgDrawW,

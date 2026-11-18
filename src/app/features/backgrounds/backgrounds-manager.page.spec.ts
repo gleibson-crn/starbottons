@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { ModalService } from '../../shared/ui';
 import { vi } from 'vitest';
 import {
   BackgroundTemplateService,
@@ -24,6 +25,9 @@ const SAVED: BackgroundTemplate = {
   storagePath: 'user/madeira.png',
 };
 
+let confirmAnswer = true;
+const fakeModal = { showConfirm: async (): Promise<boolean> => confirmAnswer };
+
 const removed: BackgroundTemplate[] = [];
 
 const fakeService: Pick<BackgroundTemplateService, 'list' | 'save' | 'remove'> = {
@@ -44,7 +48,10 @@ describe('BackgroundsManagerPage', () => {
 
   function build(): BackgroundsManagerPage {
     TestBed.configureTestingModule({
-      providers: [{ provide: BackgroundTemplateService, useValue: fakeService }],
+      providers: [
+        { provide: BackgroundTemplateService, useValue: fakeService },
+        { provide: ModalService, useValue: fakeModal },
+      ],
     });
     const fixture = TestBed.createComponent(BackgroundsManagerPage);
     fixture.detectChanges();
@@ -83,7 +90,7 @@ describe('BackgroundsManagerPage', () => {
 
   it('removeTemplate exclui após confirmação', async () => {
     removed.length = 0;
-    vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
+    confirmAnswer = true;
     const cmp = build();
     await cmp.reload();
 
@@ -95,7 +102,7 @@ describe('BackgroundsManagerPage', () => {
 
   it('removeTemplate não exclui quando o usuário cancela', async () => {
     removed.length = 0;
-    vi.spyOn(globalThis, 'confirm').mockReturnValue(false);
+    confirmAnswer = false;
     const cmp = build();
     await cmp.reload();
 

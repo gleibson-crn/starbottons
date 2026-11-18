@@ -1,8 +1,16 @@
-import { DEFAULT_FILTERS, type ImageFilters, type UploadRecord } from '../../shared/types';
+import {
+  DEFAULT_FILTERS,
+  DEFAULT_STYLE_EFFECT,
+  type ImageFilters,
+  type StyleEffect,
+  type UploadRecord,
+} from '../../shared/types';
 import {
   newUploadingItem,
+  withAiStyle,
   withFilters,
   withGenerationUpload,
+  withStyle,
 } from './batch-item';
 
 const VIVID: ImageFilters = {
@@ -47,5 +55,39 @@ describe('batch-item — filtros', () => {
     expect(next).not.toBe(item);
     expect(item.generationUpload).toBeNull();
     expect(next.generationUpload).toBe(TREATED);
+  });
+});
+
+describe('batch-item — estilo por IA (Trilha 2)', () => {
+  const POSTER: StyleEffect = { kind: 'posterize', levels: 4 };
+
+  it('novo item nasce sem estilização por IA', () => {
+    expect(newUploadingItem('i1', file()).aiStyled).toBe(false);
+  });
+
+  it('withAiStyle marca aiStyled, adota o upload tratado e zera filtros/estilo', () => {
+    const dirty = withStyle(withFilters(newUploadingItem('i1', file()), VIVID), POSTER);
+    const styled = withAiStyle(dirty, TREATED);
+
+    expect(styled.aiStyled).toBe(true);
+    expect(styled.generationUpload).toBe(TREATED);
+    expect(styled.filters).toEqual(DEFAULT_FILTERS);
+    expect(styled.style).toEqual(DEFAULT_STYLE_EFFECT);
+    // Imutável.
+    expect(dirty.aiStyled).toBe(false);
+  });
+
+  it('withFilters reseta aiStyled e o upload (reprocessa se o usuário mexer)', () => {
+    const styled = withAiStyle(newUploadingItem('i1', file()), TREATED);
+    const changed = withFilters(styled, VIVID);
+    expect(changed.aiStyled).toBe(false);
+    expect(changed.generationUpload).toBeNull();
+  });
+
+  it('withStyle também reseta aiStyled e o upload', () => {
+    const styled = withAiStyle(newUploadingItem('i1', file()), TREATED);
+    const changed = withStyle(styled, POSTER);
+    expect(changed.aiStyled).toBe(false);
+    expect(changed.generationUpload).toBeNull();
   });
 });

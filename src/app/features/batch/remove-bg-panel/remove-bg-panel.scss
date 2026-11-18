@@ -1,0 +1,118 @@
+/* "Remover fundo" — seção da aba Tratar. Só tokens de tema (contraste AA). */
+.rb {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-block-start: var(--sp-4);
+  padding-block-start: var(--sp-4);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.rb__title {
+  margin: 0;
+  font-size: var(--fs-md);
+}
+
+.rb__hint,
+.rb__status {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.rb__status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.rb__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.rb__spinner {
+  flex: 0 0 auto;
+  inline-size: 1em;
+  block-size: 1em;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-block-start-color: currentColor;
+  border-radius: var(--radius-full);
+  animation: rb-spin 0.7s linear infinite;
+}
+
+@keyframes rb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rb__spinner {
+    animation: none;
+  }
+}
+
+.rb__slider {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+
+  input[type='range'] {
+    flex: 1;
+    min-inline-size: 10rem;
+  }
+}
+
+.rb__value {
+  min-inline-size: 3ch;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.rb__previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.rb__fig {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+
+  img {
+    display: block;
+    inline-size: 9rem;
+    block-size: 9rem;
+    object-fit: contain;
+  }
+}
+
+.rb__checker {
+  border-radius: var(--radius-md);
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 16px 16px;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
+}
+
+.rb__botton {
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--color-border);
+}

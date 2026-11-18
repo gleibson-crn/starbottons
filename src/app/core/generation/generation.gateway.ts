@@ -11,8 +11,11 @@ import { GenerationTimeoutError } from './generation-timeout.error';
 
 /** Bucket privado de saída da geração. */
 const RENDERS_BUCKET = 'renders';
-// Alinhado ao TTL da Edge (F-008, AUDIT-2026-07-25): 10min.
-const TTL_SECONDS = 600;
+// Alinhado ao TTL da Edge: 4h (a UI re-assina sob demanda ao imprimir/baixar).
+const TTL_SECONDS = 14400;
+/** Bucket privado dos originais enviados. */
+const UPLOADS_BUCKET = 'uploads';
+const UPLOAD_PREVIEW_TTL_SECONDS = 3600;
 
 interface JobRow {
   id: string;
@@ -116,6 +119,21 @@ export class GenerationGateway {
       const { data, error } = await this.supabase.storage
         .from(RENDERS_BUCKET)
         .createSignedUrl(storagePath, TTL_SECONDS);
+      return error ? null : this.toConfiguredHost(data?.signedUrl ?? null);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Assina (1h) o original no bucket privado `uploads` — preview de itens
+   * restaurados do lote persistido (BL-008). `null` em falha.
+   */
+  async signUpload(storagePath: string): Promise<string | null> {
+    try {
+      const { data, error } = await this.supabase.storage
+        .from(UPLOADS_BUCKET)
+        .createSignedUrl(storagePath, UPLOAD_PREVIEW_TTL_SECONDS);
       return error ? null : this.toConfiguredHost(data?.signedUrl ?? null);
     } catch {
       return null;

@@ -2,9 +2,18 @@
  * dependency-cruiser — regras de arquitetura em camadas do Star Bottons.
  *
  * Camadas (src/app):
- *   core/     infraestrutura (supabase, auth, guards, config, generation)
- *   shared/   utilitários puros, tipos e UI reutilizável (sem dependências de app)
+ *   core/     infraestrutura (supabase, auth, guards, config, generation,
+ *             upload, style-provider [Trilha 2, OFF por default])
+ *   shared/   utilitários puros, tipos, imaging (pixel pass PURO) e UI
+ *             reutilizável (sem dependências de app)
  *   features/ telas/fluxos (auth, upload, editor, generation, result)
+ *
+ * O style pass por pixel (funções PURAS ImageData->ImageData) vive em
+ * shared/imaging e é a FONTE ÚNICA do estágio (ADR-019), consumida por
+ * editor-render, mockup-render e pelo bake em core/upload. Por ser leaf puro,
+ * NÃO pode importar @angular/* — a regra `imaging-e-puro` abaixo protege isso.
+ * O worker (style-pass.worker.ts) é um entry-point e por isso é isento da
+ * regra no-orphans.
  *
  * O MOTOR de geração (service, gateway, errors, buildGenerateRequest) vive em
  * `core/generation` — é infraestrutura sem UI, reusável por qualquer feature
@@ -70,6 +79,14 @@ module.exports = {
       },
     },
     {
+      name: 'imaging-e-puro',
+      severity: 'error',
+      comment:
+        'shared/imaging são funções puras de pixel (ADR-019): não podem importar @angular/* nem acoplar a framework. O orquestrador prepare-art usa canvas via CanvasFactory injetável, não Angular.',
+      from: { path: '^src/app/shared/imaging' },
+      to: { path: 'node_modules/@angular' },
+    },
+    {
       name: 'no-orphans',
       severity: 'warn',
       comment: 'Módulos órfãos podem ser código morto.',
@@ -78,6 +95,7 @@ module.exports = {
         pathNot: [
           '\\.(spec|test)\\.ts$',
           '\\.d\\.ts$',
+          '\\.worker\\.ts$',
           '(^|/)index\\.ts$',
           '(^|/)\\.gitkeep$',
         ],

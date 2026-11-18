@@ -30,6 +30,7 @@ function makeItem(
     perSizeTier: { 32: 'ok', 44: 'ok', 58: 'ok' },
     arts,
     uploadError: null,
+    seqLabel: '',
   };
 }
 

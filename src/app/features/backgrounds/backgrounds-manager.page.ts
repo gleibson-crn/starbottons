@@ -7,7 +7,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { FileDropzone, ToastService } from '../../shared/ui';
+import { FileDropzone, ModalService, ToastService } from '../../shared/ui';
 import {
   BackgroundTemplateService,
   type BackgroundTemplate,
@@ -36,6 +36,7 @@ type GridPhase = 'loading' | 'ready' | 'error';
 export class BackgroundsManagerPage implements OnInit, OnDestroy {
   private readonly service = inject(BackgroundTemplateService);
   private readonly toast = inject(ToastService);
+  private readonly modal = inject(ModalService);
 
   readonly name = signal('');
   readonly pendingFile = signal<File | null>(null);
@@ -91,7 +92,7 @@ export class BackgroundsManagerPage implements OnInit, OnDestroy {
   }
 
   async removeTemplate(template: BackgroundTemplate): Promise<void> {
-    if (!this.confirmDelete(template.name)) {
+    if (!(await this.confirmDelete(template.name))) {
       return;
     }
     try {
@@ -108,8 +109,13 @@ export class BackgroundsManagerPage implements OnInit, OnDestroy {
     await this.load();
   }
 
-  private confirmDelete(name: string): boolean {
-    return globalThis.confirm(`Excluir o fundo "${name}"? Esta ação não pode ser desfeita.`);
+  private confirmDelete(name: string): Promise<boolean> {
+    return this.modal.showConfirm({
+      title: 'Excluir fundo?',
+      message: `Excluir o fundo "${name}"? Esta ação não pode ser desfeita.`,
+      confirmLabel: 'Excluir',
+      danger: true,
+    });
   }
 
   private resetForm(): void {

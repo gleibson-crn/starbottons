@@ -2,6 +2,7 @@ import type {
   EditorTransform,
   ImageFilters,
   ResolutionTier,
+  StyleEffect,
   UploadRecord,
 } from '../../shared/types';
 
@@ -17,7 +18,6 @@ export type ArtStatus = 'idle' | 'generating' | 'ready' | 'failed';
 export interface ArtState {
   readonly status: ArtStatus;
   readonly printPngUrl: string | null;
-  readonly printPdfUrl: string | null;
   readonly jobId: string | null;
   readonly errorMessage: string | null;
 }
@@ -26,7 +26,6 @@ export interface ArtState {
 export const IDLE_ART: ArtState = {
   status: 'idle',
   printPngUrl: null,
-  printPdfUrl: null,
   jobId: null,
   errorMessage: null,
 };
@@ -65,14 +64,42 @@ export interface BatchItem {
   /** Tratamento/filtros de imagem (default = neutro, nenhum filtro). */
   readonly filters: ImageFilters;
   /**
+   * Efeito de estilo por pixel (ADR-019). Ausente/`none` = sem estilo (bake
+   * segue o caminho tonal do ADR-014). Como os filtros, é baked full-res no
+   * upload tratado e invalida `generationUpload` ao mudar.
+   */
+  readonly style?: StyleEffect;
+  /**
    * Upload tratado full-res desta imagem (Abordagem A do ADR-014). `null` quando
    * os filtros são neutros ou o tratado ainda não foi materializado; ao gerar
    * com filtros é preenchido uma vez e reusado por todos os tamanhos do item.
    */
   readonly generationUpload: UploadRecord | null;
+  /**
+   * Trilha 2 (ADR-021) — `true` quando a imagem foi estilizada por IA e o
+   * `generationUpload` já contém o PNG tratado full-res estilizado (vindo da
+   * Edge `style-transfer`). Força `needsTreated` mesmo em imagens pequenas, para
+   * que a geração use o upload estilizado e não o original. É resetado por
+   * `withFilters`/`withStyle` (mexer nos filtros locais reprocessa o item).
+   */
+  readonly aiStyled?: boolean;
+  /**
+   * "Remover fundo" (ISNet local): `true` quando a pessoa foi recortada. O PNG
+   * transparente (`cutoutUpload`) vira a FONTE de geração (como `generationUpload`),
+   * mas o `upload` ORIGINAL fica intacto (desfazer) e filtros/estilo CONTINUAM
+   * valendo sobre o recorte no bake.
+   */
+  readonly cutout?: boolean;
+  /** Upload do recorte (PNG com alfa) — fonte do bake tratado quando `cutout`. */
+  readonly cutoutUpload?: UploadRecord | null;
   readonly selectedSizes: ReadonlySet<BottonSize>;
   readonly perSizeDpi: Readonly<Record<BottonSize, number>>;
   readonly perSizeTier: Readonly<Record<BottonSize, ResolutionTier>>;
   readonly arts: Readonly<Partial<Record<BottonSize, ArtState>>>;
   readonly uploadError: string | null;
+  /**
+   * Número (senha) MANUAL digitado pelo dono (só dígitos, ≤8). Vazio por padrão.
+   * Impresso na sangria só se `BatchStore.numbered`.
+   */
+  readonly seqLabel: string;
 }

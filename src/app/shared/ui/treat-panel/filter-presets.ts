@@ -4,7 +4,11 @@ import { DEFAULT_FILTERS, filtersEqual } from '../../types';
 /** Id estável de cada preset (também usado como chave do chip). */
 export type PresetId = 'original' | 'grayscale' | 'sepia' | 'vivid';
 
-/** Chip de tratamento: rótulo + assinatura completa de filtros. */
+/**
+ * Chip de tratamento TONAL: rótulo + assinatura dos filtros. Selecionar um chip
+ * define os filtros tonais, então há um único preset ativo por vez. (Os antigos
+ * estilos por pixel foram removidos da UI; o pipeline segue inerte no código.)
+ */
 export interface FilterPreset {
   readonly id: PresetId;
   readonly label: string;
@@ -12,9 +16,8 @@ export interface FilterPreset {
 }
 
 /**
- * Presets de "1 clique". Cada um define a assinatura COMPLETA de filtros
- * (seleção única). O "Vívido" combina saturação 140% + contraste 115% + brilho
- * 100% (sem efeito exclusivo).
+ * Presets TONAIS de "1 clique" (CSS-puro). O "Vívido" combina saturação 140% +
+ * contraste 115% + brilho 100% (sem efeito exclusivo).
  */
 export const FILTER_PRESETS: readonly FilterPreset[] = [
   { id: 'original', label: 'Original', filters: DEFAULT_FILTERS },
@@ -35,10 +38,14 @@ export const FILTER_PRESETS: readonly FilterPreset[] = [
   },
 ];
 
+/** Todos os presets, na ordem de exibição (só tonais). */
+export const ALL_PRESETS: readonly FilterPreset[] = [...FILTER_PRESETS];
+
 /**
- * Retorna o id do preset cuja assinatura bate EXATAMENTE com `f`, ou `null`
- * quando o usuário saiu da assinatura (estado "Personalizado").
+ * Retorna o id do preset cuja assinatura tonal bate EXATAMENTE com `f`, ou
+ * `null` quando o usuário saiu da assinatura (estado "Personalizado").
  */
 export function activePresetId(f: ImageFilters): PresetId | null {
-  return FILTER_PRESETS.find((p) => filtersEqual(p.filters, f))?.id ?? null;
+  const hit = ALL_PRESETS.find((p) => filtersEqual(p.filters, f));
+  return hit?.id ?? null;
 }

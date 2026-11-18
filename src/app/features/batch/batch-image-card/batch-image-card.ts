@@ -2,11 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
   output,
   signal,
 } from '@angular/core';
-import { DownloadButton, ResolutionBadge } from '../../../shared/ui';
+import { DownloadButton, ResolutionBadge, ToastService } from '../../../shared/ui';
+import { GenerationService } from '../../../core/generation/generation.service';
+import { PrintStore, toLocalUrl } from '../../../core/print';
 import {
   BOTTON_SIZES,
   deriveItemStatus,
@@ -26,10 +29,9 @@ import { SizeMultiSelect } from '../size-multi-select/size-multi-select';
 /** Uma arte pronta com suas URLs e nomes de arquivo. */
 interface ReadyDownload {
   readonly size: BottonSize;
+  readonly jobId: string | null;
   readonly pngUrl: string | null;
-  readonly pdfUrl: string | null;
   readonly pngName: string;
-  readonly pdfName: string;
 }
 
 /** Uma arte que falhou: qual tamanho + mensagem amigável + detalhe técnico. */
@@ -59,15 +61,26 @@ function failureDetail(raw: string | null): string | null {
   styleUrl: './batch-image-card.scss',
 })
 export class BatchImageCard {
+  private readonly printStore = inject(PrintStore);
+  private readonly toast = inject(ToastService);
+  private readonly generation = inject(GenerationService);
+
   readonly item = input.required<BatchItem>();
   readonly capped = input<boolean>(false);
   readonly busy = input<boolean>(false);
+  /** Lote numerado: exibe o badge do nº (impresso só na sangria). */
+  readonly numbered = input<boolean>(false);
+  /** Número (senha) repetido em outro item do lote (aviso, não bloqueia). */
+  readonly duplicate = input<boolean>(false);
 
   readonly sizeToggled = output<BottonSize>();
   readonly removed = output<void>();
   readonly nameChanged = output<string>();
+  readonly seqChanged = output<string>();
   readonly transformChanged = output<BatchEditResult>();
   readonly retried = output<void>();
+  /** Pedido de REENVIAR a imagem quando o UPLOAD falhou (reusa o File original). */
+  readonly uploadRetried = output<void>();
   /** Pedido de abrir o Mockup Contextual desta imagem (grid → /app/mockup/:id). */
   readonly applyScene = output<void>();
 
@@ -106,8 +119,22 @@ export class BatchImageCard {
     }));
   });
 
+  /** `true` quando TODAS as artes prontas deste item já estão na folha. */
+  readonly inPrint = computed(() => {
+    const dls = this.downloads();
+    if (dls.length === 0) {
+      return false;
+    }
+    const id = this.item().id;
+    return dls.every((dl) => this.printStore.has(`${id}:${dl.size}`));
+  });
+
   onName(event: Event): void {
     this.nameChanged.emit((event.target as HTMLInputElement).value);
+  }
+
+  onSeq(event: Event): void {
+    this.seqChanged.emit((event.target as HTMLInputElement).value);
   }
 
   onSaved(result: BatchEditResult): void {
@@ -115,14 +142,96 @@ export class BatchImageCard {
     this.editing.set(false);
   }
 
+  /**
+   * "Levar para impressão": enfileira TODAS as artes prontas desta imagem na
+   * PrintStore (uma linha por tamanho pronto) e navega para a folha. A signed
+   * URL (cross-origin, expira) vira object URL de mesma origem via `toLocalUrl`
+   * — a mesma conversão que a folha fazia — para imprimir de forma confiável.
+   * Reenviar a mesma arte SOMA a quantidade (o merge é feito na store).
+   */
+  /** Motivo da última falha ao enfileirar (exibido no toast de erro). */
+  private lastEnqueueError = '';
+
+  /**
+   * ADICIONA as artes prontas deste item à folha SEM navegar — o usuário junta
+   * várias artes e vai à folha pelo botão global "Impressão (N)" do cabeçalho.
+   * Feedback por toast; artes já na folha não são duplicadas.
+   */
+  async addToPrint(): Promise<void> {
+    const item = this.item();
+    this.lastEnqueueError = '';
+    let enqueued = 0;
+    for (const dl of this.downloads()) {
+      if (await this.enqueueDownload(item.id, item.name, dl)) {
+        enqueued++;
+      }
+    }
+    if (enqueued > 0) {
+      this.toast.success('Adicionado à folha de impressão.');
+    } else {
+      const why = this.lastEnqueueError || 'nenhuma arte pronta';
+      this.toast.error(`Não foi possível adicionar à impressão: ${why}.`);
+    }
+  }
+
+  /** Remove as artes deste item da folha de impressão. */
+  removeFromPrint(): void {
+    const id = this.item().id;
+    for (const dl of this.downloads()) {
+      this.printStore.remove(`${id}:${dl.size}`);
+    }
+  }
+
+  /** Converte a arte pronta em object URL e a enfileira; `false` se falhar. */
+  private async enqueueDownload(
+    itemId: string,
+    name: string,
+    dl: ReadyDownload,
+  ): Promise<boolean> {
+    if (!dl.pngUrl) {
+      this.lastEnqueueError = 'a arte não tem URL de impressão — gere novamente';
+      return false;
+    }
+    const key = `${itemId}:${dl.size}`;
+    if (this.printStore.has(key)) {
+      return true; // já na folha — não duplica a quantidade
+    }
+    try {
+      // URL FRESH (a guardada pode ter expirado); fallback na antiga.
+      const fresh = await this.generation.freshPrintUrl(dl.jobId);
+      const url = await toLocalUrl(fresh ?? dl.pngUrl);
+      this.printStore.enqueue({
+        key,
+        url,
+        name,
+        sizeMm: dl.size,
+        quantity: 1,
+        origin: 'ready',
+      });
+      return true;
+    } catch (err) {
+      this.lastEnqueueError =
+        err instanceof Error ? err.message : 'falha ao baixar a arte';
+      return false;
+    }
+  }
+
+  /** Provedor de URL fresh para o botão de download (re-assina no clique). */
+  readonly refreshers = computed(() => {
+    const map = new Map<BottonSize, () => Promise<string | null>>();
+    for (const dl of this.downloads()) {
+      map.set(dl.size, () => this.generation.freshPrintUrl(dl.jobId));
+    }
+    return map;
+  });
+
   private toDownload(item: BatchItem, size: BottonSize): ReadyDownload {
     const art = item.arts[size];
     return {
       size,
+      jobId: art?.jobId ?? null,
       pngUrl: art?.printPngUrl ?? null,
-      pdfUrl: art?.printPdfUrl ?? null,
       pngName: artFileName(item.name, size, 'png'),
-      pdfName: artFileName(item.name, size, 'pdf'),
     };
   }
 }

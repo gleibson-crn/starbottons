@@ -5,6 +5,7 @@
     [attr.download]="filename()"
     target="_blank"
     rel="noopener"
+    (click)="onClick($event)"
   >
     <span class="dl__icon" aria-hidden="true">{{ icon() }}</span>
     <span class="dl__body">

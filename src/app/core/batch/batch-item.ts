@@ -1,7 +1,12 @@
-import { DEFAULT_FILTERS, DEFAULT_TRANSFORM } from '../../shared/types';
+import {
+  DEFAULT_FILTERS,
+  DEFAULT_STYLE_EFFECT,
+  DEFAULT_TRANSFORM,
+} from '../../shared/types';
 import type {
   EditorTransform,
   ImageFilters,
+  StyleEffect,
   UploadRecord,
 } from '../../shared/types';
 import type { ImageProbe } from '../upload';
@@ -39,12 +44,17 @@ export function newUploadingItem(id: string, file: File): BatchItem {
     transform: DEFAULT_TRANSFORM,
     editorSide: BATCH_EDITOR_SIDE,
     filters: DEFAULT_FILTERS,
+    style: DEFAULT_STYLE_EFFECT,
     generationUpload: null,
+    aiStyled: false,
+    cutout: false,
+    cutoutUpload: null,
     selectedSizes: new Set(),
     perSizeDpi: { ...ZERO_DPI },
     perSizeTier: computePerSizeTier(ZERO_DPI),
     arts: {},
     uploadError: null,
+    seqLabel: '',
   };
 }
 
@@ -72,6 +82,20 @@ export function withUpload(
 
 export function withUploadError(item: BatchItem, message: string): BatchItem {
   return { ...item, uploadError: message };
+}
+
+/** Zera a falha de upload — usado ao REENVIAR (o card volta a "Enviando…"). */
+export function clearUploadError(item: BatchItem): BatchItem {
+  return item.uploadError === null ? item : { ...item, uploadError: null };
+}
+
+/** Sanitiza o número (senha): só dígitos, no máx. 8. */
+export function sanitizeSeqLabel(value: string): string {
+  return value.replace(/\D/g, '').slice(0, 8);
+}
+
+export function withSeqLabel(item: BatchItem, value: string): BatchItem {
+  return { ...item, seqLabel: sanitizeSeqLabel(value) };
 }
 
 export function withName(item: BatchItem, name: string): BatchItem {
@@ -105,7 +129,19 @@ export function withFilters(
   item: BatchItem,
   filters: ImageFilters,
 ): BatchItem {
-  return { ...item, filters, generationUpload: null };
+  return { ...item, filters, generationUpload: null, aiStyled: false };
+}
+
+/**
+ * Novo efeito de estilo (ADR-019). Como `withFilters`, invalida o upload
+ * tratado em cache (`generationUpload`) — ele reflete o estilo anterior e será
+ * remateriazado (com o estilo baked full-res) na próxima geração.
+ */
+export function withStyle(
+  item: BatchItem,
+  style: StyleEffect,
+): BatchItem {
+  return { ...item, style, generationUpload: null, aiStyled: false };
 }
 
 /** Guarda o upload tratado full-res (reuso por todos os tamanhos do item). */
@@ -114,6 +150,46 @@ export function withGenerationUpload(
   upload: UploadRecord,
 ): BatchItem {
   return { ...item, generationUpload: upload };
+}
+
+/**
+ * "Remover fundo": grava (ou, com `null`, desfaz) o recorte. O original e os
+ * filtros/estilo permanecem; só invalida o tratado em cache (`generationUpload`),
+ * que precisa ser re-materializado a partir do recorte (ou do original, ao desfazer).
+ */
+export function withCutout(
+  item: BatchItem,
+  upload: UploadRecord | null,
+): BatchItem {
+  return {
+    ...item,
+    cutout: upload !== null,
+    cutoutUpload: upload,
+    generationUpload: null,
+    aiStyled: false,
+  };
+}
+
+/**
+ * Trilha 2 (ADR-021) — grava o resultado da estilização por IA: o
+ * `generationUpload` já é o PNG tratado full-res ESTILIZADO (materializado pelo
+ * diálogo), então marca `aiStyled` e zera filtros/estilo locais (a estilização
+ * substitui o tratamento por pixel). `needsTreated` passa a valer sempre, e a
+ * geração usa este upload direto — sem reprocessar.
+ */
+export function withAiStyle(
+  item: BatchItem,
+  upload: UploadRecord,
+): BatchItem {
+  return {
+    ...item,
+    generationUpload: upload,
+    aiStyled: true,
+    cutout: false,
+    cutoutUpload: null,
+    filters: DEFAULT_FILTERS,
+    style: DEFAULT_STYLE_EFFECT,
+  };
 }
 
 /**

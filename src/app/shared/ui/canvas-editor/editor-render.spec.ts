@@ -140,6 +140,43 @@ describe('editor-render — imagem de fundo', () => {
   });
 });
 
+const FRAME_IMAGE = { naturalWidth: 200, naturalHeight: 100 } as HTMLImageElement;
+
+describe('editor-render — moldura (camada no topo)', () => {
+  it('sem frames desenha só a arte (1 drawImage)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawScene(params(ctx));
+    expect(ops.filter((o) => o.op === 'drawImage').length).toBe(1);
+  });
+
+  it('com frames desenha arte + moldura (2 drawImage)', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawScene({ ...params(ctx), frames: [{ image: FRAME_IMAGE }] });
+    expect(ops.filter((o) => o.op === 'drawImage').length).toBe(2);
+  });
+
+  it('a moldura é desenhada DEPOIS da arte (por cima)', () => {
+    const { ctx, ops } = makeMockCtx();
+    // arte (drawW/drawH=100) primeiro; moldura (COVER) por último.
+    drawScene({ ...params(ctx), frames: [{ image: FRAME_IMAGE }] });
+    const draws = ops.filter((o) => o.op === 'drawImage');
+    expect(draws[0].args).toEqual([-50, -50, 100, 100]);
+  });
+
+  it('desenha a moldura em COVER fixo (neutro) usando o preset informado', () => {
+    const { ctx, ops } = makeMockCtx();
+    drawScene({
+      ...params(ctx),
+      image: null, // isola a moldura
+      frames: [{ image: FRAME_IMAGE, drawW: 320, drawH: 160 }],
+    });
+    const translate = ops.find((o) => o.op === 'translate');
+    expect(translate?.args).toEqual([100, 100]);
+    const draw = ops.find((o) => o.op === 'drawImage');
+    expect(draw?.args).toEqual([-160, -80, 320, 160]);
+  });
+});
+
 describe('editor-render — filtros', () => {
   it('aplica o filtro APENAS na imagem e restaura antes das guias', () => {
     const { ctx, ops } = makeMockCtx();

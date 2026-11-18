@@ -8,24 +8,72 @@
   background: var(--color-overlay);
 }
 
+/* Layout em duas faixas: TOPO fixo (prévia + abas) e uma faixa ROLÁVEL só para
+ * os controles das abas + ações. Assim a prévia nunca sai de vista ao ajustar
+ * Tratar/Fundo. O container clipa (overflow:hidden) e a rolagem vive no filho
+ * `.dialog__scroll`. `max-block-size:92vh` evita estourar a viewport. */
 .dialog {
   width: min(560px, 100%);
-  max-block-size: 90vh;
-  overflow: auto;
+  max-block-size: 92vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Faixa fixa: cabeçalho, prévia persistente e abas. Espaço apertado para
+ * sobrar altura à área rolável dos controles. */
+.dialog__top {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Cabeçalho: título (trunca) à esquerda + badge de resolução à direita. */
+.dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+/* Faixa rolável: painéis das abas + ações. `min-block-size:0` permite o flex
+ * child encolher para caber e habilitar o scroll interno. */
+.dialog__scroll {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  /* SÓ rolagem vertical: nunca horizontal (a barra vertical reduz a largura e
+   * os controles de 100% passariam a exceder → barra horizontal indevida). */
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
+  /* Um respiro para os controles não colarem na barra de rolagem. */
+  padding-inline-end: var(--sp-1);
+}
+
+/* Os painéis das abas podem encolher abaixo do min-content dos filhos (evita
+ * que um slider force largura e gere overflow lateral). */
+.dialog__scroll > * {
+  min-inline-size: 0;
 }
 
 .dialog__title {
   margin: 0;
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
+  /* Trunca nomes longos (ex.: "ChatGPT Image ...") numa linha só, cedendo o
+   * resto do cabeçalho para o badge. */
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.dialog__hint {
-  margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--color-text-muted);
+.dialog__header app-resolution-badge {
+  flex: 0 0 auto;
 }
 
 /* Segmented control / tablist "Ajustar | Tratar" */
@@ -73,13 +121,24 @@
   display: none;
 }
 
+/* Prévia com altura limitada: o canvas é quadrado e enche a largura, então
+ * limitamos a LARGURA (≈340px) para a prévia não dominar a altura do modal e
+ * sobrar espaço aos controles. Também respeita a altura da viewport. */
 .dialog__stage {
   display: grid;
   place-items: center;
 }
 
-/* Dica textual da aba "Ajustar" (o enquadramento é feito na prévia acima). */
-.dialog__tabhint {
+.dialog__stage app-canvas-editor {
+  inline-size: 100%;
+  max-inline-size: min(340px, 46vh);
+}
+
+/* Texto auxiliar em cinza/pequeno, compartilhado: dica da aba "Ajustar", dica
+ * de cada seção de fundo/moldura e status de upload de fundo. */
+.dialog__tabhint,
+.bgsection__hint,
+.bgimg__status {
   margin: 0;
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
@@ -118,28 +177,18 @@
   border-block-start: 1px solid var(--color-border);
 }
 
-.bgsection__title {
+/* Títulos pequenos em negrito, compartilhados (seção de fundo/moldura e galeria). */
+.bgsection__title,
+.bggallery__title {
   margin: 0;
   font-size: var(--fs-sm);
   font-weight: 700;
-}
-
-.bgsection__hint {
-  margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--color-text-muted);
 }
 
 .bgimg {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
-}
-
-.bgimg__hint {
-  margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--color-text-muted);
 }
 
 .bgimg__current {
@@ -157,12 +206,6 @@
   background: var(--color-surface-2);
 }
 
-.bgimg__status {
-  margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--color-text-muted);
-}
-
 .bgimg__error {
   margin: 0;
   font-size: var(--fs-sm);
@@ -174,12 +217,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-}
-
-.bggallery__title {
-  margin: 0;
-  font-size: var(--fs-sm);
-  font-weight: 700;
 }
 
 .bggallery__status {
@@ -251,4 +288,86 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Lista de molduras empilhadas (z-order): topo da lista = na frente. */
+.framelist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.framelist__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.framelist__item--active {
+  border-color: var(--primary-500);
+  box-shadow: var(--shadow-sm);
+}
+
+.framelist__select {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1);
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+
+.framelist__thumb {
+  inline-size: 40px;
+  block-size: 40px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+}
+
+.framelist__name {
+  font-size: var(--fs-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.framelist__actions {
+  display: flex;
+  gap: var(--sp-1);
+  flex: 0 0 auto;
+}
+
+.framelist__btn {
+  min-inline-size: var(--tap-min);
+  padding-inline: var(--sp-2);
+}
+
+.dialog__flips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+  margin-block: var(--space-2, 0.5rem);
+}
+
+/* Toggle ativo sinalizado por borda espessa + fundo (não só cor); aria-pressed no HTML. */
+.btn--toggled {
+  border: 2px solid var(--primary-600);
+  background: var(--primary-100);
+  color: var(--primary-900);
 }

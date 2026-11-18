@@ -25,6 +25,32 @@
           </p>
         }
       </div>
+      @if (numbered()) {
+        <div class="field bcard__seq" [class.bcard__seq--dup]="duplicate()">
+          <label class="field__label" [for]="'seq-' + item().id">Número (senha)</label>
+          <input
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="8"
+            class="field__control"
+            [id]="'seq-' + item().id"
+            [value]="item().seqLabel"
+            [attr.aria-invalid]="duplicate()"
+            [attr.aria-describedby]="'seq-hint-' + item().id"
+            [attr.title]="duplicate() ? 'Número repetido' : 'Impresso na sangria (traseira)'"
+            placeholder="Ex.: 42"
+            (input)="onSeq($event)"
+          />
+          <p class="bcard__seq-hint" [id]="'seq-hint-' + item().id" role="status">
+            @if (duplicate()) {
+              ⚠ Número repetido neste lote.
+            } @else {
+              Impresso na sangria (traseira).
+            }
+          </p>
+        </div>
+      }
       <p class="bcard__dims">
         @if (item().upload) {
           {{ item().width }} × {{ item().height }} px
@@ -35,14 +61,26 @@
         }
       </p>
     </div>
-    <button
-      type="button"
-      class="btn btn--ghost bcard__remove"
-      [disabled]="busy()"
-      (click)="removed.emit()"
-    >
-      Remover
-    </button>
+    <div class="bcard__head-actions">
+      @if (item().uploadError) {
+        <button
+          type="button"
+          class="btn bcard__retry"
+          [disabled]="busy()"
+          (click)="uploadRetried.emit()"
+        >
+          Reenviar
+        </button>
+      }
+      <button
+        type="button"
+        class="btn btn--ghost bcard__remove"
+        [disabled]="busy()"
+        (click)="removed.emit()"
+      >
+        Remover
+      </button>
+    </div>
   </div>
 
   @if (item().upload) {
@@ -102,7 +140,7 @@
       @if (showRetry()) {
         <button
           type="button"
-          class="btn btn--ghost"
+          class="btn bcard__retry"
           [disabled]="busy()"
           (click)="retried.emit()"
         >
@@ -119,17 +157,31 @@
             <app-download-button
               label="PNG"
               [url]="dl.pngUrl"
+              [refresh]="refreshers().get(dl.size) ?? null"
               [filename]="dl.pngName"
-            />
-            <app-download-button
-              label="PDF"
-              icon="📄"
-              [url]="dl.pdfUrl"
-              [filename]="dl.pdfName"
             />
           </li>
         }
       </ul>
+      @if (inPrint()) {
+        <button
+          type="button"
+          class="btn btn--ghost bcard__to-print"
+          [disabled]="busy()"
+          (click)="removeFromPrint()"
+        >
+          ✓ Na folha — remover
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="btn btn--primary bcard__to-print"
+          [disabled]="busy()"
+          (click)="addToPrint()"
+        >
+          Adicionar à impressão
+        </button>
+      }
     }
   }
 </article>

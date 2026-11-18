@@ -1,0 +1,109 @@
+<!-- Trilha 2 (ADR-021) — Estilo com IA (style transfer por provedor EXTERNO
+     pago). Gated por `aiStyleAvailable`, que é
+     `registry.enabled() && algumProvider.isConfigured()`. DESLIGADO por
+     default → esta seção NÃO renderiza hoje (nenhum egress da arte,
+     local-only intacto). Habilitar depende de decisão do dono
+     (provedor/orçamento/IP). -->
+@if (aiStyleAvailable) {
+  <section class="aistyle" aria-labelledby="aistyle-title">
+    <h3 id="aistyle-title" class="aistyle__title">Estilo com IA</h3>
+
+    <!-- AVISO explícito e PERSISTENTE: diferente do resto do app, aqui a
+         imagem sai da máquina para um serviço externo. Texto PROVIDER-
+         NEUTRO (o provedor é configurável). -->
+    <p class="aistyle__warning" role="note">
+      Ao usar Estilo com IA, sua imagem é enviada a um serviço externo de
+      IA para processamento — diferente do resto do app, que roda
+      localmente.
+    </p>
+
+    <!-- CARREGANDO ao abrir: enquanto a probe de créditos não responde
+         (~10s), os chips ficam inativos. Mostramos um spinner + cópia
+         amigável para deixar claro que o sistema está preparando, não
+         travado. -->
+    @if (aiCreditsChecking()) {
+      <p class="aistyle__checking" role="status">
+        <span class="aistyle__spinner" aria-hidden="true"></span>
+        Carregando estilos e liberando o uso… só um instante.
+      </p>
+    }
+
+    <!-- SEM CRÉDITOS na conta de IA (Edge respondeu HTTP 402): os filtros
+         continuam VISÍVEIS mas ficam INATIVOS, com aviso persistente. -->
+    @if (aiNoCredits()) {
+      <p class="aistyle__nocredits" role="alert">
+        É necessário inserir créditos na conta de IA para usar estes
+        filtros.
+      </p>
+    }
+
+    <div
+      class="aistyle__chips"
+      role="group"
+      aria-label="Estilos de IA disponíveis"
+    >
+      @for (s of aiStyles(); track s.id) {
+        <button
+          type="button"
+          class="chip"
+          [class.chip--active]="aiStyleId() === s.id"
+          [attr.aria-pressed]="aiStyleId() === s.id"
+          [disabled]="
+            aiPhase() === 'loading' || aiNoCredits() || aiCreditsChecking()
+          "
+          (click)="selectAiStyle(s.id)"
+        >
+          {{ s.label }}
+        </button>
+      }
+    </div>
+
+    <div class="aistyle__actions">
+      @if (aiPhase() === 'loading') {
+        <!-- Barra de progresso INDETERMINADA: sinaliza que o sistema está
+             trabalhando (o provedor não informa % real). -->
+        <div
+          class="aistyle__progress"
+          role="progressbar"
+          aria-label="Gerando estilo com IA"
+        >
+          <div class="aistyle__progress-bar"></div>
+        </div>
+        <button
+          type="button"
+          class="btn btn--ghost"
+          (click)="cancelAiStyle()"
+        >
+          Cancelar
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!aiStyleId() || aiNoCredits() || aiCreditsChecking()"
+          (click)="applyAiStyle()"
+        >
+          Aplicar estilo com IA
+        </button>
+      }
+    </div>
+
+    @if (aiPhase() === 'loading') {
+      <p class="aistyle__status" role="status">
+        Gerando com IA… isso pode levar até ~1 min. Sua imagem está sendo
+        processada — não feche esta janela.
+      </p>
+    }
+    @if (aiPhase() === 'done') {
+      <p class="aistyle__status" role="status">
+        Estilo aplicado. A prévia acima já mostra o resultado.
+        @if (aiCostUsd() !== null) {
+          Custo estimado: US$ {{ aiCostUsd()!.toFixed(3) }}.
+        }
+      </p>
+    }
+    @if (aiError()) {
+      <p class="aistyle__error" role="alert">{{ aiError() }}</p>
+    }
+  </section>
+}

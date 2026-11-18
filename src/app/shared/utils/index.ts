@@ -13,7 +13,12 @@ export {
   SIZE_OPTIONS,
   fallbackSpec,
 } from './print-spec-catalog';
-export { loadImage, safeFileName } from './image';
+export {
+  loadImage,
+  imageElementToPngBlob,
+  onePixelPngBlob,
+  safeFileName,
+} from './image';
 export { downscaleImageFile, BACKGROUND_MAX_DIM } from './downscale-image';
 export { rovingNext } from './radiogroup';
 export { sniffImageMime } from './magic-bytes';

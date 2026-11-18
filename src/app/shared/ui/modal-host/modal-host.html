@@ -1,0 +1,29 @@
+@if (modal(); as m) {
+  <dialog
+    #dlg
+    class="modal"
+    aria-labelledby="modal-title"
+    [attr.aria-describedby]="m.message ? 'modal-message' : null"
+    (cancel)="cancel($event)"
+  >
+    <div class="modal__body">
+      <h2 class="modal__title" id="modal-title">{{ m.title }}</h2>
+      @if (m.message) {
+        <p class="modal__message" id="modal-message">{{ m.message }}</p>
+      }
+      <div class="modal__actions">
+        @for (c of m.choices; track $index) {
+          <button
+            type="button"
+            class="btn"
+            [class.btn--primary]="c.variant === 'primary'"
+            [class.btn--ghost]="c.variant === 'secondary'"
+            [class.btn--danger]="c.variant === 'danger'"
+            [disabled]="c.disabled ?? false"
+            (click)="choose(c.value)"
+          >{{ c.label }}</button>
+        }
+      </div>
+    </div>
+  </dialog>
+}

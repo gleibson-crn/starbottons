@@ -75,7 +75,6 @@ export class ZipExportService {
     for (const art of collectReadyArts(items)) {
       const assets = await this.gateway.fetchAssets(art.jobId);
       this.pushKind(out, used, art, assets, 'print_png', 'png');
-      this.pushKind(out, used, art, assets, 'print_pdf', 'pdf');
     }
     return out;
   }
@@ -85,7 +84,7 @@ export class ZipExportService {
     used: Set<string>,
     art: ReadyArt,
     assets: AssetRecord[],
-    kind: 'print_png' | 'print_pdf',
+    kind: 'print_png',
     ext: ArtExt,
   ): void {
     const storagePath = assets.find((a) => a.kind === kind)?.storagePath;

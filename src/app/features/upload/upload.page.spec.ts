@@ -10,7 +10,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { UploadService } from '../../core/upload';
-import { ToastService } from '../../shared/ui';
+import { ModalService, ToastService } from '../../shared/ui';
 import { BatchStore, MAX_IMAGES } from '../../core/batch';
 import { UploadPage } from './upload.page';
 
@@ -27,6 +27,9 @@ interface Fakes {
   navigate: ReturnType<typeof vi.fn>;
   error: ReturnType<typeof vi.fn>;
   warning: ReturnType<typeof vi.fn>;
+  showConfirm: ReturnType<typeof vi.fn>;
+  hasWork: boolean;
+  numberedSet: ReturnType<typeof vi.fn>;
 }
 
 function setup(addFilesReturn: string[] = []): { page: UploadPage; f: Fakes } {
@@ -37,12 +40,23 @@ function setup(addFilesReturn: string[] = []): { page: UploadPage; f: Fakes } {
     navigate: vi.fn().mockResolvedValue(true),
     error: vi.fn(),
     warning: vi.fn(),
+    showConfirm: vi.fn().mockResolvedValue(true),
+    hasWork: false,
+    numberedSet: vi.fn(),
   };
   TestBed.configureTestingModule({
     imports: [UploadPage],
     providers: [
       { provide: UploadService, useValue: { probe: f.probe } },
-      { provide: BatchStore, useValue: { addFiles: f.addFiles, reset: f.reset } },
+      { provide: BatchStore, useValue: {
+          addFiles: f.addFiles,
+          reset: f.reset,
+          hasWork: () => f.hasWork,
+          items: () => [],
+          numbered: { set: f.numberedSet },
+        },
+      },
+      { provide: ModalService, useValue: { showConfirm: f.showConfirm } },
       { provide: Router, useValue: { navigate: f.navigate } },
       { provide: ToastService, useValue: { error: f.error, warning: f.warning } },
     ],
@@ -92,6 +106,49 @@ describe('UploadPage — lista acumulável (fluxo único)', () => {
     expect(f.addFiles).toHaveBeenCalledTimes(1);
     expect(f.addFiles.mock.calls[0][0]).toHaveLength(1);
     expect(f.navigate).toHaveBeenCalledWith(['/app/batch']);
+  });
+
+  it('toggle "Numerar bottons" repassa numbered ao store após o reset', async () => {
+    const { page, f } = setup();
+    await page.onFilesAccepted([pngFile(), pngFile()]);
+    page.numbered.set(true);
+    await page.continue();
+    expect(f.numberedSet).toHaveBeenCalledWith(true);
+    expect(f.reset.mock.invocationCallOrder[0]).toBeLessThan(
+      f.numberedSet.mock.invocationCallOrder[0],
+    );
+    expect(f.numberedSet.mock.invocationCallOrder[0]).toBeLessThan(
+      f.addFiles.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('Continuar com lote em andamento pede confirmação e reseta se confirmado', async () => {
+    const { page, f } = setup();
+    f.hasWork = true;
+    await page.onFilesAccepted([pngFile()]);
+    await page.continue();
+    expect(f.showConfirm).toHaveBeenCalledTimes(1);
+    expect(f.showConfirm.mock.calls[0][0]).toMatchObject({ danger: true });
+    expect(f.reset).toHaveBeenCalledTimes(1);
+    expect(f.navigate).toHaveBeenCalledWith(['/app/batch']);
+  });
+
+  it('Continuar com lote em andamento e confirmação CANCELADA não reseta nem navega', async () => {
+    const { page, f } = setup();
+    f.hasWork = true;
+    f.showConfirm.mockResolvedValue(false);
+    await page.onFilesAccepted([pngFile()]);
+    await page.continue();
+    expect(f.reset).not.toHaveBeenCalled();
+    expect(f.addFiles).not.toHaveBeenCalled();
+    expect(f.navigate).not.toHaveBeenCalled();
+  });
+
+  it('Continuar sem lote em andamento não pergunta nada', async () => {
+    const { page, f } = setup();
+    await page.onFilesAccepted([pngFile()]);
+    await page.continue();
+    expect(f.showConfirm).not.toHaveBeenCalled();
   });
 
   it('Continuar com 2+ itens envia ao BatchStore e navega para /app/batch', async () => {

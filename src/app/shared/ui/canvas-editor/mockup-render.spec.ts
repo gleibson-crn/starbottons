@@ -234,6 +234,34 @@ describe('renderMockup — sprite fiel (cor/fundo/filtros + recorte)', () => {
     expect(ops.find((o) => o.op === 'fillRect')?.filter).toBe('none');
   });
 
+  it('desenha a MOLDURA por cima da arte (2 drawImage, moldura por último)', () => {
+    renderMockup({
+      image: fakeImage(1000, 1000),
+      transform: RED,
+      spec: SPEC,
+      editorSide: 520,
+      side: 520,
+      frames: [{ image: fakeImage(400, 200) }],
+    });
+    const draws = ops.filter((o) => o.op === 'drawImage');
+    expect(draws.length).toBe(2);
+    // A moldura não leva filtro (é decoração); é o ÚLTIMO drawImage.
+    expect(draws[draws.length - 1].filter).toBe('none');
+  });
+
+  it('renderMockupSprite propaga a moldura ao sprite', () => {
+    const s = renderMockupSprite({
+      image: fakeImage(1200, 1200),
+      transform: RED,
+      spec: SPEC,
+      editorSide: 520,
+      targetRadiusPx: 200,
+      frames: [{ image: fakeImage(400, 200) }],
+    });
+    expect(s.discRadiusPx).toBeGreaterThan(0);
+    expect(ops.filter((o) => o.op === 'drawImage').length).toBe(2);
+  });
+
   it('renderMockupSprite propaga fundo + filtros ao sprite', () => {
     const s = renderMockupSprite({
       image: fakeImage(1200, 1200),

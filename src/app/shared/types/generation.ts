@@ -11,6 +11,10 @@ export interface GenerateOptionsBody {
     readonly offset: EditorTransform['offset'];
     readonly scale: number;
     readonly rotation: number;
+    /** Espelhar a arte na horizontal (eixo local, após a rotação). */
+    readonly flipH?: boolean;
+    /** Espelhar a arte na vertical (eixo local, após a rotação). */
+    readonly flipV?: boolean;
     readonly background: string;
     /** Caminho da imagem de fundo no Storage, ou `null` para usar só a cor. */
     readonly backgroundImage: string | null;
@@ -20,6 +24,20 @@ export interface GenerateOptionsBody {
     readonly backgroundScale: number;
     /** Rotação do fundo em graus. */
     readonly backgroundRotation: number;
+    /**
+     * MOLDURAS empilhadas (camadas decorativas por cima da arte) na ordem do
+     * array = z-order (índice 0 ao fundo; última no topo). Cada uma: `path` no
+     * bucket `uploads`, `offset` em MILÍMETROS (mesma conversão px→mm da arte),
+     * `scale` (1 = cover) e `rotation` em graus. `[]` = sem moldura.
+     */
+    /** Número impresso na sangria (traseira); `null`/ausente = sem número. */
+    readonly sequenceLabel?: string | null;
+    readonly frames: {
+      readonly path: string;
+      readonly offset: { x: number; y: number };
+      readonly scale: number;
+      readonly rotation: number;
+    }[];
   };
 }
 
@@ -30,7 +48,7 @@ export interface GenerateRequest extends GenerateOptionsBody {
 }
 
 /** Tipos de asset produzidos pela geração. */
-export type AssetKind = 'print_png' | 'print_pdf' | 'mockup_png' | 'preview_webp';
+export type AssetKind = 'print_png' | 'mockup_png' | 'preview_webp';
 
 /** Asset retornado pela Edge (200) — já com signed URL. */
 export interface EdgeAsset {
@@ -46,8 +64,6 @@ export interface GenerationResult {
   readonly jobId: string;
   /** Signed URL do PNG de impressão (bucket `renders`). */
   readonly printPngUrl: string | null;
-  /** Signed URL do PDF de impressão (bucket `renders`). */
-  readonly printPdfUrl: string | null;
 }
 
 /** Linha de `generation_jobs` consultada no fallback de polling. */

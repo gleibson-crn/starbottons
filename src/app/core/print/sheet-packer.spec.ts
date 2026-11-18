@@ -143,22 +143,28 @@ describe('packSheet', () => {
     }
   });
 
-  describe('densidade — mais denso que o shelf em grade de quadrados', () => {
-    it('empacota círculos de 58mm em MENOS páginas que a grade quadrada', () => {
-      // Grade quadrada: 6 por página (2x3) → 7 peças = 2 páginas.
+  describe('densidade — atinge a grade quadrada (full-bleed, margem/folga 0)', () => {
+    it('cabem 12 bottons de 58mm por página (grade 3×4 = 210/70 × 297/70)', () => {
+      // Em full-bleed, 3 colunas de 70mm = 210mm exatos e 4 linhas ≤ 297mm.
       const gridCap = squareGrid(ART_MM[58]);
-      expect(gridCap).toBe(6);
-      const packed = packSheet([input({ sizeMm: 58, quantity: 7 })]);
-      expect(packed.pages.length).toBe(1); // círculos nestlam → 7+ numa página
-      expect(packed.pages[0].length).toBe(7);
+      expect(gridCap).toBe(12);
+      const packed = packSheet([input({ sizeMm: 58, quantity: 12 })]);
+      expect(packed.pages.length).toBe(1);
+      expect(packed.pages[0].length).toBe(12);
       // ...e sem violar nenhuma invariante:
       assertWithinMargin(packed.pages[0]);
       assertNoCircleCollision(packed.pages[0]);
     });
 
-    it('cabem MAIS círculos de 58mm por página que na grade quadrada', () => {
+    it('a 13ª peça de 58mm transborda para uma 2ª página', () => {
+      const packed = packSheet([input({ sizeMm: 58, quantity: 13 })]);
+      expect(packed.pages.length).toBe(2);
+      expect(packed.pages[0].length).toBe(12);
+    });
+
+    it('atinge (não fica abaixo de) a densidade da grade quadrada por página', () => {
       const packed = packSheet([input({ sizeMm: 58, quantity: 30 })]);
-      expect(packed.pages[0].length).toBeGreaterThan(squareGrid(ART_MM[58]));
+      expect(packed.pages[0].length).toBeGreaterThanOrEqual(squareGrid(ART_MM[58]));
     });
 
     it('nunca usa MAIS páginas que a grade quadrada (32/44/58mm)', () => {
