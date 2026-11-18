@@ -101,6 +101,22 @@ intactos — o Sair **nunca** desliga o Docker inteiro.
 npm run db:stop     # para os containers do Supabase (os dados ficam salvos)
 ```
 
+## Atualizações (automáticas)
+
+O app agora se atualiza sozinho a partir do repositório **privado** no GitHub
+(`gleibson-crn/starbottons`, branch `main`). Ao abrir pelo atalho, se houver uma
+versão nova, aparece um pop-up **"Nova versão disponível"** com as novidades e o
+botão **Atualizar agora** — ao confirmar, o app fecha, baixa a nova versão
+(`git merge --ff-only` + `npm install` + modelo) e **reabre já atualizado**.
+Requisito: o Git precisa estar autenticado no Windows (credential manager); sem
+isso a checagem falha em silêncio e o pop-up não aparece. Nunca usa `reset --hard`
+e **nunca** desliga o Docker. A versão atual aparece como `vX.Y.Z` no cabeçalho.
+
+> Publicar uma versão nova (quem mantém o código): aumentar `APP_VERSION` em
+> `src/app/core/app-version.ts` **e** `version` no `package.json` (iguais — há teste
+> que cobra isso), adicionar as novidades em `src/app/core/release-notes.ts`, commit
+> e `git push origin main`.
+
 ## Solução de problemas
 
 - **Erro "JWT issued at future" (401) ao logar / enviar imagem** — o relógio do
