@@ -13,7 +13,13 @@
   Ao fechar o Chrome (botão "Sair" do app ou o X): LIMPEZA
     (a) encerra a árvore do servidor por PID (taskkill /T /F);
     (b) libera a porta do front e apaga scripts\.web-port;
-    (c) `supabase stop` NA PASTA DO PROJETO.
+    (c) `supabase stop` NA PASTA DO PROJETO;
+    (d) se existir scripts\.do-update (gravado pelo botão "Atualizar agora" via
+        POST http://localhost:4299/do-update): roda `node scripts/update.mjs apply`
+        (com o servidor JÁ parado, senão node_modules fica travado) e, em sucesso,
+        RE-LANÇA o app (no máx. 1 vez). Em falha mostra a mensagem e encerra.
+  Antes de subir, roda `node scripts/update.mjs check` (tolerante) para o front já
+  enxergar o flag scripts\.update-available.
   NUNCA encerra o Docker Desktop, NUNCA usa `supabase stop --all`: Docker e os
   outros projetos (Controle Fitness, Nexgency) ficam intactos.
 
@@ -74,45 +80,88 @@ function Stop-AppStack($serverProc) {
   try { & supabase stop 2>&1 | Out-Null } finally { Pop-Location }
 }
 
-# Limpa a porta da execução anterior (o up.mjs grava a nova ao escolhê-la).
-Remove-Item $portFile -ErrorAction SilentlyContinue
+$doUpdateFile = Join-Path $PSScriptRoot '.do-update'
+$resultFile   = Join-Path $PSScriptRoot '.update-result'
+$updateMjs    = Join-Path $PSScriptRoot 'update.mjs'
 
-# Sobe a aplicação numa janela de console própria (= o servidor), minimizada:
-# aparece só na barra de tarefas (clique nela para ver os logs). PID capturado.
-$server = Start-Process -FilePath 'cmd.exe' -PassThru -WindowStyle Minimized `
-  -ArgumentList '/k', "title Star Bottons (servidor) && cd /d `"$proj`" && npm run up"
+# Checa se há versão nova (tolerante: offline/erro = sem update; nunca trava a abertura).
+function Invoke-UpdateCheck {
+  try { & node $updateMjs check 2>&1 | Out-Null } catch { }
+}
 
-$deadline = (Get-Date).AddMinutes(12)
-
-# 1) Espera o up.mjs gravar a porta escolhida (após Docker+Supabase+clock).
-$port = $null
-while ((Get-Date) -lt $deadline) {
-  if (Test-Path $portFile) {
-    $port = (Get-Content $portFile -Raw).Trim()
-    if ($port) { break }
+# Aplica o update pedido (flag .do-update). Devolve $true se aplicou, $false se
+# falhou, $null se não havia pedido. Chamado SÓ depois de Stop-AppStack.
+function Invoke-PendingUpdate {
+  if (-not (Test-Path $doUpdateFile)) { return $null }
+  Remove-Item $doUpdateFile -ErrorAction SilentlyContinue
+  Remove-Item $resultFile -ErrorAction SilentlyContinue
+  Push-Location $proj
+  try { & node $updateMjs apply 2>&1 | Out-Null } finally { Pop-Location }
+  $applied = ($LASTEXITCODE -eq 0)
+  if (-not $applied) {
+    $msg = 'A atualização não pôde ser concluída.'
+    if (Test-Path $resultFile) {
+      try { $msg = (Get-Content $resultFile -Raw -Encoding UTF8 | ConvertFrom-Json).message } catch { }
+    }
+    (New-Object -ComObject WScript.Shell).Popup(
+      "$msg`n`nDetalhes: scripts\.update.log", 0, 'Star Bottons', 48) | Out-Null
   }
-  Start-Sleep -Seconds 2
-}
-if (-not $port) { $port = '4200' }   # fallback
-$url = "http://localhost:$port"
-
-# 2) Espera o front responder nessa porta.
-$ready = $false
-while ((Get-Date) -lt $deadline) {
-  try {
-    if ((Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 3).StatusCode -ge 200) { $ready = $true; break }
-  } catch { Start-Sleep -Seconds 3 }
+  return $applied
 }
 
-# 3) Abre o Chrome em modo app (perfil dedicado), aguarda fechar e limpa.
-if ($ready) {
-  $chromeProc = Open-App $url
-  if ($chromeProc) {
-    Wait-Process -Id $chromeProc.Id
-    Stop-AppStack $server
+# Uma sessão completa: sobe servidor, abre o Chrome, aguarda fechar e limpa.
+function Start-Session {
+  # Limpa a porta da execução anterior (o up.mjs grava a nova ao escolhê-la).
+  Remove-Item $portFile -ErrorAction SilentlyContinue
+
+  # Sobe a aplicação numa janela de console própria (= o servidor), minimizada:
+  # aparece só na barra de tarefas (clique nela para ver os logs). PID capturado.
+  $server = Start-Process -FilePath 'cmd.exe' -PassThru -WindowStyle Minimized `
+    -ArgumentList '/k', "title Star Bottons (servidor) && cd /d `"$proj`" && npm run up"
+
+  $deadline = (Get-Date).AddMinutes(12)
+
+  # 1) Espera o up.mjs gravar a porta escolhida (após Docker+Supabase+clock).
+  $port = $null
+  while ((Get-Date) -lt $deadline) {
+    if (Test-Path $portFile) {
+      $port = (Get-Content $portFile -Raw).Trim()
+      if ($port) { break }
+    }
+    Start-Sleep -Seconds 2
   }
-} else {
-  (New-Object -ComObject WScript.Shell).Popup(
-    'O Star Bottons demorou a subir. Confira a janela "Star Bottons (servidor)".',
-    15, 'Star Bottons', 48) | Out-Null
+  if (-not $port) { $port = '4200' }   # fallback
+  $url = "http://localhost:$port"
+
+  # 2) Espera o front responder nessa porta.
+  $ready = $false
+  while ((Get-Date) -lt $deadline) {
+    try {
+      if ((Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 3).StatusCode -ge 200) { $ready = $true; break }
+    } catch { Start-Sleep -Seconds 3 }
+  }
+
+  # 3) Abre o Chrome em modo app (perfil dedicado), aguarda fechar e limpa.
+  if ($ready) {
+    $chromeProc = Open-App $url
+    if ($chromeProc) {
+      Wait-Process -Id $chromeProc.Id
+      Stop-AppStack $server
+    }
+  } else {
+    (New-Object -ComObject WScript.Shell).Popup(
+      'O Star Bottons demorou a subir. Confira a janela "Star Bottons (servidor)".',
+      15, 'Star Bottons', 48) | Out-Null
+  }
 }
+
+# Ciclo: check -> sessão -> (se o dono pediu) apply -> re-lança no máximo 1 vez.
+# Em falha do apply NÃO re-lança (sem loop): mostra a mensagem e encerra.
+$relaunched = $false
+do {
+  Invoke-UpdateCheck
+  Start-Session
+  $applied = Invoke-PendingUpdate
+  $again = ($applied -eq $true) -and (-not $relaunched)
+  if ($again) { $relaunched = $true }
+} while ($again)

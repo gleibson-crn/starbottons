@@ -63,3 +63,10 @@ supabase/.branches
 
 # Perfil dedicado do Chrome (start-app.ps1)
 scripts/.chrome-profile/
+
+# Auto-update (scripts/update.mjs) — flags/estado locais
+scripts/.update-available
+scripts/.do-update
+scripts/.update-result
+scripts/.update.log
+public/update-available.json

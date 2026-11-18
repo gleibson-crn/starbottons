@@ -8,8 +8,9 @@
 //      cai com "unexpected EOF") sem derrubar a web.
 //
 // `npm start` (ng serve) sobe SÓ o front — por isso este comando existe.
-import { execSync, spawnSync } from 'node:child_process';
+import { execSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const isWin = process.platform === 'win32';
 
@@ -137,6 +138,20 @@ if (port === 4200) {
   console.log('      web na porta 4200.');
 } else {
   console.log(`      porta 4200 OCUPADA por outro sistema — usando a ${port}.`);
+}
+// Endpoint local do auto-update (POST http://localhost:4299/do-update grava o flag
+// scripts/.do-update). Processo filho p/ rodar em paralelo ao spawnSync abaixo;
+// falha/porta ocupada nunca impede o app de subir.
+try {
+  const updater = spawn(process.execPath, [fileURLToPath(new URL('./update-server.mjs', import.meta.url))], {
+    stdio: 'ignore',
+    windowsHide: true,
+  });
+  updater.on('error', () => {});
+  updater.unref();
+  process.on('exit', () => updater.kill());
+} catch {
+  /* não-crítico */
 }
 // Grava a porta p/ o atalho (start-app.ps1) abrir o Chrome na porta CERTA.
 try {

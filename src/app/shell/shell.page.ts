@@ -16,6 +16,8 @@ import {
 } from '@angular/router';
 import { filter } from 'rxjs';
 import { BatchStore, summarize, type Snapshot } from '../core/batch';
+import { APP_VERSION } from '../core/app-version';
+import { UpdateService } from '../core/update.service';
 import { ModalService, ToastService, type ModalChoice } from '../shared/ui';
 
 type BatchDecision = 'print' | 'zip' | 'edit' | 'clear';
@@ -48,7 +50,9 @@ export class ShellPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly modal = inject(ModalService);
   private readonly toast = inject(ToastService);
-  private readonly updateNotice = inject(UpdateNoticeService);
+  private readonly updates = inject(UpdateService);
+  /** Versão exibida discretamente no cabeçalho. */
+  protected readonly version = APP_VERSION;
   protected readonly batch = inject(BatchStore);
 
   /** `true` quando a rota ativa é o fluxo de lote (grid). */
@@ -75,8 +79,8 @@ export class ShellPage implements OnInit {
 
   /** BL-008: ao entrar em /app, oferece retomar o último lote salvo (antes de qualquer reset). */
   async ngOnInit(): Promise<void> {
-    // aviso de "sistema atualizado": não bloqueia a UI nem o fluxo de retomada
-    void this.updateNotice.checkAndNotify();
+    // "Atualizado!" (A) ou "Nova versão disponível" (B), exclusivos; não bloqueia a UI
+    void this.updates.checkOnBoot();
     try {
       const snapshot = await this.batch.loadResumable();
       if (snapshot) {

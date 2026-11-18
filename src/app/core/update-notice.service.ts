@@ -1,30 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 import { ModalService } from './modal';
-import { APP_VERSION, RELEASES, type ReleaseNote } from './release-notes';
+import { APP_VERSION } from './app-version';
+import { RELEASE_NOTES as RELEASES, type ReleaseNote } from './release-notes';
+import { compareVersions } from './version';
 
 /** Chave do localStorage com a última versão cujas novidades já foram vistas. */
 export const LAST_SEEN_VERSION_KEY = 'sb.lastSeenVersion';
 
-function parts(version: string): number[] {
-  return version.split('.').map((p) => {
-    const n = Number.parseInt(p, 10);
-    return Number.isFinite(n) ? n : 0;
-  });
-}
-
-/** Comparação semver simples, NUMÉRICA por segmento: negativo se a<b, 0 se igual, positivo se a>b. */
-export function compareVersions(a: string, b: string): number {
-  const pa = parts(a);
-  const pb = parts(b);
-  const len = Math.max(pa.length, pb.length);
-  for (let i = 0; i < len; i++) {
-    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
-    if (diff !== 0) {
-      return diff;
-    }
-  }
-  return 0;
-}
+export { compareVersions };
 
 function readSeen(): string | null {
   try {
@@ -62,19 +45,23 @@ export class UpdateNoticeService {
       .sort((a, b) => compareVersions(b.version, a.version));
   }
 
-  /** Chamar uma vez no boot do shell. Nunca lança. */
+  /**
+   * Chamar uma vez no boot do shell. Nunca lança.
+   * Devolve `true` quando a versão acabou de subir (pós-update): o chamador
+   * usa isso para NÃO oferecer um novo update no mesmo boot.
+   */
   async checkAndNotify(
     current: string = APP_VERSION,
     releases: readonly ReleaseNote[] = RELEASES,
-  ): Promise<void> {
+  ): Promise<boolean> {
     try {
       const seen = readSeen();
       if (seen === null) {
         writeSeen(current); // instalação do zero não é "atualização"
-        return;
+        return false;
       }
       if (compareVersions(current, seen) <= 0) {
-        return;
+        return false;
       }
       const news = this.notesSince(seen, current, releases);
       if (news.length > 0) {
@@ -84,8 +71,10 @@ export class UpdateNoticeService {
         });
       }
       writeSeen(current);
+      return true;
     } catch {
       /* aviso é best-effort: nunca quebra o boot */
+      return false;
     }
   }
 

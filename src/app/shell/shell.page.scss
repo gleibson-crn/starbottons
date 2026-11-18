@@ -50,6 +50,12 @@
   text-shadow: var(--glow-star);
 }
 
+.shell__version {
+  font-size: var(--fs-xs);
+  color: #fff; /* sobre o gradiente do header: mesmo contraste da marca */
+  opacity: 0.9;
+}
+
 .shell__nav {
   display: flex;
   align-items: center;
