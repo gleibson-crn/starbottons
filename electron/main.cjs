@@ -10,9 +10,10 @@
 //
 // A URL do app pode ser trocada por SB_APP_URL (padrão: http://localhost:4200).
 
-const { app, BrowserWindow, Menu, shell } = require('electron');
+const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
+const localDb = require('./backend/db.cjs'); // backend local (ADR-033): SQLite
 
 /** Porta do front escolhida pelo up.mjs (scripts/.web-port), ou 4200. */
 function webPort() {
@@ -39,6 +40,7 @@ function createWindow() {
     backgroundColor: '#140a1f', // mesmo fundo do app (evita flash branco)
     autoHideMenuBar: true, // sem barra de menu do Electron (visual de app)
     webPreferences: {
+      preload: join(__dirname, 'preload.cjs'), // expõe window.sb (backend local)
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -65,6 +67,10 @@ app.whenReady().then(() => {
     app.setAppUserModelId('com.starbottons.app');
   }
   Menu.setApplicationMenu(null); // sem menu nativo nesta PoC
+
+  // Backend local (ADR-033): handlers IPC. Cresce a cada serviço migrado.
+  ipcMain.handle('db:print-specs:list', () => localDb.listPrintSpecs());
+
   createWindow();
 
   app.on('activate', () => {
