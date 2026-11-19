@@ -73,3 +73,6 @@ scripts/.do-update
 scripts/.update-result
 scripts/.update.log
 public/update-available.json
+
+# Artes da campanha (promocional, fora do sistema) — ficam locais
+docs/apoiase/
