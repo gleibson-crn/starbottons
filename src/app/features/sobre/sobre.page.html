@@ -24,7 +24,7 @@
       <div class="sobre__pix-data">
         <p class="sobre__pix-name">PIX para <strong>{{ donation.pixName }}</strong></p>
 
-        <label class="sobre__field-label" for="pixkey">Chave PIX (CPF)</label>
+        <label class="sobre__field-label" for="pixkey">Chave PIX</label>
         <div class="sobre__copyrow">
           <input id="pixkey" class="sobre__input" [value]="donation.pixKey" readonly />
           <button type="button" class="btn btn--primary" (click)="copy(donation.pixKey, 'Chave PIX')">

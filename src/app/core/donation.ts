@@ -4,8 +4,8 @@
  * daqui (ver `pix.ts`) — nada é enviado para fora da máquina.
  */
 export const DONATION = {
-  /** Chave PIX do autor (CPF, só dígitos). */
-  pixKey: '05389106407',
+  /** Chave PIX do autor (aleatória — protege o CPF; registrada no banco). */
+  pixKey: 'e1847ef2-18d0-40fb-a4db-9b2bfd9c03a7',
   /** Nome exibido ao doador no app PIX (sem acento, ≤25). */
   pixName: 'Gleibson CRN',
   /** Cidade do recebedor exibida no app PIX (≤15). */

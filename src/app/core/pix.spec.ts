@@ -12,7 +12,7 @@ describe('crc16 (CCITT/FALSE)', () => {
 });
 
 describe('pixPayload (BR Code estático)', () => {
-  const params = { key: '05389106407', name: 'Gleibson CRN', city: 'Recife' };
+  const params = { key: 'e1847ef2-18d0-40fb-a4db-9b2bfd9c03a7', name: 'Gleibson CRN', city: 'Recife' };
 
   it('começa com o Payload Format Indicator 000201', () => {
     expect(pixPayload(params).startsWith('000201')).toBe(true);
@@ -21,7 +21,7 @@ describe('pixPayload (BR Code estático)', () => {
   it('inclui o GUI do PIX e a chave', () => {
     const out = pixPayload(params);
     expect(out).toContain('br.gov.bcb.pix');
-    expect(out).toContain('05389106407');
+    expect(out).toContain('e1847ef2-18d0-40fb-a4db-9b2bfd9c03a7');
   });
 
   it('CRC final confere com o recomputado sobre o resto (roundtrip)', () => {
