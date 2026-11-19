@@ -11,8 +11,20 @@
 // A URL do app pode ser trocada por SB_APP_URL (padrão: http://localhost:4200).
 
 const { app, BrowserWindow, Menu, shell } = require('electron');
+const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
 
-const APP_URL = process.env.SB_APP_URL || 'http://localhost:4200';
+/** Porta do front escolhida pelo up.mjs (scripts/.web-port), ou 4200. */
+function webPort() {
+  try {
+    const p = readFileSync(join(__dirname, '..', 'scripts', '.web-port'), 'utf8').trim();
+    return /^\d+$/.test(p) ? p : '4200';
+  } catch {
+    return '4200';
+  }
+}
+
+const APP_URL = process.env.SB_APP_URL || `http://localhost:${webPort()}`;
 
 function createWindow() {
   const win = new BrowserWindow({
