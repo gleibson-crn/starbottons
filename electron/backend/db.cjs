@@ -21,9 +21,26 @@ function open() {
   return db;
 }
 
-/** Extensão a partir do mime (só PNG/JPEG são aceitos nos fundos). */
+/** Extensão a partir do mime. */
 function extOf(mime) {
+  if (mime === 'image/webp') {
+    return '.webp';
+  }
   return mime === 'image/jpeg' ? '.jpg' : '.png';
+}
+
+/** Mapeia a linha de mockup do SQLite p/ o renderer (target: TEXT -> objeto). */
+function mapMockup(row) {
+  if (!row) {
+    return row;
+  }
+  let target = null;
+  try {
+    target = JSON.parse(row.target);
+  } catch {
+    target = null;
+  }
+  return { ...row, target };
 }
 
 module.exports = {
@@ -48,6 +65,49 @@ module.exports = {
   },
   removeBackground: (id) => {
     const storagePath = schema.deleteBackground(open(), id);
+    if (storagePath) {
+      storage.remove(storagePath);
+    }
+  },
+
+  // mockup_templates (templates de cenário)
+  listMockups: () => schema.listMockups(open()).map(mapMockup),
+  saveMockup: ({ name, bytes, mime, sceneWidth, sceneHeight, target }) => {
+    const storagePath = storage.save(bytes, extOf(mime));
+    return mapMockup(
+      schema.insertMockup(open(), {
+        id: randomUUID(),
+        name,
+        storagePath,
+        mime,
+        bytes: bytes?.byteLength ?? bytes?.length ?? null,
+        sceneWidth,
+        sceneHeight,
+        target: JSON.stringify(target),
+      }),
+    );
+  },
+  updateMockup: (id, { target, scene }) => {
+    if (scene) {
+      const old = schema.getMockup(open(), id);
+      const storagePath = storage.save(scene.bytes, extOf(scene.mime));
+      const row = schema.updateMockupScene(open(), id, {
+        storagePath,
+        mime: scene.mime,
+        bytes: scene.bytes?.byteLength ?? scene.bytes?.length ?? null,
+        sceneWidth: scene.width,
+        sceneHeight: scene.height,
+        target: JSON.stringify(target),
+      });
+      if (old && old.storage_path) {
+        storage.remove(old.storage_path);
+      }
+      return mapMockup(row);
+    }
+    return mapMockup(schema.updateMockupTarget(open(), id, JSON.stringify(target)));
+  },
+  removeMockup: (id) => {
+    const storagePath = schema.deleteMockup(open(), id);
     if (storagePath) {
       storage.remove(storagePath);
     }

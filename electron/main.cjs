@@ -73,6 +73,10 @@ app.whenReady().then(() => {
   ipcMain.handle('bg:list', () => localDb.listBackgrounds());
   ipcMain.handle('bg:save', (_e, input) => localDb.saveBackground(input));
   ipcMain.handle('bg:remove', (_e, id) => localDb.removeBackground(id));
+  ipcMain.handle('mk:list', () => localDb.listMockups());
+  ipcMain.handle('mk:save', (_e, input) => localDb.saveMockup(input));
+  ipcMain.handle('mk:update', (_e, { id, patch }) => localDb.updateMockup(id, patch));
+  ipcMain.handle('mk:remove', (_e, id) => localDb.removeMockup(id));
   ipcMain.handle('media:read', (_e, name) => localDb.readMedia(name));
 
   createWindow();

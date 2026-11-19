@@ -25,12 +25,60 @@ export interface LocalBackgroundInput {
   readonly height: number;
 }
 
+/** Alvo da cena (círculo normalizado 0..1 + rotação) — estrutura de SceneTarget. */
+export interface LocalSceneTarget {
+  readonly cx: number;
+  readonly cy: number;
+  readonly r: number;
+  readonly rotation: number;
+}
+
+/** Linha de mockup como o SQLite devolve (target já desserializado). */
+export interface LocalMockupRow {
+  readonly id: string;
+  readonly name: string;
+  readonly storage_path: string;
+  readonly mime: string;
+  readonly bytes: number | null;
+  readonly scene_width_px: number | null;
+  readonly scene_height_px: number | null;
+  readonly target: LocalSceneTarget;
+  readonly created_at: string;
+}
+
+/** Dados p/ salvar um mockup no backend local (cena já codificada em WebP). */
+export interface LocalMockupInput {
+  readonly name: string;
+  readonly bytes: ArrayBuffer;
+  readonly mime: string;
+  readonly sceneWidth: number;
+  readonly sceneHeight: number;
+  readonly target: LocalSceneTarget;
+}
+
+/** Patch de mockup: sempre o alvo; opcionalmente uma cena nova (bytes). */
+export interface LocalMockupPatch {
+  readonly target: LocalSceneTarget;
+  readonly scene?: {
+    readonly bytes: ArrayBuffer;
+    readonly mime: string;
+    readonly width: number;
+    readonly height: number;
+  } | null;
+}
+
 /** API exposta em `window.sb` pelo preload. Cresce a cada serviço migrado. */
 export interface LocalBackendApi {
   readonly printSpecs: { list(): Promise<readonly unknown[]> };
   readonly backgrounds: {
     list(): Promise<readonly LocalBackgroundRow[]>;
     save(input: LocalBackgroundInput): Promise<LocalBackgroundRow>;
+    remove(id: string): Promise<void>;
+  };
+  readonly mockups: {
+    list(): Promise<readonly LocalMockupRow[]>;
+    save(input: LocalMockupInput): Promise<LocalMockupRow>;
+    update(id: string, patch: LocalMockupPatch): Promise<LocalMockupRow>;
     remove(id: string): Promise<void>;
   };
   readonly media: { read(name: string): Promise<Uint8Array | null> };

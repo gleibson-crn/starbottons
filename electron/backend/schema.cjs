@@ -38,8 +38,69 @@ function migrate(db) {
     );
     create index if not exists background_templates_created_at_idx
       on background_templates (created_at desc);
+
+    create table if not exists mockup_templates (
+      id              text    primary key,
+      name            text    not null,
+      storage_path    text    not null,
+      mime            text    not null check (mime in ('image/webp', 'image/jpeg', 'image/png')),
+      bytes           integer,
+      scene_width_px  integer,
+      scene_height_px integer,
+      target          text    not null,  -- JSON {cx,cy,r} (normalizado 0..1)
+      created_at      text    not null default (datetime('now'))
+    );
+    create index if not exists mockup_templates_created_at_idx
+      on mockup_templates (created_at desc);
   `);
   seedPrintSpecs(db);
+}
+
+// ── mockup_templates (templates de cenário — ADR-017) ───────────────────────
+
+const MOCKUP_COLS =
+  'id, name, storage_path, mime, bytes, scene_width_px, scene_height_px, target, created_at';
+
+/** Lista os templates de cena (mais recentes primeiro). `target` vem como JSON texto. */
+function listMockups(db) {
+  return db.prepare(`select ${MOCKUP_COLS} from mockup_templates order by created_at desc`).all();
+}
+
+function getMockup(db, id) {
+  return db.prepare(`select ${MOCKUP_COLS} from mockup_templates where id = ?`).get(id);
+}
+
+/** Insere; `target` deve chegar já como JSON string. */
+function insertMockup(db, { id, name, storagePath, mime, bytes, sceneWidth, sceneHeight, target }) {
+  db.prepare(
+    `insert into mockup_templates
+       (id, name, storage_path, mime, bytes, scene_width_px, scene_height_px, target)
+     values (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(id, name, storagePath, mime, bytes ?? null, sceneWidth ?? null, sceneHeight ?? null, target);
+  return getMockup(db, id);
+}
+
+/** Atualiza só o alvo (JSON string). */
+function updateMockupTarget(db, id, target) {
+  db.prepare('update mockup_templates set target = ? where id = ?').run(target, id);
+  return getMockup(db, id);
+}
+
+/** Troca a cena (novo arquivo + dimensões/mime) e o alvo. */
+function updateMockupScene(db, id, { storagePath, mime, bytes, sceneWidth, sceneHeight, target }) {
+  db.prepare(
+    `update mockup_templates
+        set storage_path = ?, mime = ?, bytes = ?, scene_width_px = ?, scene_height_px = ?, target = ?
+      where id = ?`,
+  ).run(storagePath, mime, bytes ?? null, sceneWidth ?? null, sceneHeight ?? null, target, id);
+  return getMockup(db, id);
+}
+
+/** Remove e devolve o storage_path (p/ apagar o arquivo). */
+function deleteMockup(db, id) {
+  const row = db.prepare('select storage_path from mockup_templates where id = ?').get(id);
+  db.prepare('delete from mockup_templates where id = ?').run(id);
+  return row ? row.storage_path : null;
 }
 
 // ── background_templates (biblioteca de fundos — ADR-016) ────────────────────
@@ -105,4 +166,10 @@ module.exports = {
   listBackgrounds,
   insertBackground,
   deleteBackground,
+  listMockups,
+  getMockup,
+  insertMockup,
+  updateMockupTarget,
+  updateMockupScene,
+  deleteMockup,
 };

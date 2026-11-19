@@ -3,6 +3,7 @@ import { APP_CONFIG } from '../../core/config/app-config';
 import { AuthService } from '../../core/auth';
 import { SupabaseClientService } from '../../core/supabase';
 import { safeFileName, withConfiguredHost } from '../../shared/utils';
+import { localBackend, type LocalMockupRow } from '../../core/local-backend/local-api';
 import type { SceneTarget } from './scene-target';
 import { encodeScene } from './scene-encode';
 
@@ -63,9 +64,15 @@ export class ContextualTemplateService {
   private readonly supabase = inject(SupabaseClientService).client;
   private readonly auth = inject(AuthService);
   private readonly config = inject(APP_CONFIG);
+  /** Backend local (Electron) ou `null` no modo web → cai no Supabase. */
+  private readonly local = localBackend();
 
   /** Lista templates (mais recentes primeiro) já com thumbnail assinado. */
   async list(): Promise<SceneTemplate[]> {
+    if (this.local) {
+      const rows = await this.local.mockups.list();
+      return Promise.all(rows.map((r) => this.localToTemplate(r)));
+    }
     const { data, error } = await this.supabase
       .from(TABLE)
       .select(COLUMNS)
@@ -80,6 +87,17 @@ export class ContextualTemplateService {
   /** Recodifica + faz upload da cena e registra a linha; devolve o template. */
   async save(input: SaveTemplateInput): Promise<SceneTemplate> {
     const encoded = await encodeScene(input.scene);
+    if (this.local) {
+      const row = await this.local.mockups.save({
+        name: input.name,
+        bytes: await encoded.blob.arrayBuffer(),
+        mime: 'image/webp',
+        sceneWidth: encoded.width,
+        sceneHeight: encoded.height,
+        target: input.target,
+      });
+      return this.localToTemplate(row);
+    }
     const path = `${this.userId()}/${crypto.randomUUID()}-${safeFileName(input.name)}.webp`;
     await this.uploadScene(path, encoded.blob);
     const row = await this.insertRow(path, input, encoded);
@@ -92,6 +110,22 @@ export class ContextualTemplateService {
    * objeto e REMOVE o antigo p/ não deixar órfão). Devolve o template atualizado.
    */
   async update(id: string, patch: UpdateTemplateInput): Promise<SceneTemplate> {
+    if (this.local) {
+      if (patch.scene) {
+        const encoded = await encodeScene(patch.scene);
+        const row = await this.local.mockups.update(id, {
+          target: patch.target,
+          scene: {
+            bytes: await encoded.blob.arrayBuffer(),
+            mime: 'image/webp',
+            width: encoded.width,
+            height: encoded.height,
+          },
+        });
+        return this.localToTemplate(row);
+      }
+      return this.localToTemplate(await this.local.mockups.update(id, { target: patch.target }));
+    }
     if (!patch.scene) {
       const row = await this.updateRow(id, { target: patch.target });
       return this.toTemplate(row);
@@ -122,6 +156,10 @@ export class ContextualTemplateService {
 
   /** Exclui o template (linha + objeto no bucket). */
   async remove(template: SceneTemplate): Promise<void> {
+    if (this.local) {
+      await this.local.mockups.remove(template.id);
+      return;
+    }
     const { error } = await this.supabase.from(TABLE).delete().eq('id', template.id);
     if (error) {
       throw new Error(`Falha ao excluir: ${error.message}`);
@@ -216,5 +254,29 @@ export class ContextualTemplateService {
       createdAt: row.created_at,
       thumbUrl: await this.signThumb(row.storage_path),
     };
+  }
+
+  // ── Backend local (Electron, ADR-033) ──────────────────────────────────────
+
+  private async localToTemplate(row: LocalMockupRow): Promise<SceneTemplate> {
+    return {
+      id: row.id,
+      name: row.name,
+      storagePath: row.storage_path,
+      sceneWidth: row.scene_width_px ?? 0,
+      sceneHeight: row.scene_height_px ?? 0,
+      target: row.target,
+      createdAt: row.created_at,
+      thumbUrl: await this.localThumb(row.storage_path, row.mime),
+    };
+  }
+
+  /** Lê os bytes do arquivo local e devolve um blob URL (file:// seria bloqueado). */
+  private async localThumb(name: string, mime: string): Promise<string | null> {
+    const bytes = await this.local?.media.read(name);
+    if (!bytes) {
+      return null;
+    }
+    return URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: mime }));
   }
 }

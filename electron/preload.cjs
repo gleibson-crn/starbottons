@@ -14,6 +14,13 @@ contextBridge.exposeInMainWorld('sb', {
     save: (input) => ipcRenderer.invoke('bg:save', input),
     remove: (id) => ipcRenderer.invoke('bg:remove', id),
   },
+  /** Templates de cenário (mockup_templates + arquivos locais). */
+  mockups: {
+    list: () => ipcRenderer.invoke('mk:list'),
+    save: (input) => ipcRenderer.invoke('mk:save', input),
+    update: (id, patch) => ipcRenderer.invoke('mk:update', { id, patch }),
+    remove: (id) => ipcRenderer.invoke('mk:remove', id),
+  },
   /** Mídia local: devolve os bytes de um arquivo (o renderer monta o blob URL). */
   media: {
     read: (name) => ipcRenderer.invoke('media:read', name),

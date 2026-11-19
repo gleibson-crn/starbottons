@@ -9,6 +9,10 @@ const {
   listBackgrounds,
   insertBackground,
   deleteBackground,
+  listMockups,
+  insertMockup,
+  updateMockupTarget,
+  deleteMockup,
 } = require('./schema.cjs');
 
 const db = new DatabaseSync(':memory:');
@@ -49,4 +53,24 @@ assert.throws(
   'CHECK barra mime webp',
 );
 
-console.log('OK: backend local (print_specs + background_templates).');
+// mockup_templates (CRUD + target JSON)
+assert.strictEqual(listMockups(db).length, 0, 'mockups começam vazios');
+const mid = randomUUID();
+const mrow = insertMockup(db, {
+  id: mid,
+  name: 'Cena',
+  storagePath: 'c.webp',
+  mime: 'image/webp',
+  bytes: 900,
+  sceneWidth: 1200,
+  sceneHeight: 800,
+  target: JSON.stringify({ cx: 0.5, cy: 0.4, r: 0.2, rotation: 0 }),
+});
+assert.strictEqual(mrow.target, '{"cx":0.5,"cy":0.4,"r":0.2,"rotation":0}', 'target JSON persistido');
+assert.strictEqual(listMockups(db).length, 1, 'lista com 1 mockup');
+const mrow2 = updateMockupTarget(db, mid, JSON.stringify({ cx: 0.1, cy: 0.2, r: 0.3, rotation: 15 }));
+assert.ok(mrow2.target.includes('"rotation":15'), 'target atualizado');
+assert.strictEqual(deleteMockup(db, mid), 'c.webp', 'delete devolve storage_path');
+assert.strictEqual(listMockups(db).length, 0, 'lista vazia após delete');
+
+console.log('OK: backend local (print_specs + background_templates + mockup_templates).');
