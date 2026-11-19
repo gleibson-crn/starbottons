@@ -9,7 +9,7 @@
 // (Para desenvolver com a stack completa — edge/Supabase —, use `npm run up`.)
 import { spawn, spawnSync } from 'node:child_process';
 import { rmSync } from 'node:fs';
-import { createServer } from 'node:net';
+import { Socket } from 'node:net';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,14 +19,33 @@ const PROJ = join(HERE, '..');
 const PORT_FILE = join(HERE, '.web-port');
 const MAIN = join(PROJ, 'electron', 'main.cjs');
 
-/** true se a porta está LIVRE (tenta escutar; cobre IPv4+IPv6 pelo bind padrão). */
-function portFree(port) {
+/**
+ * true se ALGUÉM já escuta em host:port (connect bem-sucedido).
+ * GOTCHA: `createServer().listen(port)` faz bind no CURINGA e NÃO detecta um
+ * `ng serve` de outro projeto (ex.: Controle Fitness) que, no Windows, escuta
+ * SÓ em `::1` (loopback IPv6). Isso fazia a 4200 parecer livre, o nosso ng serve
+ * colidir e a janela do Electron carregar o APP ERRADO. Sondar por connect em
+ * 127.0.0.1 E ::1 pega o bind loopback-only.
+ */
+function inUse(host, port) {
   return new Promise((resolve) => {
-    const srv = createServer();
-    srv.once('error', () => resolve(false));
-    srv.once('listening', () => srv.close(() => resolve(true)));
-    srv.listen(port);
+    const sock = new Socket();
+    const done = (v) => {
+      sock.destroy();
+      resolve(v);
+    };
+    sock.setTimeout(600);
+    sock.once('connect', () => done(true));
+    sock.once('timeout', () => done(false));
+    sock.once('error', () => done(false)); // ECONNREFUSED = ninguém escutando
+    sock.connect(port, host);
   });
+}
+
+/** Porta LIVRE = ninguém escutando em 127.0.0.1 NEM em ::1. */
+async function portFree(port) {
+  const [v4, v6] = await Promise.all([inUse('127.0.0.1', port), inUse('::1', port)]);
+  return !v4 && !v6;
 }
 
 /** 1ª porta livre a partir de 4200 — evita colidir com outro ng serve (ex.: CF). */
