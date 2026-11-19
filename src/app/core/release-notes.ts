@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.1.4',
+    date: '2026-11-19',
+    notes: [
+      'Teste do "Atualizar agora" de ponta a ponta — sem mudança de funcionalidade.',
+    ],
+  },
+  {
     version: '1.1.3',
     date: '2026-11-19',
     notes: [
