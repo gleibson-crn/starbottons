@@ -48,6 +48,14 @@
         [attr.aria-current]="framesLink.isActive ? 'page' : null"
       >Curadoria de molduras</a>
     </nav>
+    <a
+      class="shell__support"
+      routerLink="/app/sobre"
+      routerLinkActive="is-active"
+      title="Sobre o projeto e como apoiar"
+    >
+      <span aria-hidden="true">♥</span> Apoiar
+    </a>
     @if (updates.available(); as upd) {
       <button
         type="button"

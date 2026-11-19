@@ -98,6 +98,41 @@
   color: var(--primary-700);
 }
 
+/* "Apoiar": link para a tela Sobre/doação, no estilo dos itens do menu, com
+ * o coração em destaque. Discreto, sempre acessível. */
+.shell__support {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1, 0.25rem);
+  min-block-size: var(--tap-min);
+  padding-inline: var(--sp-3);
+  border-radius: var(--radius-md);
+  border: 1px solid hsl(0 0% 100% / 0.45);
+  background: hsl(0 0% 100% / 0.08);
+  color: #fff;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  text-decoration: none;
+  transition: background var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease),
+    box-shadow var(--motion-base) var(--ease);
+}
+
+.shell__support span {
+  color: #ff8ad1;
+}
+
+.shell__support:hover {
+  background: hsl(0 0% 100% / 0.18);
+  border-color: #fff;
+  box-shadow: var(--glow-hover);
+}
+
+.shell__support.is-active {
+  background: #fff;
+  color: var(--primary-700);
+}
+
 /* Botão "Sair" (ghost) sobre o header em gradiente: texto/borda claros. */
 .shell__header .btn--ghost {
   color: #fff;

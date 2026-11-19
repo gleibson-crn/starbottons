@@ -1,0 +1,131 @@
+.sobre {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  max-inline-size: 720px;
+  margin-inline: auto;
+}
+
+.sobre__title {
+  margin: 0 0 var(--sp-2);
+  font-family: var(--font-display);
+  color: var(--color-text);
+}
+
+.sobre__lead {
+  margin: 0;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.sobre__card {
+  padding: var(--sp-5) var(--sp-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 14px);
+  background: var(--color-surface);
+}
+
+/* Bloco de apoio em leve destaque. */
+.sobre__support {
+  border-color: var(--primary-400, #c084fc);
+  box-shadow: var(--glow-hover, 0 0 0 1px #c084fc55);
+}
+
+.sobre__h2 {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-lg);
+  color: var(--color-text);
+}
+
+.sobre__card p {
+  margin: 0 0 var(--sp-3);
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.sobre__pix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+  align-items: flex-start;
+  margin-block-start: var(--sp-4);
+}
+
+.sobre__qr {
+  flex: 0 0 auto;
+  inline-size: 200px;
+  block-size: 200px;
+  border-radius: var(--radius-md);
+  background: #fff;
+  padding: var(--sp-2);
+}
+
+.sobre__pix-data {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.sobre__pix-name {
+  margin: 0 0 var(--sp-1);
+}
+
+.sobre__field-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--color-text-muted, #9a84b8);
+  margin-block-start: var(--sp-2);
+}
+
+.sobre__copyrow {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: stretch;
+}
+
+.sobre__input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg, #140a1f);
+  color: var(--color-text);
+  font-size: var(--fs-sm);
+}
+
+.sobre__input--mono {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: var(--fs-xs);
+}
+
+.sobre__recorrente {
+  margin-block-start: var(--sp-3);
+  text-decoration: none;
+  text-align: center;
+}
+
+.sobre__list {
+  margin: 0 0 var(--sp-3);
+  padding-inline-start: var(--sp-5);
+  color: var(--color-text);
+  line-height: 1.7;
+}
+
+.sobre__fineprint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted, #9a84b8);
+}
+
+.sobre__fineprint a,
+.sobre__pix-data a {
+  color: var(--primary-400, #c084fc);
+}
+
+@media (max-width: 30rem) {
+  .sobre__qr {
+    margin-inline: auto;
+  }
+}

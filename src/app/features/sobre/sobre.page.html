@@ -1,0 +1,65 @@
+<section class="sobre">
+  <header class="sobre__head">
+    <h1 class="sobre__title">Sobre o Star Bottons</h1>
+    <p class="sobre__lead">
+      O Star Bottons é <strong>gratuito</strong> e feito para facilitar a vida de quem
+      produz bottons. Você pode usá-lo à vontade — inclusive no seu trabalho, em
+      eventos e para vender o que criar.
+    </p>
+  </header>
+
+  <div class="sobre__card sobre__support">
+    <h2 class="sobre__h2">Ajude a manter o projeto no ar</h2>
+    <p>
+      Se você usa o Star Bottons para <strong>trabalhar, em eventos ou para faturar</strong>,
+      considere contribuir. É a doação de quem usa que mantém o sistema no ar, atualizado
+      e recebendo melhorias — e quem mais depende dele é quem trabalha com ele todos os dias.
+      A contribuição é <strong>voluntária</strong> e nunca é condição para usar o sistema.
+    </p>
+
+    <div class="sobre__pix">
+      @if (qr(); as qrUrl) {
+        <img class="sobre__qr" [src]="qrUrl" alt="QR Code do PIX para doação" width="200" height="200" />
+      }
+      <div class="sobre__pix-data">
+        <p class="sobre__pix-name">PIX para <strong>{{ donation.pixName }}</strong></p>
+
+        <label class="sobre__field-label" for="pixkey">Chave PIX (CPF)</label>
+        <div class="sobre__copyrow">
+          <input id="pixkey" class="sobre__input" [value]="donation.pixKey" readonly />
+          <button type="button" class="btn btn--primary" (click)="copy(donation.pixKey, 'Chave PIX')">
+            Copiar chave
+          </button>
+        </div>
+
+        <label class="sobre__field-label" for="pixcode">PIX copia e cola</label>
+        <div class="sobre__copyrow">
+          <input id="pixcode" class="sobre__input sobre__input--mono" [value]="pixCode" readonly />
+          <button type="button" class="btn btn--ghost" (click)="copy(pixCode, 'Código PIX')">
+            Copiar código
+          </button>
+        </div>
+
+        @if (donation.apoiaseUrl) {
+          <a class="btn btn--primary sobre__recorrente" [href]="donation.apoiaseUrl" target="_blank" rel="noopener">
+            ♥ Apoiar todo mês (Apoia.se)
+          </a>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="sobre__card">
+    <h2 class="sobre__h2">Uso e licença</h2>
+    <ul class="sobre__list">
+      <li><strong>Grátis</strong> para baixar, usar e compartilhar.</li>
+      <li>Os <strong>bottons que você cria são seus</strong> — pode vender e usar comercialmente.</li>
+      <li>É <strong>proibido vender, cobrar por ou revender o próprio sistema</strong>, ou remover os créditos e este pedido de apoio.</li>
+    </ul>
+    <p class="sobre__fineprint">
+      Projeto mantido por <strong>{{ donation.credit }}</strong> ·
+      <a [href]="donation.githubUrl" target="_blank" rel="noopener">github.com/{{ donation.credit }}</a>
+      · versão v{{ version }}
+    </p>
+  </div>
+</section>

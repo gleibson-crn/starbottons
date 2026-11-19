@@ -58,6 +58,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/frames/frame-manager.routes'),
       },
+      {
+        path: 'sobre',
+        loadComponent: () =>
+          import('./features/sobre/sobre.page').then((m) => m.SobrePage),
+      },
       // Redirects das paths do antigo fluxo single → fluxo único (upload).
       { path: 'selection', pathMatch: 'full', redirectTo: 'upload' },
       { path: 'editor', pathMatch: 'full', redirectTo: 'upload' },
