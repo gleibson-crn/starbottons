@@ -8,4 +8,14 @@ contextBridge.exposeInMainWorld('sb', {
   printSpecs: {
     list: () => ipcRenderer.invoke('db:print-specs:list'),
   },
+  /** Biblioteca de fundos (background_templates + arquivos locais). */
+  backgrounds: {
+    list: () => ipcRenderer.invoke('bg:list'),
+    save: (input) => ipcRenderer.invoke('bg:save', input),
+    remove: (id) => ipcRenderer.invoke('bg:remove', id),
+  },
+  /** Mídia local: devolve os bytes de um arquivo (o renderer monta o blob URL). */
+  media: {
+    read: (name) => ipcRenderer.invoke('media:read', name),
+  },
 });

@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { APP_CONFIG } from '../config/app-config';
 import { AuthService } from '../auth';
 import { SupabaseClientService } from '../supabase';
+import { localBackend, type LocalBackgroundRow } from '../local-backend/local-api';
 import {
   downscaleImageFile,
   loadImage,
@@ -60,9 +61,15 @@ export class BackgroundTemplateService {
   private readonly supabase = inject(SupabaseClientService).client;
   private readonly auth = inject(AuthService);
   private readonly config = inject(APP_CONFIG);
+  /** Backend local (Electron) ou `null` no modo web → cai no Supabase. */
+  private readonly local = localBackend();
 
   /** Lista templates (mais recentes primeiro) já com thumbnail assinado. */
   async list(): Promise<BackgroundTemplate[]> {
+    if (this.local) {
+      const rows = await this.local.backgrounds.list();
+      return Promise.all(rows.map((r) => this.localToTemplate(r)));
+    }
     const { data, error } = await this.supabase
       .from(TABLE)
       .select(COLUMNS)
@@ -87,6 +94,17 @@ export class BackgroundTemplateService {
     // (827px) e imagens grandes estouram o limite de CPU do worker na geração.
     const file = await downscaleImageFile(input.file);
     const { width, height } = await this.probe(file);
+    if (this.local) {
+      const mime = /jpe?g/i.test(file.type) ? 'image/jpeg' : 'image/png';
+      const row = await this.local.backgrounds.save({
+        name: input.name,
+        bytes: await file.arrayBuffer(),
+        mime,
+        width,
+        height,
+      });
+      return this.localToTemplate(row);
+    }
     const path = `${this.userId()}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
     await this.uploadFile(path, file);
     const row = await this.insertRow(path, { ...input, file }, width, height);
@@ -95,6 +113,10 @@ export class BackgroundTemplateService {
 
   /** Exclui o template (linha + objeto no bucket `uploads`). */
   async remove(template: BackgroundTemplate): Promise<void> {
+    if (this.local) {
+      await this.local.backgrounds.remove(template.id);
+      return;
+    }
     const { error } = await this.supabase.from(TABLE).delete().eq('id', template.id);
     if (error) {
       throw new Error(`Falha ao excluir: ${error.message}`);
@@ -175,5 +197,30 @@ export class BackgroundTemplateService {
       createdAt: row.created_at,
       thumbUrl: await this.signThumb(row.storage_path),
     };
+  }
+
+  // ── Backend local (Electron, ADR-033) ──────────────────────────────────────
+
+  private async localToTemplate(row: LocalBackgroundRow): Promise<BackgroundTemplate> {
+    return {
+      id: row.id,
+      name: row.name,
+      storagePath: row.storage_path,
+      mime: row.mime,
+      width: row.width_px ?? 0,
+      height: row.height_px ?? 0,
+      createdAt: row.created_at,
+      thumbUrl: await this.localThumb(row.storage_path, row.mime),
+    };
+  }
+
+  /** Lê os bytes do arquivo local e devolve um blob URL (file:// seria bloqueado). */
+  private async localThumb(name: string, mime: string): Promise<string | null> {
+    const bytes = await this.local?.media.read(name);
+    if (!bytes) {
+      return null;
+    }
+    // Cópia p/ um Uint8Array com ArrayBuffer comum (o IPC pode devolver genérico).
+    return URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: mime }));
   }
 }

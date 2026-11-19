@@ -70,6 +70,10 @@ app.whenReady().then(() => {
 
   // Backend local (ADR-033): handlers IPC. Cresce a cada serviço migrado.
   ipcMain.handle('db:print-specs:list', () => localDb.listPrintSpecs());
+  ipcMain.handle('bg:list', () => localDb.listBackgrounds());
+  ipcMain.handle('bg:save', (_e, input) => localDb.saveBackground(input));
+  ipcMain.handle('bg:remove', (_e, id) => localDb.removeBackground(id));
+  ipcMain.handle('media:read', (_e, name) => localDb.readMedia(name));
 
   createWindow();
 
