@@ -25,6 +25,8 @@ function webPort() {
 }
 
 const APP_URL = process.env.SB_APP_URL || `http://localhost:${webPort()}`;
+/** Ícone do app (barra de título + barra de tarefas). */
+const ICON = join(__dirname, '..', 'scripts', 'starbottons.ico');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -33,6 +35,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'Star Bottons',
+    icon: ICON,
     backgroundColor: '#140a1f', // mesmo fundo do app (evita flash branco)
     autoHideMenuBar: true, // sem barra de menu do Electron (visual de app)
     webPreferences: {
@@ -57,6 +60,10 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Identidade no Windows: agrupa e usa o ícone certo na barra de tarefas.
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.starbottons.app');
+  }
   Menu.setApplicationMenu(null); // sem menu nativo nesta PoC
   createWindow();
 

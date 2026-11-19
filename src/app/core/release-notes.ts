@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.7',
+    date: '2026-11-19',
+    notes: [
+      'Tela "Sobre" mais bonita e com respiro: espaçamento corrigido (não fica mais tudo colado) e a lista de apoiadores carrega em segundo plano, sem travar a página.',
+    ],
+  },
+  {
     version: '1.2.6',
     date: '2026-11-19',
     notes: [

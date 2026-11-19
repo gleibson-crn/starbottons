@@ -1,13 +1,13 @@
 .sobre {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-6);
-  max-inline-size: 720px;
+  gap: var(--sp-8);
+  max-inline-size: 820px;
   margin-inline: auto;
 }
 
 .sobre__title {
-  margin: 0 0 var(--sp-2);
+  margin: 0 0 var(--sp-3);
   font-family: var(--font-display);
   color: var(--color-text);
 }
@@ -15,13 +15,13 @@
 .sobre__lead {
   margin: 0;
   color: var(--color-text);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .sobre__card {
-  padding: var(--sp-5) var(--sp-6);
+  padding: var(--sp-8);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg, 14px);
+  border-radius: var(--radius-lg, 16px);
   background: var(--color-surface);
 }
 
@@ -32,23 +32,23 @@
 }
 
 .sobre__h2 {
-  margin: 0 0 var(--sp-3);
+  margin: 0 0 var(--sp-4);
   font-size: var(--fs-lg);
   color: var(--color-text);
 }
 
 .sobre__card p {
-  margin: 0 0 var(--sp-3);
+  margin: 0 0 var(--sp-4);
   color: var(--color-text);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .sobre__pix {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-5);
+  gap: var(--sp-8);
   align-items: flex-start;
-  margin-block-start: var(--sp-4);
+  margin-block-start: var(--sp-6);
 }
 
 .sobre__qr {
@@ -61,33 +61,35 @@
 }
 
 .sobre__pix-data {
-  flex: 1 1 260px;
+  flex: 1 1 280px;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
 }
 
 .sobre__pix-name {
-  margin: 0 0 var(--sp-1);
+  margin: 0 0 var(--sp-2);
 }
 
 .sobre__field-label {
   font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--color-text-muted, #9a84b8);
-  margin-block-start: var(--sp-2);
+  margin-block-start: var(--sp-4);
+  margin-block-end: calc(-1 * var(--sp-1)); /* aproxima do input logo abaixo */
 }
 
 .sobre__copyrow {
   display: flex;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
   align-items: stretch;
+  flex-wrap: wrap;
 }
 
 .sobre__input {
-  flex: 1 1 auto;
+  flex: 1 1 220px;
   min-inline-size: 0;
-  padding: var(--sp-2) var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-bg, #140a1f);
@@ -100,26 +102,31 @@
   font-size: var(--fs-xs);
 }
 
+.sobre__copyrow .btn {
+  flex: 0 0 auto;
+}
+
 .sobre__recorrente {
-  margin-block-start: var(--sp-3);
+  margin-block-start: var(--sp-4);
+  padding-block: var(--sp-3);
   text-decoration: none;
   text-align: center;
 }
 
 .sobre__wall {
   list-style: none;
-  margin: var(--sp-2) 0 0;
+  margin: var(--sp-4) 0 0;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
 }
 
 .sobre__supporter {
   display: inline-flex;
   align-items: baseline;
   gap: var(--sp-2);
-  padding: var(--sp-1, 0.25rem) var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
   border-radius: 999px;
   border: 1px solid var(--color-border);
   background: var(--color-bg, #140a1f);
@@ -136,10 +143,10 @@
 }
 
 .sobre__list {
-  margin: 0 0 var(--sp-3);
-  padding-inline-start: var(--sp-5);
+  margin: 0 0 var(--sp-4);
+  padding-inline-start: var(--sp-6);
   color: var(--color-text);
-  line-height: 1.7;
+  line-height: 1.85;
 }
 
 .sobre__fineprint {
@@ -154,6 +161,10 @@
 }
 
 @media (max-width: 30rem) {
+  .sobre__card {
+    padding: var(--sp-6);
+  }
+
   .sobre__qr {
     margin-inline: auto;
   }

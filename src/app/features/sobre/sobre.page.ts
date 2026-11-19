@@ -44,14 +44,31 @@ export class SobrePage implements OnInit {
   protected readonly qr = signal<string | null>(null);
   /** Apoiadores exibidos na "Parede de Apoiadores" (vazio = estado "em breve"). */
   protected readonly supporters = signal<readonly Supporter[]>([]);
+  /** `true` enquanto a lista de apoiadores está sendo buscada (lazy). */
+  protected readonly supportersLoading = signal(true);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    // A página abre na hora. QR e lista de apoiadores carregam EM PARALELO, sem
+    // bloquear a tela — assim uma lista grande de apoiadores nunca trava o Sobre.
+    void this.initQr();
+    void this.initSupporters();
+  }
+
+  private async initQr(): Promise<void> {
     try {
       this.qr.set(await QRCode.toDataURL(this.pixCode, { margin: 1, width: 240 }));
     } catch {
       this.qr.set(null);
     }
-    this.supporters.set(await this.loadSupporters());
+  }
+
+  private async initSupporters(): Promise<void> {
+    this.supportersLoading.set(true);
+    try {
+      this.supporters.set(await this.loadSupporters());
+    } finally {
+      this.supportersLoading.set(false);
+    }
   }
 
   /** Busca a lista (URL pública se houver; senão o arquivo embutido). Best-effort. */

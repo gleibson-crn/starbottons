@@ -51,7 +51,9 @@
 
   <div class="sobre__card">
     <h2 class="sobre__h2">Quem apoia o projeto</h2>
-    @if (supporters().length) {
+    @if (supportersLoading()) {
+      <p class="sobre__fineprint">Carregando apoiadores…</p>
+    } @else if (supporters().length) {
       <p>Obrigado a quem mantém o Star Bottons vivo 💜</p>
       <ul class="sobre__wall">
         @for (s of supporters(); track s.name) {
