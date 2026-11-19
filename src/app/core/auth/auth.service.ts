@@ -1,6 +1,22 @@
 import { inject, Injectable, signal } from '@angular/core';
 import type { Session, User } from '@supabase/supabase-js';
 import { SupabaseClientService } from '../supabase/supabase-client.service';
+import { localBackend } from '../local-backend/local-api';
+import { LOCAL_USER } from './local-credentials';
+
+/**
+ * Usuário sintético do modo DESKTOP (Electron): o app é local-only, de usuário
+ * único, SEM login (ADR-033). Não há Supabase; este objeto só satisfaz o tipo
+ * `User` para quem lê `auth.user()` — nenhuma escrita remota o usa.
+ */
+const LOCAL_SESSION_USER = {
+  id: 'local-user',
+  email: LOCAL_USER.email,
+  app_metadata: {},
+  user_metadata: {},
+  aud: 'local',
+  created_at: '',
+} as unknown as User;
 
 /**
  * Serviço de autenticação (fachada sobre o Supabase Auth).
@@ -22,7 +38,17 @@ export class AuthService {
   /** Resolve quando a sessão inicial foi lida do storage (evita corrida do guard). */
   private readonly hydrated: Promise<void>;
 
+  /** Backend local (Electron): quando presente, o app roda SEM login. */
+  private readonly local = localBackend();
+
   constructor() {
+    // DESKTOP (ADR-033): sem Supabase, sem login. Autentica já com o usuário
+    // local único e não escuta mudanças de sessão remotas.
+    if (this.local) {
+      this.applySession({ user: LOCAL_SESSION_USER } as unknown as Session);
+      this.hydrated = Promise.resolve();
+      return;
+    }
     this.hydrated = this.hydrate();
     this.supabase.auth.onAuthStateChange((_event, session) => {
       this.applySession(session);

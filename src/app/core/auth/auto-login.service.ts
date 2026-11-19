@@ -1,6 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { AuthService } from './auth.service';
 import { LOCAL_USER } from './local-credentials';
+import { localBackend } from '../local-backend/local-api';
 
 /**
  * Login invisível: no boot, se não há sessão, entra com o usuário fixo local.
@@ -16,6 +17,11 @@ export class AutoLoginService {
   readonly failed = signal(false);
 
   async run(): Promise<void> {
+    // DESKTOP (ADR-033): sem Supabase — o AuthService já entra com o usuário
+    // local único no boot. Nada a fazer (não tenta signIn remoto).
+    if (localBackend()) {
+      return;
+    }
     await this.auth.ensureHydrated();
     if (this.auth.isAuthenticated()) {
       return;
