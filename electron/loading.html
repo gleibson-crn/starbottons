@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Star Bottons</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at 50% 35%, #241038 0%, #140a1f 70%);
+        color: #f3e9ff;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        user-select: none;
+        overflow: hidden;
+      }
+      .wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+        text-align: center;
+      }
+      /* Botton girando: anel externo + miolo. */
+      .botton {
+        position: relative;
+        width: 108px;
+        height: 108px;
+      }
+      .ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 7px solid rgba(255, 255, 255, 0.12);
+        border-top-color: #b57bff;
+        border-right-color: #7c3aed;
+        animation: spin 0.9s linear infinite;
+      }
+      .core {
+        position: absolute;
+        inset: 20px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #a855f7, #6d28d9);
+        box-shadow:
+          inset 0 2px 8px rgba(255, 255, 255, 0.35),
+          0 6px 20px rgba(124, 58, 237, 0.45);
+        display: grid;
+        place-items: center;
+        font-size: 30px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .title {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+      }
+      .sub {
+        font-size: 14px;
+        color: #c4b3e0;
+      }
+      .dots::after {
+        content: '';
+        animation: dots 1.4s steps(4, end) infinite;
+      }
+      @keyframes dots {
+        0% {
+          content: '';
+        }
+        25% {
+          content: '.';
+        }
+        50% {
+          content: '..';
+        }
+        75% {
+          content: '...';
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="botton" aria-hidden="true">
+        <div class="ring"></div>
+        <div class="core">★</div>
+      </div>
+      <div>
+        <div class="title">Star Bottons</div>
+        <div class="sub dots">Abrindo o aplicativo</div>
+      </div>
+    </div>
+  </body>
+</html>

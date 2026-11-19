@@ -14,7 +14,10 @@ const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
 const { readFileSync, writeFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { tmpdir } = require('node:os');
+const http = require('node:http');
 const localDb = require('./backend/db.cjs'); // backend local (ADR-033): SQLite
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Imprime a folha A4 gerando um PDF e abrindo-o no visualizador do sistema.
@@ -52,6 +55,50 @@ function webPort() {
 const APP_URL = process.env.SB_APP_URL || `http://localhost:${webPort()}`;
 /** Ícone do app (barra de título + barra de tarefas). */
 const ICON = join(__dirname, '..', 'scripts', 'starbottons.ico');
+/** Porta do APP_URL (p/ sondar o ng serve antes de carregar). */
+const APP_PORT = Number(new URL(APP_URL).port || 80);
+
+/** true se host:port responde GET / (<400). */
+function probe(host, port) {
+  return new Promise((resolve) => {
+    const req = http.get({ host, port, path: '/', timeout: 1200 }, (res) => {
+      res.resume();
+      resolve((res.statusCode ?? 500) < 400);
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
+/** Sonda IPv4 e IPv6 (o ng serve no Windows costuma escutar só em ::1). */
+async function appReady() {
+  const [v4, v6] = await Promise.all([probe('127.0.0.1', APP_PORT), probe('::1', APP_PORT)]);
+  return v4 || v6;
+}
+
+/**
+ * Carrega a app assim que o ng serve responder, mantendo a tela de carregamento
+ * (loading.html) visível enquanto compila. A janela abre NA HORA; a troca é só
+ * quando o front está pronto — sem esperar o build terminar para abrir.
+ */
+async function loadWhenReady(win) {
+  const deadline = Date.now() + 5 * 60 * 1000;
+  while (Date.now() < deadline) {
+    if (win.isDestroyed()) {
+      return;
+    }
+    if (await appReady()) {
+      break;
+    }
+    await sleep(400);
+  }
+  if (!win.isDestroyed()) {
+    win.loadURL(APP_URL);
+  }
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -70,7 +117,10 @@ function createWindow() {
     },
   });
 
-  win.loadURL(APP_URL);
+  // Abre JÁ com a tela de carregamento local (instantânea) e troca pela app
+  // assim que o ng serve responder — a janela não espera o build para aparecer.
+  win.loadFile(join(__dirname, 'loading.html'));
+  void loadWhenReady(win);
 
   // Links externos (ex.: GitHub, Apoia.se) abrem no navegador do sistema,
   // não dentro do app.
