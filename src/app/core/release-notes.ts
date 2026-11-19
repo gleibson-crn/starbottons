@@ -10,6 +10,14 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.1.1',
+    date: '2026-11-18',
+    notes: [
+      'Primeira atualização automática de verificação — testa o novo sistema de updates do Star Bottons.',
+      'Ajustes internos de manutenção.',
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-11-18',
     notes: [
