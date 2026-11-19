@@ -86,8 +86,71 @@ function migrate(db) {
       origin_template_id text,
       unique (template_id, position)
     );
+
+    -- Originais enviados (ADR-034 F1): no lugar do bucket 'uploads' do Supabase.
+    create table if not exists uploads (
+      id           text    primary key,
+      storage_path text    not null,
+      filename     text,
+      mime         text,
+      width_px     integer,
+      height_px    integer,
+      bytes        integer,
+      created_at   text    not null default (datetime('now'))
+    );
+
+    -- Artes de impressão geradas (ADR-034 F4): no lugar do bucket 'renders'.
+    -- Chaveado por job_id (UUID do client) p/ o freshPrintUrl reconstruir a URL
+    -- após recarregar o lote (o snapshot não persiste a URL — só o jobId).
+    create table if not exists renders (
+      job_id       text    primary key,
+      storage_path text    not null,
+      width_px     integer,
+      height_px    integer,
+      dpi          integer,
+      created_at   text    not null default (datetime('now'))
+    );
   `);
   seedPrintSpecs(db);
+}
+
+// ── uploads (originais enviados — ADR-034 F1) ────────────────────────────────
+
+/** Registra um upload e devolve a linha. `id` é um UUID. */
+function insertUpload(db, { id, storagePath, filename, mime, width, height, bytes }) {
+  db.prepare(
+    `insert into uploads (id, storage_path, filename, mime, width_px, height_px, bytes)
+     values (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(id, storagePath, filename ?? null, mime ?? null, width ?? null, height ?? null, bytes ?? null);
+  return db.prepare('select * from uploads where id = ?').get(id);
+}
+
+/** Caminho do original pelo id do upload (ou null). */
+function getUploadPath(db, id) {
+  const row = db.prepare('select storage_path from uploads where id = ?').get(id);
+  return row ? row.storage_path : null;
+}
+
+// ── renders (artes de impressão geradas — ADR-034 F4) ────────────────────────
+
+/** Grava (UPSERT por job_id) o render de um job e devolve a linha. */
+function upsertRender(db, { jobId, storagePath, widthPx, heightPx, dpi }) {
+  db.prepare(
+    `insert into renders (job_id, storage_path, width_px, height_px, dpi)
+       values (?, ?, ?, ?, ?)
+     on conflict (job_id) do update set
+       storage_path = excluded.storage_path,
+       width_px = excluded.width_px,
+       height_px = excluded.height_px,
+       dpi = excluded.dpi`,
+  ).run(jobId, storagePath, widthPx ?? null, heightPx ?? null, dpi ?? null);
+  return db.prepare('select * from renders where job_id = ?').get(jobId);
+}
+
+/** Caminho do render pelo job_id (ou null) — usado pelo freshPrintUrl. */
+function getRenderPath(db, jobId) {
+  const row = db.prepare('select storage_path from renders where job_id = ?').get(jobId);
+  return row ? row.storage_path : null;
 }
 
 // ── mockup_templates (templates de cenário — ADR-017) ───────────────────────
@@ -304,10 +367,26 @@ function listPrintSpecs(db) {
   return db.prepare('select * from print_specs where is_active = 1 order by visible_mm').all();
 }
 
+/** Carrega a print_spec de shape×tamanho (visível) ativa, ou null (paridade com a edge). */
+function getPrintSpec(db, shape, visibleMm) {
+  return (
+    db
+      .prepare(
+        'select * from print_specs where shape = ? and visible_mm = ? and is_active = 1',
+      )
+      .get(shape, visibleMm) ?? null
+  );
+}
+
 module.exports = {
   migrate,
   seedPrintSpecs,
   listPrintSpecs,
+  getPrintSpec,
+  insertUpload,
+  getUploadPath,
+  upsertRender,
+  getRenderPath,
   listBackgrounds,
   insertBackground,
   deleteBackground,

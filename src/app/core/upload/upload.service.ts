@@ -3,6 +3,7 @@ import { AuthService } from '../auth';
 import { SupabaseClientService } from '../supabase';
 import type { UploadRecord } from '../../shared/types';
 import { loadImage, safeFileName } from '../../shared/utils';
+import { type LocalBackendApi, localBackend } from '../local-backend/local-api';
 
 const BUCKET = 'uploads';
 
@@ -24,6 +25,8 @@ export interface ImageProbe {
 export class UploadService {
   private readonly supabase = inject(SupabaseClientService).client;
   private readonly auth = inject(AuthService);
+  /** Backend local (Electron) quando presente; senão `null` → caminho Supabase. */
+  private readonly local = localBackend();
 
   /** Lê largura/altura da imagem e cria um object URL de preview. */
   async probe(file: File): Promise<ImageProbe> {
@@ -34,6 +37,9 @@ export class UploadService {
 
   /** Faz upload do arquivo e registra o metadado; retorna o `UploadRecord`. */
   async upload(file: File, probe: ImageProbe): Promise<UploadRecord> {
+    if (this.local) {
+      return this.uploadLocal(this.local, file, probe);
+    }
     const userId = this.auth.user()?.id ?? 'anon';
     const path = `${userId}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
 
@@ -45,6 +51,33 @@ export class UploadService {
     }
 
     const id = await this.insertRecord(path, file, probe, userId);
+    return {
+      id,
+      path,
+      fileName: file.name,
+      width: probe.width,
+      height: probe.height,
+      previewUrl: probe.previewUrl,
+    };
+  }
+
+  /**
+   * Upload no backend LOCAL (Electron): grava o arquivo + a linha em `uploads`
+   * via IPC e devolve o `UploadRecord`. O preview reusa o object URL do `probe`.
+   */
+  private async uploadLocal(
+    local: LocalBackendApi,
+    file: File,
+    probe: ImageProbe,
+  ): Promise<UploadRecord> {
+    const bytes = await file.arrayBuffer();
+    const { id, path } = await local.uploads.save({
+      bytes,
+      filename: file.name,
+      mime: file.type,
+      width: probe.width,
+      height: probe.height,
+    });
     return {
       id,
       path,

@@ -35,4 +35,12 @@ contextBridge.exposeInMainWorld('sb', {
   media: {
     read: (name) => ipcRenderer.invoke('media:read', name),
   },
+  /** Originais enviados (uploads + arquivos locais) — ADR-034 F1. */
+  uploads: {
+    save: (input) => ipcRenderer.invoke('up:save', input),
+  },
+  /** Geração da arte de impressão em processo (SQLite+arquivos) — ADR-034 F4. */
+  generate: (body) => ipcRenderer.invoke('gen:run', body),
+  /** Caminho do render de um job (freshPrintUrl após recarregar o lote). */
+  renderPath: (jobId) => ipcRenderer.invoke('gen:render-path', jobId),
 });

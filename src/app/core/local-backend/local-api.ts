@@ -129,6 +129,29 @@ export interface LocalCompositionInput {
   readonly flatBytes: ArrayBuffer;
 }
 
+/** Dados p/ registrar um original enviado (ADR-034 F1). */
+export interface LocalUploadInput {
+  readonly bytes: ArrayBuffer;
+  readonly filename: string;
+  readonly mime: string;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** Resultado do upload local: id + caminho no storage. */
+export interface LocalUploadResult {
+  readonly id: string;
+  readonly path: string;
+}
+
+/** Resultado da geração local: caminho do print_png + dimensões/DPI (ADR-034 F4). */
+export interface LocalGenerateResult {
+  readonly path: string;
+  readonly width_px: number;
+  readonly height_px: number;
+  readonly dpi: number;
+}
+
 /** API exposta em `window.sb` pelo preload. Cresce a cada serviço migrado. */
 export interface LocalBackendApi {
   readonly printSpecs: { list(): Promise<readonly unknown[]> };
@@ -153,9 +176,29 @@ export interface LocalBackendApi {
     remove(id: string): Promise<void>;
   };
   readonly media: { read(name: string): Promise<Uint8Array | null> };
+  readonly uploads: { save(input: LocalUploadInput): Promise<LocalUploadResult> };
+  generate(body: unknown): Promise<LocalGenerateResult>;
+  renderPath(jobId: string): Promise<string | null>;
 }
 
 /** A API local se rodando no Electron (preload), senão `null` (modo web). */
 export function localBackend(): LocalBackendApi | null {
   return (globalThis as unknown as { sb?: LocalBackendApi }).sb ?? null;
+}
+
+/**
+ * Lê os bytes de um arquivo local (`window.sb.media.read`) e devolve um blob URL
+ * para exibir no renderer (file:// de origem http seria bloqueado). `null` se o
+ * arquivo não existir. Helper compartilhado pelos serviços locais.
+ */
+export async function localMediaUrl(
+  local: LocalBackendApi,
+  name: string,
+  mime = 'image/png',
+): Promise<string | null> {
+  const bytes = await local.media.read(name);
+  if (!bytes) {
+    return null;
+  }
+  return URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: mime }));
 }

@@ -85,6 +85,10 @@ app.whenReady().then(() => {
   ipcMain.handle('fr:copy', (_e, src) => localDb.copyPng(src));
   ipcMain.handle('fr:remove', (_e, id) => localDb.removeFrame(id));
   ipcMain.handle('media:read', (_e, name) => localDb.readMedia(name));
+  // uploads + geração (ADR-034 F1/F4)
+  ipcMain.handle('up:save', (_e, input) => localDb.saveUpload(input));
+  ipcMain.handle('gen:run', (_e, body) => localDb.generate(body));
+  ipcMain.handle('gen:render-path', (_e, jobId) => localDb.renderPath(jobId));
 
   createWindow();
 

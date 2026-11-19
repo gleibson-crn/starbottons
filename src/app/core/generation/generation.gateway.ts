@@ -8,6 +8,7 @@ import type {
 } from '../../shared/types';
 import { withConfiguredHost } from '../../shared/utils';
 import { GenerationTimeoutError } from './generation-timeout.error';
+import { localBackend, localMediaUrl } from '../local-backend/local-api';
 
 /** Bucket privado de saída da geração. */
 const RENDERS_BUCKET = 'renders';
@@ -38,6 +39,12 @@ interface AssetRow {
 export class GenerationGateway {
   private readonly config = inject(APP_CONFIG);
   private readonly supabase = inject(SupabaseClientService).client;
+  /**
+   * Backend local (Electron) quando presente. No modo local não há Supabase:
+   * `insertQueuedJob` é no-op (o render é gravado por job_id em `generate`) e as
+   * URLs (`signUpload`/`signRender`/`fetchAssets`) saem do storage local.
+   */
+  private readonly local = localBackend();
 
   async invokeGenerate(
     body: unknown,
@@ -76,6 +83,11 @@ export class GenerationGateway {
     batchId: string | null;
     params: unknown;
   }): Promise<void> {
+    // Local: sem generation_jobs/polling — o render é gravado por job_id em
+    // `window.sb.generate`. O estado do lote vive no IndexedDB. No-op.
+    if (this.local) {
+      return;
+    }
     const { error } = await this.supabase.from('generation_jobs').insert({
       id: input.jobId,
       upload_id: input.uploadId,
@@ -104,6 +116,10 @@ export class GenerationGateway {
   }
 
   async fetchAssets(jobId: string): Promise<AssetRecord[]> {
+    if (this.local) {
+      const path = await this.local.renderPath(jobId);
+      return path ? [{ kind: 'print_png', storagePath: path }] : [];
+    }
     const { data } = await this.supabase
       .from('assets')
       .select('kind,storage_path')
@@ -115,6 +131,9 @@ export class GenerationGateway {
   }
 
   async signRender(storagePath: string): Promise<string | null> {
+    if (this.local) {
+      return localMediaUrl(this.local, storagePath, 'image/png');
+    }
     try {
       const { data, error } = await this.supabase.storage
         .from(RENDERS_BUCKET)
@@ -130,6 +149,10 @@ export class GenerationGateway {
    * restaurados do lote persistido (BL-008). `null` em falha.
    */
   async signUpload(storagePath: string): Promise<string | null> {
+    if (this.local) {
+      // Tipo genérico: o <img> detecta pelo conteúdo, não pelo type do blob.
+      return localMediaUrl(this.local, storagePath, 'image/png');
+    }
     try {
       const { data, error } = await this.supabase.storage
         .from(UPLOADS_BUCKET)

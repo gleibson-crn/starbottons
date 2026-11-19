@@ -9,6 +9,11 @@ import type {
 import { GenerationGateway } from './generation.gateway';
 import { GenerationTimeoutError } from './generation-timeout.error';
 import { TerminalGenerationError } from './terminal-generation.error';
+import {
+  type LocalBackendApi,
+  localBackend,
+  localMediaUrl,
+} from '../local-backend/local-api';
 
 /** Opções (com defaults) do fluxo de geração — sobrescritas em testes. */
 export interface GenerateOptions {
@@ -67,11 +72,16 @@ const DEFAULTS: ResolvedOptions = {
 @Injectable({ providedIn: 'root' })
 export class GenerationService {
   private readonly gateway = inject(GenerationGateway);
+  /** Backend local (Electron) quando presente; senão `null` → caminho Supabase. */
+  private readonly local = localBackend();
 
   async generate(
     request: GenerateOptionsBody,
     options: GenerateOptions = {},
   ): Promise<GenerationResult> {
+    if (this.local) {
+      return this.generateLocal(this.local, request, options);
+    }
     const cfg = { ...DEFAULTS, ...options };
     const jobId = options.jobId ?? crypto.randomUUID();
     const body = { ...request, job_id: jobId };
@@ -95,6 +105,25 @@ export class GenerationService {
     throw lastError instanceof Error
       ? lastError
       : new Error('Falha ao gerar a arte.');
+  }
+
+  /**
+   * Geração no backend LOCAL (Electron): roda EM PROCESSO (SQLite + arquivos),
+   * sem HTTP/JWT/generation_jobs/polling nem retry (erro local é determinístico,
+   * não transitório). Guarda o render por `job_id` → `freshPrintUrl` reconstrói
+   * a URL ao recarregar o lote. Devolve um blob URL do print_png.
+   */
+  private async generateLocal(
+    local: LocalBackendApi,
+    request: GenerateOptionsBody,
+    options: GenerateOptions,
+  ): Promise<GenerationResult> {
+    const jobId = options.jobId ?? crypto.randomUUID();
+    const onProgress = options.onProgress ?? (() => undefined);
+    onProgress(null);
+    const res = await local.generate({ ...request, job_id: jobId });
+    onProgress(100);
+    return { jobId, printPngUrl: await localMediaUrl(local, res.path, 'image/png') };
   }
 
   private async runOnce(
@@ -154,6 +183,10 @@ export class GenerationService {
   async freshPrintUrl(jobId: string | null): Promise<string | null> {
     if (!jobId) {
       return null;
+    }
+    if (this.local) {
+      const path = await this.local.renderPath(jobId);
+      return path ? localMediaUrl(this.local, path, 'image/png') : null;
     }
     try {
       return await this.signKind(await this.gateway.fetchAssets(jobId), 'print_png');
