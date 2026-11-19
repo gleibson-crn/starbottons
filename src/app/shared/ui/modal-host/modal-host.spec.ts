@@ -66,6 +66,28 @@ describe('ModalHost', () => {
     expect(await p).toBe(false);
   });
 
+  it('dismissible:false — Esc e backdrop NÃO fecham; só botão resolve', async () => {
+    const { svc, root, flush } = setup();
+    const p = svc.showChoices({
+      title: 'Atualizar?',
+      dismissible: false,
+      choices: [
+        { value: 'now', label: 'Agora', variant: 'primary' },
+        { value: 'later', label: 'Depois', variant: 'secondary' },
+      ],
+    });
+    await flush();
+    // Esc: ignorado — modal segue ativo.
+    root.querySelector('dialog')!.dispatchEvent(new Event('cancel', { cancelable: true }));
+    expect(svc.active()).not.toBeNull();
+    // Backdrop: ignorado — modal segue ativo.
+    root.querySelector('dialog')!.click();
+    expect(svc.active()).not.toBeNull();
+    // Só o botão resolve.
+    root.querySelectorAll('button')[0].click();
+    expect(await p).toBe('now');
+  });
+
   it('foco inicial vai a um botão seguro, nunca ao destrutivo', async () => {
     const { svc, root, flush } = setup();
     document.body.appendChild(root);

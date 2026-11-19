@@ -9,6 +9,24 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
-  <app-root></app-root>
+  <app-root>
+    <!-- Loader mostrado até o Angular montar (o framework substitui este conteúdo).
+         Cobre o instante entre a splash redirecionar e o app renderizar. -->
+    <style>
+      .sb-boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;gap:22px;background:radial-gradient(120% 120% at 50% 0%,#2a0f45,#140a1f 60%,#0d0714);
+        color:#f3e8ff;font-family:"Segoe UI",system-ui,sans-serif}
+      .sb-boot__brand{font-size:28px;font-weight:700;letter-spacing:.5px}
+      .sb-boot__star{color:#c084fc;animation:sb-pulse 1.8s ease-in-out infinite;display:inline-block}
+      .sb-boot__dot{width:46px;height:46px;border-radius:50%;border:4px solid #3a2850;
+        border-top-color:#a855f7;animation:sb-spin 1s linear infinite}
+      @keyframes sb-spin{to{transform:rotate(360deg)}}
+      @keyframes sb-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+    </style>
+    <div class="sb-boot">
+      <div class="sb-boot__brand"><span class="sb-boot__star">★</span> Star Bottons</div>
+      <div class="sb-boot__dot"></div>
+    </div>
+  </app-root>
 </body>
 </html>

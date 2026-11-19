@@ -75,7 +75,16 @@ function Stop-AppStack($serverProc) {
     Remove-Item $portFile -ErrorAction SilentlyContinue
   }
 
-  # (c) só os containers DESTE projeto (config.toml da pasta). Docker segue de pé.
+  # (c) splash-server (porta 4288): mata só o node que escuta nela.
+  Get-NetTCPConnection -LocalPort 4288 -State Listen -ErrorAction SilentlyContinue |
+    ForEach-Object {
+      $owner = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
+      if ($owner -and $owner.ProcessName -eq 'node') {
+        & taskkill.exe /PID $owner.Id /T /F 2>&1 | Out-Null
+      }
+    }
+
+  # (d) só os containers DESTE projeto (config.toml da pasta). Docker segue de pé.
   Push-Location $proj
   try { & supabase stop 2>&1 | Out-Null } finally { Pop-Location }
 }
@@ -119,6 +128,32 @@ function Start-Session {
   $server = Start-Process -FilePath 'cmd.exe' -PassThru -WindowStyle Minimized `
     -ArgumentList '/k', "title Star Bottons (servidor) && cd /d `"$proj`" && npm run up"
 
+  # Splash: sobe a tela de carregamento (node splash-server.mjs, porta 4288) e
+  # abre o Chrome NELA já — feedback imediato enquanto o up.mjs sobe tudo. A
+  # própria splash sonda a porta do app e redireciona quando fica pronta.
+  $splashScript = Join-Path $PSScriptRoot 'splash-server.mjs'
+  Start-Process -FilePath 'node' -WindowStyle Hidden -ArgumentList "`"$splashScript`""
+  $splashUrl = 'http://127.0.0.1:4288'   # bate com o bind do splash-server (127.0.0.1)
+  $splashUp  = $false
+  $sDeadline = (Get-Date).AddSeconds(12)
+  while ((Get-Date) -lt $sDeadline) {
+    try {
+      if ((Invoke-WebRequest -Uri $splashUrl -UseBasicParsing -TimeoutSec 2).StatusCode -ge 200) { $splashUp = $true; break }
+    } catch { Start-Sleep -Milliseconds 500 }
+  }
+
+  if ($splashUp) {
+    # A splash cuida da espera e do redirect para o app; só aguardamos o Chrome.
+    $chromeProc = Open-App $splashUrl
+    if ($chromeProc) {
+      Wait-Process -Id $chromeProc.Id
+      Stop-AppStack $server
+    }
+    return
+  }
+
+  # FALLBACK (splash não subiu — ex.: node fora do PATH): comportamento antigo,
+  # espera o app responder e abre o Chrome direto nele. Nunca bloqueia o boot.
   $deadline = (Get-Date).AddMinutes(12)
 
   # 1) Espera o up.mjs gravar a porta escolhida (após Docker+Supabase+clock).

@@ -74,6 +74,8 @@ export class UpdateService {
     const choice = await this.modal.showChoices<UpdateChoice>({
       title: `Nova versão disponível (v${update.latestVersion})`,
       message: update.notes.map((n) => `• ${n}`).join('\n'),
+      // Não some por clique fora/Esc: o aviso só sai escolhendo um botão.
+      dismissible: false,
       choices: [
         { value: 'now', label: 'Atualizar agora', variant: 'primary' },
         { value: 'later', label: 'Depois', variant: 'secondary' },

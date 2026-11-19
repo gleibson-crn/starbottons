@@ -26,6 +26,12 @@ export interface ChoicesOptions<T> {
   readonly title: string;
   readonly message?: string;
   readonly choices: readonly ModalChoice<T>[];
+  /**
+   * Quando `false`, Esc e clique no backdrop NÃO fecham — o usuário precisa
+   * escolher um botão. Use em decisões que não podem sumir por engano (ex.: o
+   * aviso de atualização). Padrão: `true`.
+   */
+  readonly dismissible?: boolean;
 }
 
 /** Modal ativo (forma única consumida pelo host). */
@@ -35,6 +41,8 @@ export interface ActiveModal {
   readonly choices: readonly ModalChoice<unknown>[];
   /** Valor devolvido por Esc / clique no backdrop. */
   readonly cancelValue: unknown;
+  /** `false` = Esc/backdrop não fecham (exige escolher um botão). */
+  readonly dismissible: boolean;
   readonly resolve: (value: unknown) => void;
 }
 
@@ -50,7 +58,7 @@ export class ModalService {
   readonly active = this.activeSignal.asReadonly();
 
   showConfirm(opts: ConfirmOptions): Promise<boolean> {
-    return this.enqueue<boolean>(opts.title, opts.message, false, [
+    return this.enqueue<boolean>(opts.title, opts.message, false, true, [
       { value: false, label: opts.cancelLabel ?? 'Cancelar', variant: 'secondary' },
       {
         value: true,
@@ -61,14 +69,20 @@ export class ModalService {
   }
 
   async showAlert(opts: AlertOptions): Promise<void> {
-    await this.enqueue<boolean>(opts.title, opts.message, true, [
+    await this.enqueue<boolean>(opts.title, opts.message, true, true, [
       { value: true, label: 'OK', variant: 'primary' },
     ]);
   }
 
   /** Resolve o `value` escolhido, ou `null` se cancelado (Esc/backdrop). */
   showChoices<T>(opts: ChoicesOptions<T>): Promise<T | null> {
-    return this.enqueue<T | null>(opts.title, opts.message ?? '', null, opts.choices);
+    return this.enqueue<T | null>(
+      opts.title,
+      opts.message ?? '',
+      null,
+      opts.dismissible ?? true,
+      opts.choices,
+    );
   }
 
   /** Chamado pelo host: resolve o modal ativo e avança a fila. */
@@ -85,6 +99,7 @@ export class ModalService {
     title: string,
     message: string,
     cancelValue: unknown,
+    dismissible: boolean,
     choices: readonly ModalChoice<unknown>[],
   ): Promise<R> {
     return new Promise<R>((resolve) => {
@@ -93,6 +108,7 @@ export class ModalService {
         message,
         choices,
         cancelValue,
+        dismissible,
         resolve: resolve as (v: unknown) => void,
       };
       if (this.activeSignal()) {

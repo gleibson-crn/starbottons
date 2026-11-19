@@ -10,6 +10,14 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.1.3',
+    date: '2026-11-19',
+    notes: [
+      'Tela de carregamento: ao abrir pelo atalho, aparece na hora uma tela "Iniciando…" com barra de progresso, até o sistema ficar pronto.',
+      'Aviso de atualização agora só fecha ao escolher "Atualizar agora" ou "Depois" — não some mais por um clique fora.',
+    ],
+  },
+  {
     version: '1.1.2',
     date: '2026-11-19',
     notes: [

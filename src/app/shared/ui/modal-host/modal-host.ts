@@ -45,9 +45,10 @@ export class ModalHost {
 
   /** Esc (evento `cancel` do dialog) e clique no backdrop. */
   cancel(event: Event): void {
-    event.preventDefault();
+    event.preventDefault(); // Esc nunca fecha o <dialog> por conta própria
     const current = this.modal();
-    if (current) {
+    // Modal não-descartável: Esc/backdrop são ignorados (exige escolher um botão).
+    if (current && current.dismissible) {
       this.finish(current.cancelValue);
     }
   }
