@@ -7,18 +7,20 @@ do sistema e Sair/X fechando de verdade — ainda usando o backend **atual** (ng
 
 ## Como rodar a PoC
 
-Por enquanto são **dois passos** (a integração do backend vem nas próximas fases):
+**Um comando (recomendado):**
 
 ```bash
-# 1) sobe o backend + o app web (como hoje)
-npm run up
-
-# 2) noutro terminal, abre a janela nativa do Electron
-npm run electron
+npm run desktop
 ```
 
-A janela abre o app em `http://localhost:4200` (troque com a variável `SB_APP_URL`
-se o `up` tiver escolhido outra porta).
+Ele sobe o backend+web (`up.mjs`), descobre a **porta certa** (escolhida
+automaticamente — importante quando outro projeto Angular já usa a 4200, ex.:
+Controle Fitness) e só então abre a janela nativa do Electron nessa porta. Ao
+fechar a janela, derruba o backend.
+
+**Dois passos (manual):** se já tiver o `npm run up` rodando, pode abrir só a
+janela com `npm run electron` — mas ele depende de `scripts/.web-port` estar
+atualizado; se abrir o app errado, prefira o `npm run desktop`.
 
 ## O que a Fase 0 valida
 
