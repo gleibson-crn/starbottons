@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.2',
+    date: '2026-11-19',
+    notes: [
+      'O menu do topo agora fica fixo ao rolar a tela — a navegação fica sempre à mão.',
+    ],
+  },
+  {
     version: '1.2.1',
     date: '2026-11-19',
     notes: [

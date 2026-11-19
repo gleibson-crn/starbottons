@@ -5,7 +5,10 @@
 }
 
 .shell__header {
-  position: relative;
+  /* Fixo no topo: ao rolar qualquer tela, o menu continua acessível. */
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 30;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -14,6 +17,7 @@
   padding: var(--sp-3) var(--sp-6);
   border-block-end: 1px solid transparent;
   background: var(--gradient-header);
+  box-shadow: 0 2px 14px hsl(275 70% 8% / 0.45);
 }
 
 /* Motivo de estrelinhas discreto no canto (decorativo, fora da árvore de
