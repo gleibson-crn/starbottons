@@ -8,10 +8,10 @@ export const DONATION = {
   pixKey: '05389106407',
   /** Nome exibido ao doador no app PIX (sem acento, ≤25). */
   pixName: 'Gleibson CRN',
-  /** Cidade do recebedor exibida no app PIX (≤15). CONFIRMAR com o autor. */
-  pixCity: 'BRASIL',
+  /** Cidade do recebedor exibida no app PIX (≤15). */
+  pixCity: 'Recife',
   /** Página de apoio recorrente (Apoia.se). Vazio = botão recorrente oculto. */
-  apoiaseUrl: '',
+  apoiaseUrl: 'https://apoia.se/starbottons',
   /**
    * URL pública do `supporters.json` (ex.: raw do repo quando ele for PÚBLICO).
    * Vazio = usa só o arquivo embutido `/supporters.json` (fallback offline).
