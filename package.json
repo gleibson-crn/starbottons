@@ -18,7 +18,8 @@
     "fix:clock": "node scripts/fix-clock.mjs",
     "models:fetch": "node scripts/fetch-models.mjs",
     "models:smoke": "node scripts/smoke-model.mjs",
-    "electron": "electron electron/main.cjs"
+    "electron": "electron electron/main.cjs",
+    "desktop": "node scripts/start-electron.mjs"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
