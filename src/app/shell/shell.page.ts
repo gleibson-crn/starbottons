@@ -117,9 +117,19 @@ export class ShellPage implements OnInit {
    * Se a janela não fechar (aba normal), avisa que já pode fechar.
    */
   async exit(): Promise<void> {
-    // Fecha na hora, sem pop-up: salva o lote (retomável no próximo boot) e
-    // sinaliza o atalho a fechar a janela — o Chrome bloqueia window.close() em
-    // --app, então quem fecha é o start-app.ps1 (via flag scripts/.quit).
+    // Confirma (evita fechar tudo por clique acidental). Ao confirmar, fecha
+    // limpo e na hora — sem segundo pop-up: salva o lote (retomável no próximo
+    // boot) e sinaliza o atalho a fechar a janela (o Chrome bloqueia
+    // window.close() em --app; quem fecha é o start-app.ps1 via flag .quit).
+    const ok = await this.modal.showConfirm({
+      title: 'Sair do Star Bottons?',
+      message: 'Tem certeza que deseja sair? O sistema será fechado.',
+      confirmLabel: 'Sair',
+      cancelLabel: 'Cancelar',
+    });
+    if (!ok) {
+      return;
+    }
     this.batch.flushPersist();
     await this.requestQuit();
     this.closeWindow(); // fallback para navegador comum (ng serve puro)

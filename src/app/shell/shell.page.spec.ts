@@ -283,24 +283,29 @@ describe('ShellPage - Sair (app desktop)', () => {
 
   afterEach(() => vi.restoreAllMocks());
 
-  it('Sair fecha na hora: POST /quit + window.close, sem pop-up nem signOut', async () => {
+  it('Sair confirmado: POST /quit + window.close, sem segundo pop-up nem signOut', async () => {
     const close = vi.spyOn(window, 'close').mockImplementation(() => undefined);
     const fetchSpy = vi.fn().mockResolvedValue({ ok: true, text: async () => '{}' });
     vi.stubGlobal('fetch', fetchSpy);
+    modalFake.showConfirm.mockResolvedValue(true);
     sairButton(await renderAt('/app/upload')).click();
     await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1));
+    expect(modalFake.showConfirm).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith('http://localhost:4299/quit', { method: 'POST' });
-    expect(modalFake.showConfirm).not.toHaveBeenCalled();
     expect(modalFake.showAlert).not.toHaveBeenCalled();
     expect(authFake.signOut).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 
-  it('Sair funciona mesmo se o /quit falhar (cai no window.close)', async () => {
+  it('Sair cancelado: não fecha nem sinaliza quit (evita saída acidental)', async () => {
     const close = vi.spyOn(window, 'close').mockImplementation(() => undefined);
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sem servidor')));
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, text: async () => '{}' });
+    vi.stubGlobal('fetch', fetchSpy);
+    modalFake.showConfirm.mockResolvedValue(false);
     sairButton(await renderAt('/app/upload')).click();
-    await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 200));
+    expect(close).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalledWith('http://localhost:4299/quit', { method: 'POST' });
     vi.unstubAllGlobals();
   });
 });
