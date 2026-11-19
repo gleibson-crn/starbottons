@@ -18,8 +18,21 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const UPDATE_PORT = 4299;
 const HERE = dirname(fileURLToPath(import.meta.url));
-const FLAG = join(process.env.SB_ROOT ? join(process.env.SB_ROOT, 'scripts') : HERE, '.do-update');
+const SCRIPTS_DIR = process.env.SB_ROOT ? join(process.env.SB_ROOT, 'scripts') : HERE;
+const FLAG = join(SCRIPTS_DIR, '.do-update');
+/** Flag de "sair": o start-app.ps1 vê e fecha a janela do app (Chrome bloqueia window.close). */
+const QUIT_FLAG = join(SCRIPTS_DIR, '.quit');
 const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+function writeQuitFlag(res) {
+  try {
+    mkdirSync(SCRIPTS_DIR, { recursive: true });
+    writeFileSync(QUIT_FLAG, new Date().toISOString());
+    res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"ok":true}');
+  } catch {
+    res.writeHead(500).end();
+  }
+}
 
 function parseTarget(body) {
   try {
@@ -55,7 +68,8 @@ function setCors(req, res) {
 export function createUpdateServer() {
   return createServer((req, res) => {
     const { allowed, hasOrigin } = setCors(req, res);
-    if ((req.url ?? '').split('?')[0] !== '/do-update') {
+    const path = (req.url ?? '').split('?')[0];
+    if (path !== '/do-update' && path !== '/quit') {
       res.writeHead(404).end();
     } else if (hasOrigin && !allowed) {
       res.writeHead(403).end();
@@ -63,6 +77,8 @@ export function createUpdateServer() {
       res.writeHead(204).end();
     } else if (req.method !== 'POST') {
       res.writeHead(405).end();
+    } else if (path === '/quit') {
+      writeQuitFlag(res); // sinaliza o atalho a fechar a janela e desligar
     } else {
       let body = '';
       req.on('data', (c) => {

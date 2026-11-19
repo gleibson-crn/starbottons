@@ -283,35 +283,24 @@ describe('ShellPage - Sair (app desktop)', () => {
 
   afterEach(() => vi.restoreAllMocks());
 
-  it('confirma via ModalService e chama window.close (sem signOut)', async () => {
+  it('Sair fecha na hora: POST /quit + window.close, sem pop-up nem signOut', async () => {
     const close = vi.spyOn(window, 'close').mockImplementation(() => undefined);
-    modalFake.showConfirm.mockResolvedValue(true);
-    modalFake.showAlert.mockResolvedValue(undefined);
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, text: async () => '{}' });
+    vi.stubGlobal('fetch', fetchSpy);
     sairButton(await renderAt('/app/upload')).click();
     await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1));
-    await vi.waitFor(() => expect(modalFake.showAlert).toHaveBeenCalled()); // drena o timer pendente
-    expect(modalFake.showConfirm).toHaveBeenCalledTimes(1);
-    const auth = authFake;
-    expect(auth.signOut).not.toHaveBeenCalled();
-  });
-
-  it('cancelar não fecha a janela nem mostra o aviso', async () => {
-    const close = vi.spyOn(window, 'close').mockImplementation(() => undefined);
-    modalFake.showConfirm.mockResolvedValue(false);
-    sairButton(await renderAt('/app/upload')).click();
-    await new Promise((r) => setTimeout(r, 400));
-    expect(close).not.toHaveBeenCalled();
+    expect(fetchSpy).toHaveBeenCalledWith('http://localhost:4299/quit', { method: 'POST' });
+    expect(modalFake.showConfirm).not.toHaveBeenCalled();
     expect(modalFake.showAlert).not.toHaveBeenCalled();
+    expect(authFake.signOut).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 
-  it('se a janela não fecha (aba normal), avisa que pode fechar com segurança', async () => {
-    vi.spyOn(window, 'close').mockImplementation(() => undefined);
-    modalFake.showConfirm.mockResolvedValue(true);
-    modalFake.showAlert.mockResolvedValue(undefined);
+  it('Sair funciona mesmo se o /quit falhar (cai no window.close)', async () => {
+    const close = vi.spyOn(window, 'close').mockImplementation(() => undefined);
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sem servidor')));
     sairButton(await renderAt('/app/upload')).click();
-    await vi.waitFor(() => expect(modalFake.showAlert).toHaveBeenCalled());
-    expect(modalFake.showAlert.mock.calls[0][0].message).toBe(
-      'Pode fechar esta janela com segurança.',
-    );
+    await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1));
+    vi.unstubAllGlobals();
   });
 });

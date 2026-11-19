@@ -117,22 +117,21 @@ export class ShellPage implements OnInit {
    * Se a janela não fechar (aba normal), avisa que já pode fechar.
    */
   async exit(): Promise<void> {
-    const ok = await this.modal.showConfirm({
-      title: 'Sair do Star Bottons?',
-      message: 'A janela será fechada e o sistema será desligado.',
-      confirmLabel: 'Sair',
-      cancelLabel: 'Cancelar',
-    });
-    if (!ok) {
-      return;
+    // Fecha na hora, sem pop-up: salva o lote (retomável no próximo boot) e
+    // sinaliza o atalho a fechar a janela — o Chrome bloqueia window.close() em
+    // --app, então quem fecha é o start-app.ps1 (via flag scripts/.quit).
+    this.batch.flushPersist();
+    await this.requestQuit();
+    this.closeWindow(); // fallback para navegador comum (ng serve puro)
+  }
+
+  /** Pede ao atalho para encerrar (POST local). Best-effort: nunca lança. */
+  private async requestQuit(): Promise<void> {
+    try {
+      await fetch('http://localhost:4299/quit', { method: 'POST' });
+    } catch {
+      /* sem servidor local: cai no window.close() do fallback */
     }
-    this.closeWindow();
-    // Janela normal de navegador: window.close() é no-op e a página segue viva.
-    await new Promise((r) => setTimeout(r, 300));
-    await this.modal.showAlert({
-      title: 'Até logo',
-      message: 'Pode fechar esta janela com segurança.',
-    });
   }
 
   /** Reabre o pop-up de atualização (botão "Atualização disponível" do topo). */

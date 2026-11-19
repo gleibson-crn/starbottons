@@ -76,3 +76,6 @@ public/update-available.json
 
 # Artes da campanha (promocional, fora do sistema) — ficam locais
 docs/apoiase/
+
+# Flag de "sair" (start-app.ps1) — transitório
+scripts/.quit

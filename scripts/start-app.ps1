@@ -31,6 +31,23 @@ $ErrorActionPreference = 'SilentlyContinue'
 $proj       = Split-Path -Parent $PSScriptRoot
 $portFile   = Join-Path $PSScriptRoot '.web-port'
 $profileDir = Join-Path $PSScriptRoot '.chrome-profile'
+$quitFlag   = Join-Path $PSScriptRoot '.quit'
+
+# Aguarda o app encerrar: o usuário fecha a janela (X) OU clica "Sair" (que grava
+# scripts\.quit via POST http://localhost:4299/quit — o Chrome proíbe window.close
+# de fechar a janela de --app, então quem fecha é o atalho).
+function Wait-ForAppExit($chromeProc) {
+  Remove-Item $quitFlag -ErrorAction SilentlyContinue   # limpa flag de sessão anterior
+  while ($true) {
+    if (-not (Get-Process -Id $chromeProc.Id -ErrorAction SilentlyContinue)) { break }
+    if (Test-Path $quitFlag) {
+      Remove-Item $quitFlag -ErrorAction SilentlyContinue
+      & taskkill.exe /PID $chromeProc.Id /T /F 2>&1 | Out-Null
+      break
+    }
+    Start-Sleep -Milliseconds 400
+  }
+}
 
 function Find-Chrome {
   $paths = @(
@@ -146,7 +163,7 @@ function Start-Session {
     # A splash cuida da espera e do redirect para o app; só aguardamos o Chrome.
     $chromeProc = Open-App $splashUrl
     if ($chromeProc) {
-      Wait-Process -Id $chromeProc.Id
+      Wait-ForAppExit $chromeProc
       Stop-AppStack $server
     }
     return
@@ -180,7 +197,7 @@ function Start-Session {
   if ($ready) {
     $chromeProc = Open-App $url
     if ($chromeProc) {
-      Wait-Process -Id $chromeProc.Id
+      Wait-ForAppExit $chromeProc
       Stop-AppStack $server
     }
   } else {
