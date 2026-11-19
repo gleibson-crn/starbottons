@@ -109,8 +109,44 @@
   background: hsl(0 0% 100% / 0.12);
 }
 
+/* "Atualização disponível": pílula clara em destaque (ação), com pulso suave
+ * para chamar o olho. Reabre o pop-up se o usuário o fechou sem querer. */
+.shell__update {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-block-size: var(--tap-min);
+  padding-inline: var(--sp-3);
+  border-radius: var(--radius-md);
+  border: 1px solid hsl(0 0% 100% / 0.6);
+  background: #fff;
+  color: var(--primary-700);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  animation: shell-update-pulse 2s var(--ease) infinite;
+  transition: box-shadow var(--motion-base) var(--ease),
+    transform var(--motion-fast) var(--ease);
+}
+
+.shell__update:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--glow-hover);
+}
+
+@keyframes shell-update-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(0 0% 100% / 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 7px hsl(0 0% 100% / 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .shell__header::after {
+  .shell__header::after,
+  .shell__update {
     animation: none !important;
   }
 }

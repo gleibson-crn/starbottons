@@ -48,6 +48,16 @@
         [attr.aria-current]="framesLink.isActive ? 'page' : null"
       >Curadoria de molduras</a>
     </nav>
+    @if (updates.available(); as upd) {
+      <button
+        type="button"
+        class="shell__update"
+        (click)="openUpdate()"
+        [attr.title]="'Atualizar para a versão ' + upd.latestVersion"
+      >
+        <span aria-hidden="true">⟳</span> Atualização disponível
+      </button>
+    }
     <button type="button" class="btn btn--ghost" (click)="exit()">
       <span aria-hidden="true">⏻</span> Sair
     </button>

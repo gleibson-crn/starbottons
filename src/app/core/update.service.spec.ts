@@ -103,6 +103,30 @@ describe('UpdateService (B: nova versão disponível)', () => {
     );
     expect(svc.closed).toBe(0);
   });
+
+  it('pop-up é não-descartável (não some por clique fora/Esc)', async () => {
+    modal.showChoices.mockResolvedValue('later');
+    const svc = setup(() => json(available));
+    await svc.checkOnBoot();
+    expect(modal.showChoices.mock.calls[0][0].dismissible).toBe(false);
+  });
+
+  it('botão do topo: available() liga e openDialog() reabre o pop-up', async () => {
+    modal.showChoices.mockResolvedValue('later');
+    const svc = setup(() => json(available));
+    await svc.checkOnBoot();
+    expect(svc.available()?.latestVersion).toBe('9.9.9'); // botão aparece no topo
+    await svc.openDialog(); // clicar no botão reabre
+    expect(modal.showChoices).toHaveBeenCalledTimes(2);
+  });
+
+  it('openDialog() sem atualização conhecida: no-op', async () => {
+    const svc = setup(() => notFound);
+    await svc.checkOnBoot();
+    await svc.openDialog();
+    expect(modal.showChoices).not.toHaveBeenCalled();
+    expect(svc.available()).toBeNull();
+  });
 });
 
 describe('UpdateNotice (A: atualizado) e exclusividade A x B', () => {

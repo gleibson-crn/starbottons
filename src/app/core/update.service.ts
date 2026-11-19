@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { APP_VERSION } from './app-version';
 import { ModalService } from './modal';
 import { UpdateNoticeService } from './update-notice.service';
@@ -27,6 +27,14 @@ export class UpdateService {
   private readonly notice = inject(UpdateNoticeService);
   private checked = false;
 
+  /**
+   * Atualização disponível (ou `null`). O shell mostra um botão "Atualização
+   * disponível" no topo enquanto isto estiver preenchido — assim, se o usuário
+   * fechar o pop-up sem querer, reabre pelo botão (ver `openDialog`).
+   */
+  private readonly availableSignal = signal<UpdateAvailable | null>(null);
+  readonly available = this.availableSignal.asReadonly();
+
   /** Chamar UMA vez no init do shell (chamadas extras são ignoradas). */
   async checkOnBoot(current: string = APP_VERSION): Promise<void> {
     if (this.checked) {
@@ -40,10 +48,22 @@ export class UpdateService {
       }
       const available = await this.fetchAvailable(current);
       if (available) {
+        this.availableSignal.set(available); // liga o botão do topo
         await this.offer(available);
       }
     } catch {
       /* nunca quebra o boot */
+    }
+  }
+
+  /**
+   * Reabre o pop-up de atualização (chamado pelo botão do topo). No-op se não
+   * há atualização conhecida. Útil quando o usuário fechou o pop-up sem querer.
+   */
+  async openDialog(): Promise<void> {
+    const available = this.availableSignal();
+    if (available) {
+      await this.offer(available);
     }
   }
 

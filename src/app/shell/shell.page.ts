@@ -50,7 +50,7 @@ export class ShellPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly modal = inject(ModalService);
   private readonly toast = inject(ToastService);
-  private readonly updates = inject(UpdateService);
+  protected readonly updates = inject(UpdateService);
   /** Versão exibida discretamente no cabeçalho. */
   protected readonly version = APP_VERSION;
   protected readonly batch = inject(BatchStore);
@@ -133,6 +133,11 @@ export class ShellPage implements OnInit {
       title: 'Até logo',
       message: 'Pode fechar esta janela com segurança.',
     });
+  }
+
+  /** Reabre o pop-up de atualização (botão "Atualização disponível" do topo). */
+  openUpdate(): void {
+    void this.updates.openDialog();
   }
 
   /** Isolado para facilitar o spy em testes. */
