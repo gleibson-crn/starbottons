@@ -113,6 +113,46 @@ module.exports = {
     }
   },
 
+  // frame_templates (molduras + camadas)
+  listFrames: () => schema.listFrames(open()),
+  saveFrame: ({ name, bytes, mime, width, height }) => {
+    const storagePath = storage.save(bytes, extOf(mime));
+    return schema.insertFrame(open(), {
+      id: randomUUID(),
+      name,
+      storagePath,
+      mime,
+      bytes: bytes?.byteLength ?? bytes?.length ?? null,
+      width,
+      height,
+    });
+  },
+  updateFraming: (id, framing) => schema.updateFrameFraming(open(), id, framing),
+  listLayers: (templateId) => schema.listLayers(open(), templateId),
+  saveComposition: ({ templateId, layers, flatBytes }) => {
+    const oldPaths = schema.frameCurrentPaths(open(), templateId);
+    const flatPath = storage.save(flatBytes, '.png');
+    schema.replaceLayers(open(), templateId, layers);
+    const row = schema.updateFrameFlat(open(), templateId, {
+      storagePath: flatPath,
+      isComposite: layers.length > 1,
+    });
+    const keep = new Set([flatPath, ...layers.map((l) => l.storagePath)]);
+    for (const p of new Set(oldPaths)) {
+      if (!keep.has(p)) {
+        storage.remove(p);
+      }
+    }
+    return row;
+  },
+  copyPng: (srcName) => storage.copy(srcName),
+  removeFrame: (id) => {
+    const { storagePath, layerPaths } = schema.deleteFrame(open(), id);
+    for (const p of new Set([storagePath, ...layerPaths].filter(Boolean))) {
+      storage.remove(p);
+    }
+  },
+
   // leitura de mídia (bytes -> o renderer monta um blob URL p/ exibir)
   readMedia: (name) => storage.read(name),
 };

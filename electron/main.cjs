@@ -77,6 +77,13 @@ app.whenReady().then(() => {
   ipcMain.handle('mk:save', (_e, input) => localDb.saveMockup(input));
   ipcMain.handle('mk:update', (_e, { id, patch }) => localDb.updateMockup(id, patch));
   ipcMain.handle('mk:remove', (_e, id) => localDb.removeMockup(id));
+  ipcMain.handle('fr:list', () => localDb.listFrames());
+  ipcMain.handle('fr:save', (_e, input) => localDb.saveFrame(input));
+  ipcMain.handle('fr:framing', (_e, { id, framing }) => localDb.updateFraming(id, framing));
+  ipcMain.handle('fr:layers', (_e, templateId) => localDb.listLayers(templateId));
+  ipcMain.handle('fr:composition', (_e, input) => localDb.saveComposition(input));
+  ipcMain.handle('fr:copy', (_e, src) => localDb.copyPng(src));
+  ipcMain.handle('fr:remove', (_e, id) => localDb.removeFrame(id));
   ipcMain.handle('media:read', (_e, name) => localDb.readMedia(name));
 
   createWindow();

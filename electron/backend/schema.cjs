@@ -7,6 +7,8 @@
 // Esta é a FUNDAÇÃO da migração: começa pela tabela print_specs (catálogo de
 // tamanhos, só leitura). As demais tabelas entram nos próximos passos.
 
+const { randomUUID } = require('node:crypto');
+
 /** Cria as tabelas (idempotente) e semeia o catálogo. */
 function migrate(db) {
   db.exec(`
@@ -47,11 +49,43 @@ function migrate(db) {
       bytes           integer,
       scene_width_px  integer,
       scene_height_px integer,
-      target          text    not null,  -- JSON {cx,cy,r} (normalizado 0..1)
+      target          text    not null,  -- JSON {cx,cy,r,rotation} (normalizado 0..1)
       created_at      text    not null default (datetime('now'))
     );
     create index if not exists mockup_templates_created_at_idx
       on mockup_templates (created_at desc);
+
+    create table if not exists frame_templates (
+      id               text    primary key,
+      name             text    not null,
+      storage_path     text    not null,
+      mime             text    not null check (mime = 'image/png'),
+      bytes            integer,
+      width_px         integer,
+      height_px        integer,
+      default_offset_x real    not null default 0,
+      default_offset_y real    not null default 0,
+      default_scale    real    not null default 1,
+      default_rotation real    not null default 0,
+      is_composite     integer not null default 0,
+      created_at       text    not null default (datetime('now'))
+    );
+    create index if not exists frame_templates_created_at_idx
+      on frame_templates (created_at desc);
+
+    create table if not exists frame_template_layers (
+      id                 text    primary key,
+      template_id        text    not null,
+      position           integer not null,
+      storage_path       text    not null,
+      offset_x           real    not null default 0,
+      offset_y           real    not null default 0,
+      scale              real    not null default 1,
+      rotation           real    not null default 0,
+      source             text    not null default 'upload' check (source in ('upload', 'template')),
+      origin_template_id text,
+      unique (template_id, position)
+    );
   `);
   seedPrintSpecs(db);
 }
@@ -101,6 +135,117 @@ function deleteMockup(db, id) {
   const row = db.prepare('select storage_path from mockup_templates where id = ?').get(id);
   db.prepare('delete from mockup_templates where id = ?').run(id);
   return row ? row.storage_path : null;
+}
+
+// ── frame_templates + frame_template_layers (molduras — ADR-023/024) ─────────
+
+const FRAME_COLS =
+  'id, name, storage_path, mime, bytes, width_px, height_px, default_offset_x, default_offset_y, default_scale, default_rotation, is_composite, created_at';
+const LAYER_COLS =
+  'id, template_id, position, storage_path, offset_x, offset_y, scale, rotation, source, origin_template_id';
+
+function listFrames(db) {
+  return db.prepare(`select ${FRAME_COLS} from frame_templates order by created_at desc`).all();
+}
+
+function getFrame(db, id) {
+  return db.prepare(`select ${FRAME_COLS} from frame_templates where id = ?`).get(id);
+}
+
+/** Insere a moldura + a camada 0 (= o próprio PNG, neutra). */
+function insertFrame(db, { id, name, storagePath, mime, bytes, width, height }) {
+  db.prepare(
+    `insert into frame_templates (id, name, storage_path, mime, bytes, width_px, height_px)
+     values (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(id, name, storagePath, mime, bytes ?? null, width ?? null, height ?? null);
+  insertLayer(db, { templateId: id, position: 0, storagePath, source: 'upload' });
+  return getFrame(db, id);
+}
+
+function updateFrameFraming(db, id, { offsetX, offsetY, scale, rotation }) {
+  db.prepare(
+    `update frame_templates
+        set default_offset_x = ?, default_offset_y = ?, default_scale = ?, default_rotation = ?
+      where id = ?`,
+  ).run(offsetX, offsetY, scale, rotation, id);
+  return getFrame(db, id);
+}
+
+function updateFrameFlat(db, id, { storagePath, isComposite }) {
+  db.prepare('update frame_templates set storage_path = ?, is_composite = ? where id = ?').run(
+    storagePath,
+    isComposite ? 1 : 0,
+    id,
+  );
+  return getFrame(db, id);
+}
+
+/** Remove a moldura (+ suas camadas) e devolve os paths dos arquivos a apagar. */
+function deleteFrame(db, id) {
+  const frame = db.prepare('select storage_path from frame_templates where id = ?').get(id);
+  const layerPaths = db
+    .prepare('select storage_path from frame_template_layers where template_id = ?')
+    .all(id)
+    .map((r) => r.storage_path);
+  db.prepare('delete from frame_template_layers where template_id = ?').run(id);
+  db.prepare('delete from frame_templates where id = ?').run(id);
+  return { storagePath: frame ? frame.storage_path : null, layerPaths };
+}
+
+function listLayers(db, templateId) {
+  return db
+    .prepare(`select ${LAYER_COLS} from frame_template_layers where template_id = ? order by position`)
+    .all(templateId);
+}
+
+function insertLayer(
+  db,
+  { templateId, position, storagePath, offsetX, offsetY, scale, rotation, source, originTemplateId },
+) {
+  db.prepare(
+    `insert into frame_template_layers
+       (id, template_id, position, storage_path, offset_x, offset_y, scale, rotation, source, origin_template_id)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    randomUUID(),
+    templateId,
+    position,
+    storagePath,
+    offsetX ?? 0,
+    offsetY ?? 0,
+    scale ?? 1,
+    rotation ?? 0,
+    source ?? 'upload',
+    originTemplateId ?? null,
+  );
+}
+
+/** Substitui todas as camadas da moldura (delete + insert na ordem dada). */
+function replaceLayers(db, templateId, layers) {
+  db.prepare('delete from frame_template_layers where template_id = ?').run(templateId);
+  layers.forEach((l, i) =>
+    insertLayer(db, {
+      templateId,
+      position: i,
+      storagePath: l.storagePath,
+      offsetX: l.offset?.x,
+      offsetY: l.offset?.y,
+      scale: l.scale,
+      rotation: l.rotation,
+      source: l.source,
+      originTemplateId: l.originTemplateId,
+    }),
+  );
+}
+
+/** Paths em uso pela moldura hoje: achatado atual + PNGs das camadas. */
+function frameCurrentPaths(db, templateId) {
+  const frame = db.prepare('select storage_path from frame_templates where id = ?').get(templateId);
+  const layers = db
+    .prepare('select storage_path from frame_template_layers where template_id = ?')
+    .all(templateId)
+    .map((r) => r.storage_path);
+  return [frame ? frame.storage_path : null, ...layers].filter(Boolean);
 }
 
 // ── background_templates (biblioteca de fundos — ADR-016) ────────────────────
@@ -172,4 +317,14 @@ module.exports = {
   updateMockupTarget,
   updateMockupScene,
   deleteMockup,
+  listFrames,
+  getFrame,
+  insertFrame,
+  updateFrameFraming,
+  updateFrameFlat,
+  deleteFrame,
+  listLayers,
+  insertLayer,
+  replaceLayers,
+  frameCurrentPaths,
 };

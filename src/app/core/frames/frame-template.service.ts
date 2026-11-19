@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import { APP_CONFIG } from '../config/app-config';
 import { AuthService } from '../auth';
 import { SupabaseClientService } from '../supabase';
+import { localBackend } from '../local-backend/local-api';
+import { frameRowToTemplate, layerRowToComposition } from './frame-template.local';
 import type { Framing } from '../../shared/types';
 import {
   downscaleImageFile,
@@ -117,9 +119,16 @@ export class FrameTemplateService {
   private readonly supabase = inject(SupabaseClientService).client;
   private readonly auth = inject(AuthService);
   private readonly config = inject(APP_CONFIG);
+  /** Backend local (Electron) ou `null` no modo web → cai no Supabase. */
+  private readonly local = localBackend();
 
   /** Lista templates (mais recentes primeiro) já com thumbnail assinado. */
   async list(): Promise<FrameTemplate[]> {
+    if (this.local) {
+      const local = this.local;
+      const rows = await local.frames.list();
+      return Promise.all(rows.map((r) => frameRowToTemplate(local, r)));
+    }
     const { data, error } = await this.supabase
       .from(TABLE)
       .select(COLUMNS)
@@ -150,6 +159,17 @@ export class FrameTemplateService {
     // preserva o alfa.
     const file = await downscaleImageFile(input.file);
     const { width, height } = await this.probe(file);
+    if (this.local) {
+      return frameRowToTemplate(this.local,
+        await this.local.frames.save({
+          name: input.name,
+          bytes: await file.arrayBuffer(),
+          mime: 'image/png',
+          width,
+          height,
+        }),
+      );
+    }
     const path = `${this.userId()}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
     await this.uploadFile(path, file);
     const row = await this.insertRow(path, { ...input, file }, width, height);
@@ -166,6 +186,11 @@ export class FrameTemplateService {
 
   /** Camadas da moldura em ordem de empilhamento (`position` asc), com URL assinada. */
   async listLayers(templateId: string): Promise<CompositionLayer[]> {
+    if (this.local) {
+      const local = this.local;
+      const rows = await local.frames.listLayers(templateId);
+      return Promise.all(rows.map((r) => layerRowToComposition(local, r)));
+    }
     const rows = await this.fetchLayerRows(templateId);
     return Promise.all(
       rows.map(async (r) => ({
@@ -194,6 +219,21 @@ export class FrameTemplateService {
     if (layers.length < 1 || layers.length > MAX_COMPOSITION_LAYERS) {
       throw new Error(`A moldura precisa ter de 1 a ${MAX_COMPOSITION_LAYERS} camadas.`);
     }
+    if (this.local) {
+      const row = await this.local.frames.saveComposition({
+        templateId,
+        layers: layers.map((l) => ({
+          storagePath: l.storagePath,
+          offset: l.offset,
+          scale: l.scale,
+          rotation: l.rotation,
+          source: l.source,
+          originTemplateId: l.originTemplateId ?? null,
+        })),
+        flatBytes: await flatBlob.arrayBuffer(),
+      });
+      return frameRowToTemplate(this.local,row);
+    }
     const oldPaths = await this.currentPaths(templateId);
     const flatPath = `frame-composites/${crypto.randomUUID()}.png`;
     await this.uploadBlob(flatPath, flatBlob);
@@ -211,6 +251,9 @@ export class FrameTemplateService {
 
   /** Copia um PNG do bucket p/ um novo path (camada independente); devolve o novo path. */
   async copyPng(srcStoragePath: string): Promise<string> {
+    if (this.local) {
+      return this.local.frames.copyPng(srcStoragePath);
+    }
     const dst = `frame-layers/${crypto.randomUUID()}.png`;
     const { error } = await this.supabase.storage.from(BUCKET).copy(srcStoragePath, dst);
     if (error) {
@@ -225,6 +268,16 @@ export class FrameTemplateService {
    * componente, não do serviço. Devolve o template atualizado.
    */
   async updateFraming(id: string, framing: Framing): Promise<FrameTemplate> {
+    if (this.local) {
+      return frameRowToTemplate(this.local,
+        await this.local.frames.updateFraming(id, {
+          offsetX: framing.offset.x,
+          offsetY: framing.offset.y,
+          scale: framing.scale,
+          rotation: framing.rotation,
+        }),
+      );
+    }
     const { data, error } = await this.supabase
       .from(TABLE)
       .update({
@@ -244,6 +297,10 @@ export class FrameTemplateService {
 
   /** Exclui o template (linha + objeto no bucket `uploads`). */
   async remove(template: FrameTemplate): Promise<void> {
+    if (this.local) {
+      await this.local.frames.remove(template.id);
+      return;
+    }
     const layerPaths = (await this.fetchLayerRows(template.id)).map((r) => r.storage_path);
     const { error } = await this.supabase.from(TABLE).delete().eq('id', template.id);
     if (error) {
@@ -410,4 +467,5 @@ export class FrameTemplateService {
       isComposite: row.is_composite ?? false,
     };
   }
+
 }

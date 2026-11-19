@@ -1,8 +1,15 @@
 // Backend local (ADR-033) — armazenamento de IMAGENS em arquivos locais, no lugar
 // do Supabase Storage. Os binários ficam em `userData/media` (pasta do app, no PC
 // do usuário). Testável sem Electron: defina SB_MEDIA_DIR para apontar a pasta.
-const { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } = require('node:fs');
-const { join, basename } = require('node:path');
+const {
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+  existsSync,
+  copyFileSync,
+} = require('node:fs');
+const { join, basename, extname } = require('node:path');
 const { randomUUID } = require('node:crypto');
 
 /** Pasta base das mídias (userData/media), ou SB_MEDIA_DIR em teste. */
@@ -54,4 +61,15 @@ function has(name) {
   return existsSync(pathOf(name));
 }
 
-module.exports = { save, read, remove, has, safeName };
+/** Copia um arquivo salvo para um novo nome; devolve o novo nome (ou null). */
+function copy(name) {
+  const src = pathOf(name);
+  if (!existsSync(src)) {
+    return null;
+  }
+  const dst = `${randomUUID()}${extname(safeName(name))}`;
+  copyFileSync(src, pathOf(dst));
+  return dst;
+}
+
+module.exports = { save, read, remove, has, copy, safeName };

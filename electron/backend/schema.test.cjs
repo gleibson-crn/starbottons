@@ -13,6 +13,12 @@ const {
   insertMockup,
   updateMockupTarget,
   deleteMockup,
+  listFrames,
+  insertFrame,
+  listLayers,
+  replaceLayers,
+  updateFrameFlat,
+  deleteFrame,
 } = require('./schema.cjs');
 
 const db = new DatabaseSync(':memory:');
@@ -73,4 +79,29 @@ assert.ok(mrow2.target.includes('"rotation":15'), 'target atualizado');
 assert.strictEqual(deleteMockup(db, mid), 'c.webp', 'delete devolve storage_path');
 assert.strictEqual(listMockups(db).length, 0, 'lista vazia após delete');
 
-console.log('OK: backend local (print_specs + background_templates + mockup_templates).');
+// frame_templates + camadas
+assert.strictEqual(listFrames(db).length, 0, 'molduras começam vazias');
+const fid = randomUUID();
+const frow = insertFrame(db, {
+  id: fid,
+  name: 'Moldura',
+  storagePath: 'm.png',
+  mime: 'image/png',
+  bytes: 500,
+  width: 800,
+  height: 800,
+});
+assert.strictEqual(frow.is_composite, 0, 'nasce não-composta');
+assert.strictEqual(listLayers(db, fid).length, 1, 'save cria a camada 0');
+replaceLayers(db, fid, [
+  { storagePath: 'l0.png', offset: { x: 0, y: 0 }, scale: 1, rotation: 0, source: 'upload' },
+  { storagePath: 'l1.png', offset: { x: 0.2, y: 0 }, scale: 1.2, rotation: 10, source: 'template' },
+]);
+assert.strictEqual(listLayers(db, fid).length, 2, 'composição com 2 camadas');
+assert.strictEqual(updateFrameFlat(db, fid, { storagePath: 'flat.png', isComposite: true }).is_composite, 1);
+const fdel = deleteFrame(db, fid);
+assert.strictEqual(fdel.storagePath, 'flat.png', 'delete devolve o achatado');
+assert.strictEqual(fdel.layerPaths.length, 2, 'delete devolve as 2 camadas');
+assert.strictEqual(listLayers(db, fid).length, 0, 'camadas somem');
+
+console.log('OK: backend local (print_specs + backgrounds + mockups + frames).');

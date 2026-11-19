@@ -21,6 +21,16 @@ contextBridge.exposeInMainWorld('sb', {
     update: (id, patch) => ipcRenderer.invoke('mk:update', { id, patch }),
     remove: (id) => ipcRenderer.invoke('mk:remove', id),
   },
+  /** Molduras (frame_templates + frame_template_layers + arquivos locais). */
+  frames: {
+    list: () => ipcRenderer.invoke('fr:list'),
+    save: (input) => ipcRenderer.invoke('fr:save', input),
+    updateFraming: (id, framing) => ipcRenderer.invoke('fr:framing', { id, framing }),
+    listLayers: (templateId) => ipcRenderer.invoke('fr:layers', templateId),
+    saveComposition: (input) => ipcRenderer.invoke('fr:composition', input),
+    copyPng: (src) => ipcRenderer.invoke('fr:copy', src),
+    remove: (id) => ipcRenderer.invoke('fr:remove', id),
+  },
   /** Mídia local: devolve os bytes de um arquivo (o renderer monta o blob URL). */
   media: {
     read: (name) => ipcRenderer.invoke('media:read', name),
