@@ -9,7 +9,7 @@
 //   3) espera o app responder NAQUELA porta (sonda IPv4 e IPv6 — ng serve escuta ::1);
 //   4) abre o Electron apontando para a porta CERTA (SB_APP_URL);
 //   5) ao fechar a janela, derruba o backend.
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { get as httpGet } from 'node:http';
 import { createRequire } from 'node:module';
@@ -53,14 +53,32 @@ async function main() {
 
   // Sobe o stack (up.mjs grava a porta escolhida em scripts/.web-port).
   const up = spawn('npm', ['run', 'up'], { cwd: PROJ, stdio: 'inherit', shell: true });
-  const killUp = () => {
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) {
+      return;
+    }
+    cleaned = true;
+    // Mata a ÁRVORE do backend (cmd -> npm -> concurrently -> ng serve + edge),
+    // não só o npm — senão ng serve/edge sobrevivem e o console fica aberto.
     try {
-      up.kill();
+      if (process.platform === 'win32' && up.pid) {
+        spawnSync('taskkill', ['/PID', String(up.pid), '/T', '/F'], { stdio: 'ignore' });
+      } else {
+        up.kill('SIGKILL');
+      }
+    } catch {
+      /* ignore */
+    }
+    // Para os containers Supabase DESTE projeto (libera RAM); Docker segue de pé.
+    try {
+      spawnSync('supabase', ['stop'], { cwd: PROJ, stdio: 'ignore', shell: true });
     } catch {
       /* ignore */
     }
   };
-  process.on('exit', killUp);
+  process.on('exit', cleanup);
 
   // Espera a porta ser gravada E o app responder nela.
   let port = null;
@@ -77,7 +95,7 @@ async function main() {
   }
   if (!port) {
     console.error('Star Bottons não subiu a tempo. Confira o log acima (npm run up).');
-    killUp();
+    cleanup();
     process.exit(1);
   }
 
@@ -90,7 +108,7 @@ async function main() {
     env: { ...process.env, SB_APP_URL: `http://localhost:${port}` },
   });
   win.on('exit', () => {
-    killUp();
+    cleanup();
     process.exit(0);
   });
 }
