@@ -64,6 +64,9 @@ supabase/.branches
 # Perfil dedicado do Chrome (start-app.ps1)
 scripts/.chrome-profile/
 
+# Porta dinâmica do front, gravada a cada boot (up.mjs) — transitória
+scripts/.web-port
+
 # Auto-update (scripts/update.mjs) — flags/estado locais
 scripts/.update-available
 scripts/.do-update
