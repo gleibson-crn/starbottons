@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.3',
+    date: '2026-11-19',
+    notes: [
+      'Agora dá para apoiar o Star Bottons todo mês pelo Apoia.se: botão "♥ Apoiar todo mês" na tela "Sobre".',
+    ],
+  },
+  {
     version: '1.2.2',
     date: '2026-11-19',
     notes: [
