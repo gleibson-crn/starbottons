@@ -12,6 +12,13 @@ export const DONATION = {
   pixCity: 'BRASIL',
   /** Página de apoio recorrente (Apoia.se). Vazio = botão recorrente oculto. */
   apoiaseUrl: '',
+  /**
+   * URL pública do `supporters.json` (ex.: raw do repo quando ele for PÚBLICO).
+   * Vazio = usa só o arquivo embutido `/supporters.json` (fallback offline).
+   * É atualizado do lado do autor por um script de sync (ver docs), nunca com a
+   * chave do Apoia.se dentro do app.
+   */
+  supportersUrl: '',
   /** Perfil/público do autor para créditos. */
   githubUrl: 'https://github.com/gleibson-crn',
   /** Como o autor é creditado. */

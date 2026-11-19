@@ -50,6 +50,28 @@
   </div>
 
   <div class="sobre__card">
+    <h2 class="sobre__h2">Quem apoia o projeto</h2>
+    @if (supporters().length) {
+      <p>Obrigado a quem mantém o Star Bottons vivo 💜</p>
+      <ul class="sobre__wall">
+        @for (s of supporters(); track s.name) {
+          <li class="sobre__supporter">
+            <span class="sobre__supporter-name">{{ s.name }}</span>
+            @if (s.tier) {
+              <span class="sobre__supporter-tier">{{ s.tier }}</span>
+            }
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="sobre__fineprint">
+        Em breve: os apoiadores aparecerão aqui. Seja um dos primeiros a apoiar e ajude a
+        manter o projeto no ar 💜
+      </p>
+    }
+  </div>
+
+  <div class="sobre__card">
     <h2 class="sobre__h2">Uso e licença</h2>
     <ul class="sobre__list">
       <li><strong>Grátis</strong> para baixar, usar e compartilhar.</li>

@@ -106,6 +106,35 @@
   text-align: center;
 }
 
+.sobre__wall {
+  list-style: none;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.sobre__supporter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: var(--sp-1, 0.25rem) var(--sp-3);
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg, #140a1f);
+}
+
+.sobre__supporter-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.sobre__supporter-tier {
+  font-size: var(--fs-xs);
+  color: var(--primary-400, #c084fc);
+}
+
 .sobre__list {
   margin: 0 0 var(--sp-3);
   padding-inline-start: var(--sp-5);
