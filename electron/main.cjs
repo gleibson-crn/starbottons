@@ -11,9 +11,33 @@
 // A URL do app pode ser trocada por SB_APP_URL (padrão: http://localhost:4200).
 
 const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
-const { readFileSync } = require('node:fs');
+const { readFileSync, writeFileSync } = require('node:fs');
 const { join } = require('node:path');
+const { tmpdir } = require('node:os');
 const localDb = require('./backend/db.cjs'); // backend local (ADR-033): SQLite
+
+/**
+ * Imprime a folha A4 gerando um PDF e abrindo-o no visualizador do sistema.
+ * No Electron, `window.print()` abre o diálogo nativo SEM painel de prévia
+ * ("este aplicativo não dá suporte à visualização de impressão"). Gerar o PDF
+ * dá uma prévia real (e permite SALVAR a folha). `preferCSSPageSize` usa o
+ * `@page { size: A4 }` do app e `printBackground` preserva arte/cores — paridade
+ * com o print do navegador (respeita o `@media print` da página).
+ */
+async function printSheet(event) {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) {
+    return { ok: false, error: 'janela não encontrada' };
+  }
+  const pdf = await win.webContents.printToPDF({
+    printBackground: true,
+    preferCSSPageSize: true,
+  });
+  const file = join(tmpdir(), `star-bottons-folha-${Date.now()}.pdf`);
+  writeFileSync(file, pdf);
+  const err = await shell.openPath(file); // '' = sucesso
+  return err ? { ok: false, error: err } : { ok: true, path: file };
+}
 
 /** Porta do front escolhida pelo up.mjs (scripts/.web-port), ou 4200. */
 function webPort() {
@@ -89,6 +113,7 @@ app.whenReady().then(() => {
   ipcMain.handle('up:save', (_e, input) => localDb.saveUpload(input));
   ipcMain.handle('gen:run', (_e, body) => localDb.generate(body));
   ipcMain.handle('gen:render-path', (_e, jobId) => localDb.renderPath(jobId));
+  ipcMain.handle('print:sheet', (e) => printSheet(e));
 
   createWindow();
 

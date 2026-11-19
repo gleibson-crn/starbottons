@@ -43,4 +43,6 @@ contextBridge.exposeInMainWorld('sb', {
   generate: (body) => ipcRenderer.invoke('gen:run', body),
   /** Caminho do render de um job (freshPrintUrl após recarregar o lote). */
   renderPath: (jobId) => ipcRenderer.invoke('gen:render-path', jobId),
+  /** Imprime a folha A4: gera PDF (prévia real) e abre no visualizador do sistema. */
+  printSheet: () => ipcRenderer.invoke('print:sheet'),
 });

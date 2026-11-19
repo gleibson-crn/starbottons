@@ -179,6 +179,8 @@ export interface LocalBackendApi {
   readonly uploads: { save(input: LocalUploadInput): Promise<LocalUploadResult> };
   generate(body: unknown): Promise<LocalGenerateResult>;
   renderPath(jobId: string): Promise<string | null>;
+  /** Imprime a folha A4 como PDF e a abre no visualizador do sistema (Electron). */
+  printSheet(): Promise<{ ok: boolean; path?: string; error?: string }>;
 }
 
 /** A API local se rodando no Electron (preload), senão `null` (modo web). */

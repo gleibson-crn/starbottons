@@ -23,6 +23,7 @@ import {
 import { SIZE_OPTIONS } from '../../shared/utils';
 import { FileDropzone } from '../../shared/ui';
 import { buildAvulsoLine } from './avulso-art';
+import { localBackend } from '../../core/local-backend/local-api';
 
 /**
  * PrintPage — "Área de Impressão". Monta uma folha A4 otimizada (`packSheet`) a
@@ -199,8 +200,25 @@ export class PrintPage implements OnDestroy {
     return `Arte de botton redondo de ${piece.sizeMm} mm`;
   }
 
-  /** Abre o diálogo de impressão do navegador (imprime ou salva em PDF). */
+  /**
+   * Imprime a folha. No Electron (`window.sb`), gera um PDF e o abre no
+   * visualizador do sistema — prévia real + opção de salvar (o `window.print()`
+   * nativo do Electron não tem painel de prévia). No navegador, usa o diálogo de
+   * impressão normal. Qualquer falha do caminho PDF cai no `window.print()`.
+   */
   print(): void {
+    const local = localBackend();
+    if (local) {
+      local
+        .printSheet()
+        .then((r) => {
+          if (!r.ok) {
+            window.print();
+          }
+        })
+        .catch(() => window.print());
+      return;
+    }
     window.print();
   }
 
