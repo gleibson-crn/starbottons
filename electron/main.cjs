@@ -1,0 +1,61 @@
+// Star Bottons — Fase 0 (ADR-032): prova de conceito do app Electron.
+//
+// Abre o app num JANELA NATIVA (controles do sistema, Sair/X fecham de verdade),
+// ainda apontando para o backend ATUAL (ng serve + Supabase local). Nas próximas
+// fases, o Electron passa a embutir o próprio backend (SQLite + arquivos locais).
+//
+// Como rodar a PoC (dois passos, por enquanto):
+//   1) num terminal:  npm run up        (sobe Docker + Supabase + edge + web)
+//   2) noutro:        npm run electron   (abre esta janela nativa)
+//
+// A URL do app pode ser trocada por SB_APP_URL (padrão: http://localhost:4200).
+
+const { app, BrowserWindow, Menu, shell } = require('electron');
+
+const APP_URL = process.env.SB_APP_URL || 'http://localhost:4200';
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 860,
+    minWidth: 900,
+    minHeight: 600,
+    title: 'Star Bottons',
+    backgroundColor: '#140a1f', // mesmo fundo do app (evita flash branco)
+    autoHideMenuBar: true, // sem barra de menu do Electron (visual de app)
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  win.loadURL(APP_URL);
+
+  // Links externos (ex.: GitHub, Apoia.se) abrem no navegador do sistema,
+  // não dentro do app.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//i.test(url) && !url.startsWith(APP_URL)) {
+      shell.openExternal(url);
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
+  });
+
+  return win;
+}
+
+app.whenReady().then(() => {
+  Menu.setApplicationMenu(null); // sem menu nativo nesta PoC
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
+
+// Fecha o programa quando a janela é fechada (Sair do app OU X da janela).
+app.on('window-all-closed', () => {
+  app.quit();
+});

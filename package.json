@@ -17,7 +17,8 @@
     "up": "node scripts/up.mjs",
     "fix:clock": "node scripts/fix-clock.mjs",
     "models:fetch": "node scripts/fetch-models.mjs",
-    "models:smoke": "node scripts/smoke-model.mjs"
+    "models:smoke": "node scripts/smoke-model.mjs",
+    "electron": "electron electron/main.cjs"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
@@ -44,6 +45,7 @@
     "@types/qrcode": "^1.5.6",
     "angular-eslint": "22.7.0",
     "concurrently": "^10.0.7",
+    "electron": "^45.4.1",
     "eslint": "^10.15.0",
     "fake-indexeddb": "^6.2.8",
     "jsdom": "^31.0.1",
