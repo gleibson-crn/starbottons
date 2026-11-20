@@ -84,6 +84,8 @@ export class ShellPage implements OnInit {
   async ngOnInit(): Promise<void> {
     // "Atualizado!" (A) ou "Nova versão disponível" (B), exclusivos; não bloqueia a UI
     void this.updates.checkOnBoot();
+    // Desktop (.exe): aviso de update DENTRO do app (não o toast do SO).
+    this.updates.registerDesktop();
     try {
       const snapshot = await this.batch.loadResumable();
       if (snapshot) {

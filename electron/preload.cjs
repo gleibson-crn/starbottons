@@ -45,4 +45,8 @@ contextBridge.exposeInMainWorld('sb', {
   renderPath: (jobId) => ipcRenderer.invoke('gen:render-path', jobId),
   /** Imprime a folha A4: gera PDF (prévia real) e abre no visualizador do sistema. */
   printSheet: () => ipcRenderer.invoke('print:sheet'),
+  /** Auto-update (.exe): avisa quando a nova versão foi baixada. */
+  onUpdateDownloaded: (cb) => ipcRenderer.on('update:downloaded', (_e, info) => cb(info)),
+  /** Reinicia e instala a atualização já baixada. */
+  installUpdate: () => ipcRenderer.invoke('update:install'),
 });

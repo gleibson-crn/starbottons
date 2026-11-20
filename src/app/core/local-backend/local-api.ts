@@ -181,6 +181,13 @@ export interface LocalBackendApi {
   renderPath(jobId: string): Promise<string | null>;
   /** Imprime a folha A4 como PDF e a abre no visualizador do sistema (Electron). */
   printSheet(): Promise<{ ok: boolean; path?: string; error?: string }>;
+  /**
+   * Auto-update do desktop (.exe): assina o evento de "nova versão baixada"
+   * (para avisar DENTRO do app, não pelo toast do SO). Só presente no empacotado.
+   */
+  onUpdateDownloaded?(cb: (info: { version: string }) => void): void;
+  /** Reinicia e instala a atualização já baixada (electron-updater). */
+  installUpdate?(): Promise<void>;
 }
 
 /** A API local se rodando no Electron (preload), senão `null` (modo web). */

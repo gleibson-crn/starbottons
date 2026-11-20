@@ -1,5 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { APP_VERSION } from './app-version';
+import { RELEASE_NOTES } from './release-notes';
+import { localBackend } from './local-backend/local-api';
 import { ModalService } from './modal';
 import { UpdateNoticeService } from './update-notice.service';
 import { compareVersions } from './version';
@@ -35,6 +37,9 @@ export class UpdateService {
   private readonly availableSignal = signal<UpdateAvailable | null>(null);
   readonly available = this.availableSignal.asReadonly();
 
+  /** Versão baixada pelo electron-updater no desktop (.exe), aguardando instalar. */
+  private readonly desktopVersion = signal<string | null>(null);
+
   /** Chamar UMA vez no init do shell (chamadas extras são ignoradas). */
   async checkOnBoot(current: string = APP_VERSION): Promise<void> {
     if (this.checked) {
@@ -61,9 +66,61 @@ export class UpdateService {
    * há atualização conhecida. Útil quando o usuário fechou o pop-up sem querer.
    */
   async openDialog(): Promise<void> {
+    const dv = this.desktopVersion();
+    if (dv) {
+      await this.offerDesktop(dv);
+      return;
+    }
     const available = this.availableSignal();
     if (available) {
       await this.offer(available);
+    }
+  }
+
+  /**
+   * Fluxo de update do DESKTOP (.exe via electron-updater): quando a nova versão
+   * é baixada, avisa DENTRO do app (modal do sistema), em vez do toast nativo do
+   * SO. Chamar UMA vez no boot do shell. No-op no modo web (sem `window.sb`).
+   */
+  registerDesktop(): void {
+    const sb = localBackend();
+    sb?.onUpdateDownloaded?.((info) => {
+      const notes = RELEASE_NOTES.find((r) => r.version === info.version)?.notes ?? [];
+      this.desktopVersion.set(info.version);
+      this.availableSignal.set({ latestVersion: info.version, notes }); // liga o botão do topo
+      void this.offerDesktop(info.version);
+    });
+  }
+
+  /** Aviso "Atualização pronta" do desktop, com ação clara e feedback. */
+  private async offerDesktop(version: string): Promise<void> {
+    const notes = RELEASE_NOTES.find((r) => r.version === version)?.notes ?? [];
+    const body = notes.length ? notes.map((n) => `• ${n}`).join('\n') + '\n\n' : '';
+    const choice = await this.modal.showChoices<UpdateChoice>({
+      title: `Atualização pronta (v${version})`,
+      message:
+        body +
+        'Reiniciar agora para atualizar? Se escolher "Depois", ela será instalada sozinha quando você fechar o aplicativo.',
+      dismissible: false,
+      choices: [
+        { value: 'now', label: 'Reiniciar e atualizar', variant: 'primary' },
+        { value: 'later', label: 'Depois', variant: 'secondary' },
+      ],
+    });
+    if (choice === 'now') {
+      await this.installDesktop();
+    }
+  }
+
+  /** Dispara o reinício+instalação; se falhar, orienta a fechar e reabrir. */
+  private async installDesktop(): Promise<void> {
+    try {
+      await localBackend()?.installUpdate?.();
+    } catch {
+      await this.modal.showAlert({
+        title: 'Não foi possível reiniciar automaticamente',
+        message: 'Feche e reabra o aplicativo para concluir a atualização.',
+      });
     }
   }
 

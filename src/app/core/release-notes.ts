@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.10',
+    date: '2026-11-20',
+    notes: [
+      'O aviso de atualização agora aparece dentro do próprio aplicativo (em português), com os botões "Reiniciar e atualizar" ou "Depois" — nada de pop-up do Windows em inglês. Se escolher "Depois", a atualização é instalada sozinha ao fechar o app.',
+    ],
+  },
+  {
     version: '1.2.9',
     date: '2026-11-20',
     notes: [

@@ -198,14 +198,22 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  // Auto-update (electron-updater) — SÓ no app empacotado (.exe). Lê os Releases
-  // do repo público, baixa em segundo plano e instala ao sair. Offline ou sem
-  // release novo = silencioso. Em dev (não empacotado) não roda.
+  // Auto-update (electron-updater) — SÓ no app empacotado (.exe). Baixa o Release
+  // novo em segundo plano; quando pronto, AVISA DENTRO DO APP (evento ao renderer,
+  // NÃO o toast nativo do SO) e instala ao sair OU ao pedir "Reiniciar e atualizar".
+  // Em dev (não empacotado) não roda.
   if (app.isPackaged) {
     try {
       const { autoUpdater } = require('electron-updater');
+      autoUpdater.autoInstallOnAppQuit = true; // instala ao fechar se o usuário adiar
       autoUpdater.on('error', () => {}); // nunca derruba o app por erro de update
-      void autoUpdater.checkForUpdatesAndNotify();
+      autoUpdater.on('update-downloaded', (info) => {
+        for (const w of BrowserWindow.getAllWindows()) {
+          w.webContents.send('update:downloaded', { version: info?.version ?? '' });
+        }
+      });
+      ipcMain.handle('update:install', () => autoUpdater.quitAndInstall());
+      void autoUpdater.checkForUpdates(); // sem notificação nativa do SO
     } catch {
       /* electron-updater ausente: ignora */
     }

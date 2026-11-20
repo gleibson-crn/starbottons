@@ -164,3 +164,45 @@ describe('UpdateNotice (A: atualizado) e exclusividade A x B', () => {
     spy.mockRestore();
   });
 });
+
+describe('UpdateService — desktop (.exe via electron-updater)', () => {
+  let installUpdate: ReturnType<typeof vi.fn>;
+  let fire: ((info: { version: string }) => void) | null;
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+
+  beforeEach(() => {
+    installUpdate = vi.fn().mockResolvedValue(undefined);
+    fire = null;
+    (globalThis as unknown as { sb?: unknown }).sb = {
+      onUpdateDownloaded: (cb: (info: { version: string }) => void) => {
+        fire = cb;
+      },
+      installUpdate,
+    };
+  });
+  afterEach(() => {
+    delete (globalThis as unknown as { sb?: unknown }).sb;
+  });
+
+  it('ao baixar, avisa DENTRO do app (modal, não toast) e, em "Reiniciar", instala', async () => {
+    modal.showChoices.mockResolvedValue('now');
+    const svc = setup(() => notFound);
+    svc.registerDesktop();
+    expect(fire).toBeTypeOf('function');
+    fire!({ version: '1.2.9' });
+    await flush();
+    const opts = modal.showChoices.mock.calls[0][0];
+    expect(opts.title).toContain('1.2.9');
+    expect(opts.dismissible).toBe(false);
+    expect(installUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('em "Depois", não instala agora (fica para o fechamento do app)', async () => {
+    modal.showChoices.mockResolvedValue('later');
+    const svc = setup(() => notFound);
+    svc.registerDesktop();
+    fire!({ version: '1.2.9' });
+    await flush();
+    expect(installUpdate).not.toHaveBeenCalled();
+  });
+});
