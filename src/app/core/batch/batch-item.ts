@@ -207,6 +207,11 @@ export function withTransform(
   return { ...item, transform, editorSide, perSizeDpi, perSizeTier };
 }
 
+/** Guarda (ou limpa) a prévia da face composta capturada ao salvar o "Ajustar". */
+export function withFacePreview(item: BatchItem, dataUrl: string | null): BatchItem {
+  return { ...item, facePreview: dataUrl ?? undefined };
+}
+
 /** Patch imutável do estado de UMA arte (tamanho) do item. */
 export function withArt(
   item: BatchItem,

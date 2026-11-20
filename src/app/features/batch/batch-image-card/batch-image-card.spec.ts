@@ -313,3 +313,17 @@ describe('BatchImageCard — número (senha) manual', () => {
     expect(render(false).querySelector('.bcard__seq')).toBeNull();
   });
 });
+
+describe('BatchImageCard — prévia no card', () => {
+  it('sem facePreview, a prévia usa a foto original', () => {
+    const card = cardWith(makeItem({ previewUrl: 'orig' }));
+    expect(card.previewSrc()).toBe('orig');
+    expect(card.hasAdjustedPreview()).toBe(false);
+  });
+
+  it('com facePreview, a prévia usa a face composta', () => {
+    const card = cardWith(makeItem({ previewUrl: 'orig', facePreview: 'data:img' }));
+    expect(card.previewSrc()).toBe('data:img');
+    expect(card.hasAdjustedPreview()).toBe(true);
+  });
+});

@@ -85,6 +85,8 @@ export interface BatchEditResult {
   readonly cutoutChanged?: boolean;
   /** Upload do recorte (PNG com alfa), ou `null` ao desfazer. */
   readonly cutoutUpload?: UploadRecord | null;
+  /** Prévia (dataURL) da face composta, para exibir no card do lote. */
+  readonly facePreview?: string;
 }
 
 /** Aba do painel do diálogo. */
@@ -437,15 +439,17 @@ export class BatchEditorDialog implements OnInit {
 
   private emitSaved(cutout: CutoutCommit): void {
     const panel = this.aiPanel();
+    const canvas = this.canvas();
     this.saved.emit({
       transform: this.transform(),
-      editorSide: this.canvas()?.side() ?? this.item().editorSide,
+      editorSide: canvas?.side() ?? this.item().editorSide,
       filters: this.filters(),
       style: this.style(),
       aiStyled: panel?.aiStyled() ?? false,
       generationUpload: panel?.generationUpload() ?? null,
       cutoutChanged: cutout.changed,
       cutoutUpload: cutout.upload,
+      facePreview: canvas?.faceSnapshot() ?? undefined,
     });
   }
 

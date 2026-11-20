@@ -120,6 +120,7 @@ export class BatchGrid {
 
   onTransform(id: string, result: BatchEditResult): void {
     this.store.setTransform(id, result.transform, result.editorSide);
+    this.store.setItemFacePreview(id, result.facePreview ?? null);
     if (result.cutoutChanged) {
       this.store.setItemCutout(id, result.cutoutUpload ?? null);
     }

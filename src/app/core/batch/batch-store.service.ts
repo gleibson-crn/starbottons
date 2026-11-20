@@ -22,7 +22,7 @@ import { MAX_IMAGES, MAX_TOTAL_ARTES, GENERATION_CONCURRENCY } from './batch.con
 import {
   newUploadingItem, withArt, withFilters, withStyle, withAiStyle, withCutout,
   withGenerationUpload, withName, withSeqLabel, withToggledSize, withTransform,
-  withUpload, withUploadError, clearUploadError,
+  withFacePreview, withUpload, withUploadError, clearUploadError,
 } from './batch-item';
 import { isNameValid } from './batch-naming';
 import { EventTallyService } from './event-tally.service';
@@ -282,6 +282,11 @@ export class BatchStore {
 
   setTransform(id: string, transform: EditorTransform, editorSide: number): void {
     this.patch(id, (i) => withTransform(i, transform, editorSide));
+  }
+
+  /** Guarda a prévia da face composta (dataURL) do item; `null` limpa. */
+  setItemFacePreview(id: string, dataUrl: string | null): void {
+    this.patch(id, (i) => withFacePreview(i, dataUrl));
   }
 
   /** Define os filtros de tratamento de um item (invalida o tratado em cache). */

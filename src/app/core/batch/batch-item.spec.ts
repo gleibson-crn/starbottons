@@ -8,6 +8,7 @@ import {
 import {
   newUploadingItem,
   withAiStyle,
+  withFacePreview,
   withFilters,
   withGenerationUpload,
   withStyle,
@@ -55,6 +56,19 @@ describe('batch-item — filtros', () => {
     expect(next).not.toBe(item);
     expect(item.generationUpload).toBeNull();
     expect(next.generationUpload).toBe(TREATED);
+  });
+});
+
+describe('batch-item — prévia da face (card do lote)', () => {
+  it('novo item nasce sem prévia', () => {
+    expect(newUploadingItem('i1', file()).facePreview).toBeUndefined();
+  });
+
+  it('withFacePreview guarda o dataURL e null o limpa', () => {
+    const data = 'data:image/png;base64,AAAA';
+    const withIt = withFacePreview(newUploadingItem('i1', file()), data);
+    expect(withIt.facePreview).toBe(data);
+    expect(withFacePreview(withIt, null).facePreview).toBeUndefined();
   });
 });
 

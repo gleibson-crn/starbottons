@@ -88,6 +88,10 @@ export class BatchImageCard {
 
   readonly status = computed(() => deriveItemStatus(this.item()));
   readonly hasSelection = computed(() => this.item().selectedSizes.size > 0);
+  /** Prévia da face composta (pós-"Ajustar") ou, antes dela, a foto original. */
+  readonly previewSrc = computed(() => this.item().facePreview || this.item().previewUrl);
+  /** `true` quando a prévia já reflete os ajustes (não é só a foto original). */
+  readonly hasAdjustedPreview = computed(() => !!this.item().facePreview);
   readonly badgeDpi = computed(() => worstSelectedDpi(this.item()));
   readonly nameInvalid = computed(
     () => this.hasSelection() && !isNameValid(this.item().name),

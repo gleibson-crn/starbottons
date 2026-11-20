@@ -92,6 +92,13 @@ export interface BatchItem {
   readonly cutout?: boolean;
   /** Upload do recorte (PNG com alfa) — fonte do bake tratado quando `cutout`. */
   readonly cutoutUpload?: UploadRecord | null;
+  /**
+   * Prévia (dataURL PNG) da FACE do botton JÁ COMPOSTA (arte + enquadramento +
+   * filtros/estilo + fundo + moldura), capturada ao salvar o "Ajustar". Só da
+   * sessão: não vai ao snapshot (o item restaurado perde o blob de origem e pede
+   * reenvio). Exibida no card ao lado da seleção de tamanhos.
+   */
+  readonly facePreview?: string;
   readonly selectedSizes: ReadonlySet<BottonSize>;
   readonly perSizeDpi: Readonly<Record<BottonSize, number>>;
   readonly perSizeTier: Readonly<Record<BottonSize, ResolutionTier>>;

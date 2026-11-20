@@ -88,11 +88,26 @@
       <app-resolution-badge [dpi]="dpi" [dense]="true" />
     }
 
-    <app-size-multi-select
-      [item]="item()"
-      [capped]="capped()"
-      (sizeToggle)="sizeToggled.emit($event)"
-    />
+    <div class="bcard__size-preview">
+      <app-size-multi-select
+        class="bcard__sizes"
+        [item]="item()"
+        [capped]="capped()"
+        (sizeToggle)="sizeToggled.emit($event)"
+      />
+      @if (previewSrc(); as src) {
+        <figure class="bcard__preview">
+          <img
+            class="bcard__preview-img"
+            [src]="src"
+            [alt]="'Prévia do botton ' + item().name"
+          />
+          <figcaption class="bcard__preview-cap">
+            {{ hasAdjustedPreview() ? 'Prévia ajustada' : 'Prévia' }}
+          </figcaption>
+        </figure>
+      }
+    </div>
 
     @if (!hasSelection()) {
       <p class="bcard__warn" role="status">Selecione ao menos 1 tamanho.</p>

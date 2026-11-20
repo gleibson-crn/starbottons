@@ -28,7 +28,7 @@ import {
 import { prepareArt, type PreparedArt } from '../../imaging';
 import { computeLayout, imageDrawSize, isBleedCovered } from '../../utils';
 import { applyKey } from './editor-keymap';
-import type { FrameLayer } from './botton-face';
+import { drawBottonFace, type FrameLayer } from './botton-face';
 import { drawScene } from './editor-render';
 import { withOffset, withZoom } from './editor-transform';
 
@@ -124,6 +124,60 @@ export class CanvasEditor implements AfterViewInit {
   ngAfterViewInit(): void {
     const width = this.host.nativeElement.clientWidth || MAX_SIDE;
     this.side.set(Math.max(MIN_SIDE, Math.min(MAX_SIDE, width)));
+  }
+
+  /**
+   * Snapshot da FACE limpa (sem guias/escurecimento) num canvas offscreen
+   * `outSize`×`outSize`, recortado ao círculo de sangria — para uma prévia
+   * externa (ex.: card do lote). Reusa a MESMA composição do editor
+   * (`drawBottonFace`); os offsets são escalados de `side()` para `outSize`.
+   * Devolve um dataURL PNG, ou `null` em ambiente sem canvas (ex.: testes jsdom).
+   */
+  faceSnapshot(outSize = 192): string | null {
+    try {
+      const spec = this.spec();
+      const off = document.createElement('canvas');
+      off.width = outSize;
+      off.height = outSize;
+      const ctx = off.getContext('2d');
+      if (!ctx || !spec) {
+        return null;
+      }
+      this.paintFace(ctx, spec, outSize);
+      return off.toDataURL('image/png');
+    } catch {
+      return null; // canvas indisponível (jsdom) ou toDataURL não implementado
+    }
+  }
+
+  /** Pinta a face limpa (recortada ao círculo de sangria) no contexto dado. */
+  private paintFace(ctx: CanvasRenderingContext2D, spec: PrintSpec, outSize: number): void {
+    const layout = computeLayout(spec, outSize);
+    const t = this.transform();
+    const size = this.drawSize(this.image(), layout.bleedR * 2, t.scale);
+    const bgImg = this.backgroundImage();
+    const bgT = this.backgroundTransform();
+    const bgSize = this.drawSize(bgImg, layout.bleedR * 2, bgT?.scale ?? 1);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(layout.center, layout.center, layout.bleedR, 0, Math.PI * 2);
+    ctx.clip();
+    drawBottonFace({
+      ctx,
+      side: outSize,
+      layout,
+      image: this.prepared(),
+      transform: t,
+      filters: this.artFilters(),
+      backgroundImage: bgImg,
+      backgroundTransform: bgT,
+      bgDrawW: bgSize.drawW,
+      bgDrawH: bgSize.drawH,
+      frames: this.buildFrames(),
+      editorSide: this.side(),
+      ...size,
+    });
+    ctx.restore();
   }
 
   onPointerDown(event: PointerEvent): void {
