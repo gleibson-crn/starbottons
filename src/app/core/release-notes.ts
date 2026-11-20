@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.8',
+    date: '2026-11-20',
+    notes: [
+      'Processamento em lote: cada imagem agora mostra uma prévia do botton já ajustado, ao lado da escolha de tamanho — dá para conferir o resultado (recorte, fundo e moldura) sem abrir o editor.',
+    ],
+  },
+  {
     version: '1.2.7',
     date: '2026-11-19',
     notes: [
