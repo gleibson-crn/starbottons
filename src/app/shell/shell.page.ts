@@ -18,6 +18,7 @@ import { filter } from 'rxjs';
 import { BatchStore, summarize, type Snapshot } from '../core/batch';
 import { APP_VERSION } from '../core/app-version';
 import { UpdateService } from '../core/update.service';
+import { localBackend } from '../core/local-backend/local-api';
 import { ModalService, ToastService, type ModalChoice } from '../shared/ui';
 
 type BatchDecision = 'print' | 'zip' | 'edit' | 'clear';
@@ -54,6 +55,8 @@ export class ShellPage implements OnInit {
   /** Versão exibida discretamente no cabeçalho. */
   protected readonly version = APP_VERSION;
   protected readonly batch = inject(BatchStore);
+  /** Backend local (desktop/Electron) quando presente; null no modo web. */
+  private readonly local = localBackend();
 
   /** `true` quando a rota ativa é o fluxo de lote (grid). */
   readonly batchMode = signal(false);
@@ -91,11 +94,16 @@ export class ShellPage implements OnInit {
     }
   }
 
-  /** Aviso nativo do navegador ao fechar/recarregar com lote em andamento. */
+  /**
+   * Aviso nativo do navegador ao fechar/recarregar com lote em andamento. O lote
+   * é SEMPRE persistido aqui (retomável). No desktop (Electron) NÃO bloqueamos: o
+   * `beforeunload` com `preventDefault` CANCELA o fechamento da janela — com lote
+   * aberto o app não fechava (nem pelo "Sair" nem pelo X). Só o modo web avisa.
+   */
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent): void {
     this.batch.flushPersist();
-    if (this.batch.hasWork()) {
+    if (!this.local && this.batch.hasWork()) {
       event.preventDefault();
       event.returnValue = '';
     }

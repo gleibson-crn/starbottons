@@ -232,6 +232,19 @@ describe('ShellPage — proteção do lote (Botton)', () => {
     setWork(1);
     expect(fire()).toBe(true);
   });
+
+  it('no desktop (local) NÃO bloqueia o fechamento mesmo com lote', async () => {
+    (globalThis as unknown as { sb?: unknown }).sb = {};
+    try {
+      await renderAt('/app/mockups');
+      setWork(1);
+      const ev = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(ev);
+      expect(ev.defaultPrevented).toBe(false); // persiste o lote, mas não cancela o close
+    } finally {
+      delete (globalThis as unknown as { sb?: unknown }).sb;
+    }
+  });
 });
 
 describe('ShellPage - retomar lote (BL-008)', () => {

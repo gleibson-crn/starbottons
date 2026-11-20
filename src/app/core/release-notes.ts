@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.9',
+    date: '2026-11-20',
+    notes: [
+      'Correção: o aplicativo não fechava quando havia um lote aberto (nem pelo "Sair" nem pelo X). Agora fecha normalmente — o lote continua salvo e retomável ao reabrir.',
+    ],
+  },
+  {
     version: '1.2.8',
     date: '2026-11-20',
     notes: [
