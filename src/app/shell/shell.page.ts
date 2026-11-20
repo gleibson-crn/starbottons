@@ -7,7 +7,6 @@ import {
   signal,
 } from '@angular/core';
 import {
-  ActivatedRoute,
   NavigationEnd,
   Router,
   RouterLink,
@@ -28,12 +27,9 @@ const plural = (n: number, one: string, many: string): string => (n === 1 ? one 
 
 /**
  * ShellPage — moldura das telas internas: cabeçalho com o menu global de
- * navegação (Botton / Bottons (N) / Impressão / Curadorias) + logout, e um
- * rótulo contextual (lote / cenário / curadoria) conforme a rota ativa.
- *
- * O rótulo vem de `route.data` (batch/contextual/manage) da rota ativa,
- * atualizado a cada navegação. O menu superior destaca a rota ativa via
- * `routerLinkActive`/`aria-current`.
+ * navegação (Botton / Bottons (N) / Impressão / Curadorias) + logout. O menu
+ * superior destaca a rota ativa via `routerLinkActive`/`aria-current` (cada
+ * tela já tem seu próprio título, então não há mais rótulo contextual aqui).
  *
  * Proteção do lote: "Botton" nunca apaga em silêncio — com lote em andamento
  * abre um diálogo para imprimir/baixar/editar antes de limpar; e o
@@ -48,7 +44,6 @@ const plural = (n: number, one: string, many: string): string => (n === 1 ? one 
 })
 export class ShellPage implements OnInit {
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
   private readonly modal = inject(ModalService);
   private readonly toast = inject(ToastService);
   protected readonly updates = inject(UpdateService);
@@ -58,18 +53,6 @@ export class ShellPage implements OnInit {
   /** Backend local (desktop/Electron) quando presente; null no modo web. */
   private readonly local = localBackend();
 
-  /** `true` quando a rota ativa é o fluxo de lote (grid). */
-  readonly batchMode = signal(false);
-  /** `true` na rota do mockup contextual. */
-  readonly contextualMode = signal(false);
-  /** `true` na área curadora de mockups. */
-  readonly manageMode = signal(false);
-  /** `true` na área curadora de fundos. */
-  readonly manageBackgroundsMode = signal(false);
-  /** `true` na área curadora de molduras. */
-  readonly manageFramesMode = signal(false);
-  /** `true` na Área de Impressão. */
-  readonly printMode = signal(false);
   /** `true` na tela de upload (link "Botton" é tratado à mão, sem routerLink). */
   readonly uploadActive = signal(false);
 
@@ -250,17 +233,6 @@ export class ShellPage implements OnInit {
   }
 
   private syncContext(): void {
-    let child = this.route.firstChild;
-    while (child?.firstChild) {
-      child = child.firstChild;
-    }
-    const data = child?.snapshot?.data ?? {};
-    this.batchMode.set(data['batch'] === true);
-    this.contextualMode.set(data['contextual'] === true);
-    this.manageMode.set(data['manage'] === true);
-    this.manageBackgroundsMode.set(data['manageBackgrounds'] === true);
-    this.manageFramesMode.set(data['manageFrames'] === true);
-    this.printMode.set(data['print'] === true);
     this.uploadActive.set(this.router.url.startsWith('/app/upload'));
   }
 }

@@ -4,7 +4,7 @@
 
   <div class="manager__head">
     <div>
-      <h1 id="frame-manager-title">Curadoria de molduras</h1>
+      <h1 id="frame-manager-title" class="hero__title">Curadoria de molduras</h1>
       <p class="manager__intro">
         Cadastre molduras (PNG com transparência) para aplicar como camada
         decorativa por cima da arte dos bottons no processamento em lote. Monte
@@ -30,6 +30,7 @@
 
     <app-file-dropzone
       [accept]="accept"
+      [compact]="true"
       browseLabel="Escolher moldura PNG"
       (fileAccepted)="onFile($event)"
       (fileRejected)="onFileRejected($event)"

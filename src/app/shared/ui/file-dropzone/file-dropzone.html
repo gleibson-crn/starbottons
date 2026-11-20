@@ -1,5 +1,6 @@
 <div
   class="dropzone"
+  [class.is-compact]="compact()"
   [class.is-dragging]="dragging()"
   (dragover)="onDragOver($event)"
   (dragleave)="onDragLeave()"

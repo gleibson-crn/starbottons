@@ -7,20 +7,22 @@
   list-style: none;
   margin: var(--sp-6) 0 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
+  /* Grade responsiva: ~3 por linha (cada item ~33%), reflui em janelas estreitas. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--sp-4);
+  align-items: start;
 }
 
 .upload__item {
   display: flex;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
   align-items: center;
 }
 
 .upload__thumb {
-  inline-size: 96px;
-  block-size: 96px;
+  inline-size: 64px;
+  block-size: 64px;
   object-fit: cover;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
@@ -39,18 +41,81 @@
   margin: 0;
   font-weight: 600;
   overflow-wrap: anywhere;
+  line-height: 1.3;
+  /* No máx. 2 linhas com reticências; reserva 2 linhas SEMPRE → cards de
+     altura uniforme e o nome nunca alarga o card. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-block-size: 2.6em;
 }
 
 .upload__dims {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
 }
 
+/* Alerta de resolução baixa: só o símbolo (não cresce o card); a mensagem
+   aparece em tooltip ao passar o mouse OU clicar (foco). */
 .upload__warn {
-  margin: var(--sp-2) 0 0;
-  font-size: var(--fs-sm);
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
   color: var(--warning-500);
+  line-height: 1;
+  cursor: help;
+}
+
+.upload__warn-icon {
+  font-size: var(--fs-md);
+}
+
+.upload__warn:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.upload__warn-tip {
+  position: absolute;
+  inset-block-end: calc(100% + 6px);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  inline-size: max-content;
+  max-inline-size: 190px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-md);
+  /* Caixa na cor do símbolo (âmbar) com texto escuro da mesma família → AA. */
+  background: var(--warning-500);
+  border: 1px solid hsl(38 92% 38%);
+  box-shadow: var(--shadow-md);
+  color: hsl(38 60% 10%);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-align: start;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--ease),
+    visibility var(--motion-fast) var(--ease);
+}
+
+.upload__warn:hover .upload__warn-tip,
+.upload__warn:focus .upload__warn-tip {
+  opacity: 1;
+  visibility: visible;
 }
 
 .upload__remove {

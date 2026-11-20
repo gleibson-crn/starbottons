@@ -10,6 +10,14 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.11',
+    date: '2026-11-20',
+    notes: [
+      'Tela de envio de imagens mais organizada: a prévia dos bottons fica em grade (3 por linha, todos do mesmo tamanho), o nome do arquivo ocupa no máximo 2 linhas, e o aviso de "resolução baixa" virou um símbolo discreto — a mensagem aparece ao passar o mouse ou clicar.',
+      'Visual padronizado nas telas de Curadoria (mockups, fundos e molduras) e na Impressão: título com a cor da marca, descrição e área de envio ocupando a largura toda, e removida a barra cinza repetida no topo.',
+    ],
+  },
+  {
     version: '1.2.10',
     date: '2026-11-20',
     notes: [

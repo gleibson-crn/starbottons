@@ -1,7 +1,7 @@
 <section aria-labelledby="bg-manager-title">
   <div class="manager__head">
     <div>
-      <h1 id="bg-manager-title">Curadoria de fundos</h1>
+      <h1 id="bg-manager-title" class="hero__title">Curadoria de fundos</h1>
       <p class="manager__intro">
         Cadastre imagens de fundo (PNG ou JPEG) para reutilizar como plano de
         fundo dos bottons no processamento em lote. A imagem é preservada como
@@ -25,6 +25,7 @@
     </div>
 
     <app-file-dropzone
+      [compact]="true"
       browseLabel="Escolher imagem de fundo"
       (fileAccepted)="onFile($event)"
       (fileRejected)="onFileRejected($event)"

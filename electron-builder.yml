@@ -12,6 +12,12 @@ appId: com.starbottons.app
 productName: Star Bottons
 copyright: Star Bottons — freeware de uso livre
 
+# Nome FIXO do instalador (sem versão). Mantém a URL de download estável, para o
+# link permanente github.com/.../releases/latest/download/Star-Bottons-Setup.exe —
+# assim a descrição/link nunca precisa ser reescrita a cada release. O número da
+# versão vai no latest.yml (que o electron-updater lê), não no nome do arquivo.
+artifactName: Star-Bottons-Setup.${ext}
+
 directories:
   output: release
 

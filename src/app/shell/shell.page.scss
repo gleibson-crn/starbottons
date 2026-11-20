@@ -197,18 +197,6 @@
   }
 }
 
-.shell__context {
-  padding: var(--sp-4) var(--sp-6);
-  border-block-end: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.shell__batch-label {
-  margin: 0;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
 .shell__main {
   flex: 1;
   inline-size: min(100%, 1080px);

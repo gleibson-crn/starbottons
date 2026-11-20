@@ -7,6 +7,7 @@
 
   <app-file-dropzone
     [multiple]="true"
+    [compact]="true"
     [browseLabel]="browseLabel()"
     (filesAccepted)="onFilesAccepted($event)"
     (filesRejected)="onFilesRejected($event)"
@@ -24,13 +25,20 @@
           <div class="upload__meta">
             <p class="upload__name">{{ item.file.name }}</p>
             <p class="upload__dims">
-              {{ item.probe.width }} × {{ item.probe.height }} px
+              <span>{{ item.probe.width }} × {{ item.probe.height }} px</span>
+              @if (isLowRes(item.probe)) {
+                <button
+                  class="upload__warn"
+                  type="button"
+                  aria-label="Resolução baixa — a arte pode perder nitidez. Passe o mouse ou clique para ver."
+                >
+                  <span class="upload__warn-icon" aria-hidden="true">⚠️</span>
+                  <span class="upload__warn-tip" role="tooltip">
+                    Resolução baixa — a arte pode perder nitidez.
+                  </span>
+                </button>
+              }
             </p>
-            @if (isLowRes(item.probe)) {
-              <p class="upload__warn" role="status">
-                ⚠️ Resolução baixa — a arte pode perder nitidez.
-              </p>
-            }
           </div>
           <button
             class="upload__remove"

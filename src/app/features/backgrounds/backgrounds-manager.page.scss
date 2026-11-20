@@ -8,7 +8,6 @@
 .manager__intro {
   margin: 0 0 var(--sp-6);
   color: var(--color-text-muted);
-  max-inline-size: 60ch;
 }
 
 .manager__subtitle {
@@ -16,11 +15,13 @@
   font-size: var(--fs-md);
 }
 
+/* Área de envio em largura cheia (como a tela Botton): o form ocupa a coluna
+   toda; só o campo de texto fica com largura de leitura, e o dropzone/prévia
+   preenchem. O botão não estica. */
 .bgform {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
-  max-inline-size: 48ch;
   margin-block-end: var(--sp-6);
 }
 
@@ -28,6 +29,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+  max-inline-size: 28rem;
+}
+
+.bgform > .btn {
+  align-self: flex-start;
 }
 
 .bgform__label {

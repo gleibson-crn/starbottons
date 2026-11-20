@@ -17,6 +17,20 @@
   background: var(--primary-100);
 }
 
+/* Modo compacto: menos altura (padding enxuto, ícone menor, botão coladinho). */
+.dropzone.is-compact {
+  gap: var(--sp-2);
+  padding: var(--sp-6);
+}
+
+.dropzone.is-compact .dropzone__icon {
+  font-size: var(--fs-lg);
+}
+
+.dropzone.is-compact .dropzone__browse {
+  margin-block-start: var(--sp-2);
+}
+
 .dropzone__icon {
   font-size: var(--fs-2xl);
 }

@@ -41,6 +41,8 @@ export class FileDropzone {
   readonly multiple = input<boolean>(false);
   /** Rótulo do botão de busca. Vira "Adicionar arquivo" quando já há itens. */
   readonly browseLabel = input<string>('Procurar arquivo');
+  /** Modo compacto: ocupa menos altura (menos padding, ícone menor). */
+  readonly compact = input<boolean>(false);
 
   readonly fileAccepted = output<File>();
   readonly fileRejected = output<string>();
