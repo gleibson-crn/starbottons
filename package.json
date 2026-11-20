@@ -19,7 +19,8 @@
     "models:fetch": "node scripts/fetch-models.mjs",
     "models:smoke": "node scripts/smoke-model.mjs",
     "electron": "electron electron/main.cjs",
-    "desktop": "node scripts/start-electron.mjs"
+    "desktop": "node scripts/start-electron.mjs",
+    "preview": "ng build && electron electron/main.cjs"
   },
   "private": true,
   "packageManager": "npm@11.13.0",

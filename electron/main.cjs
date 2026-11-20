@@ -11,11 +11,12 @@
 // A URL do app pode ser trocada por SB_APP_URL (padrão: http://localhost:4200).
 
 const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
-const { readFileSync, writeFileSync } = require('node:fs');
+const { readFileSync, writeFileSync, existsSync } = require('node:fs');
 const { join } = require('node:path');
 const { tmpdir } = require('node:os');
 const http = require('node:http');
 const localDb = require('./backend/db.cjs'); // backend local (ADR-033): SQLite
+const { startStaticServer } = require('./backend/static-server.cjs'); // serve o ng build
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -52,11 +53,18 @@ function webPort() {
   }
 }
 
-const APP_URL = process.env.SB_APP_URL || `http://localhost:${webPort()}`;
 /** Ícone do app (barra de título + barra de tarefas). */
 const ICON = join(__dirname, '..', 'scripts', 'starbottons.ico');
-/** Porta do APP_URL (p/ sondar o ng serve antes de carregar). */
-const APP_PORT = Number(new URL(APP_URL).port || 80);
+
+/** Pasta do `ng build` (dist/starbottons/browser). No .exe fica em resources/. */
+function distDir() {
+  return app.isPackaged
+    ? join(process.resourcesPath, 'dist', 'starbottons', 'browser')
+    : join(__dirname, '..', 'dist', 'starbottons', 'browser');
+}
+
+let staticServer = null; // servidor estático do build (modo disco); fechado no quit.
+let appOrigin = process.env.SB_APP_URL || ''; // origem carregada (p/ links externos).
 
 /** true se host:port responde GET / (<400). */
 function probe(host, port) {
@@ -74,30 +82,53 @@ function probe(host, port) {
 }
 
 /** Sonda IPv4 e IPv6 (o ng serve no Windows costuma escutar só em ::1). */
-async function appReady() {
-  const [v4, v6] = await Promise.all([probe('127.0.0.1', APP_PORT), probe('::1', APP_PORT)]);
+async function appReady(port) {
+  const [v4, v6] = await Promise.all([probe('127.0.0.1', port), probe('::1', port)]);
   return v4 || v6;
 }
 
-/**
- * Carrega a app assim que o ng serve responder, mantendo a tela de carregamento
- * (loading.html) visível enquanto compila. A janela abre NA HORA; a troca é só
- * quando o front está pronto — sem esperar o build terminar para abrir.
- */
-async function loadWhenReady(win) {
+/** Modo DEV/fallback: espera o ng serve responder e então carrega a URL. */
+async function loadFromServe(win, url) {
+  appOrigin = url;
+  const port = Number(new URL(url).port || 80);
   const deadline = Date.now() + 5 * 60 * 1000;
   while (Date.now() < deadline) {
     if (win.isDestroyed()) {
       return;
     }
-    if (await appReady()) {
+    if (await appReady(port)) {
       break;
     }
     await sleep(400);
   }
   if (!win.isDestroyed()) {
-    win.loadURL(APP_URL);
+    win.loadURL(url);
   }
+}
+
+/**
+ * Decide COMO carregar a app, mantendo a tela de carregamento (loading.html)
+ * visível até trocar:
+ *  - DEV: `SB_APP_URL` setado (start-electron.mjs) → espera o ng serve e troca;
+ *  - DISCO: build do Angular presente (.exe empacotado OU build local) → sobe o
+ *    servidor estático interno e carrega NA HORA (sem Docker/Supabase/ng serve);
+ *  - fallback: tenta o ng serve na porta do .web-port.
+ */
+async function loadWhenReady(win) {
+  if (process.env.SB_APP_URL) {
+    await loadFromServe(win, process.env.SB_APP_URL);
+    return;
+  }
+  const dir = distDir();
+  if (existsSync(join(dir, 'index.html'))) {
+    staticServer = await startStaticServer(dir);
+    appOrigin = staticServer.url;
+    if (!win.isDestroyed()) {
+      win.loadURL(staticServer.url);
+    }
+    return;
+  }
+  await loadFromServe(win, `http://localhost:${webPort()}`);
 }
 
 function createWindow() {
@@ -125,7 +156,7 @@ function createWindow() {
   // Links externos (ex.: GitHub, Apoia.se) abrem no navegador do sistema,
   // não dentro do app.
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https?:\/\//i.test(url) && !url.startsWith(APP_URL)) {
+    if (/^https?:\/\//i.test(url) && (!appOrigin || !url.startsWith(appOrigin))) {
       shell.openExternal(url);
       return { action: 'deny' };
     }
@@ -177,4 +208,13 @@ app.whenReady().then(() => {
 // Fecha o programa quando a janela é fechada (Sair do app OU X da janela).
 app.on('window-all-closed', () => {
   app.quit();
+});
+
+// Encerra o servidor estático do build (modo disco) ao sair.
+app.on('before-quit', () => {
+  try {
+    staticServer?.close();
+  } catch {
+    /* ok */
+  }
 });
