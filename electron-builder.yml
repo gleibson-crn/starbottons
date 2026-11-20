@@ -1,0 +1,77 @@
+# Empacotamento do Star Bottons como app desktop instalável (.exe) — ADR-032 Fase 5.
+#
+# Gera um instalador NSIS (Windows) que carrega o `ng build` do disco (servidor
+# estático interno do main.cjs) — SEM Docker/Supabase/ng serve. Auto-update via
+# electron-updater lendo os Releases do repo público gleibson-crn/starbottons.
+#
+# Comandos (package.json):
+#   npm run dist          -> instalador .exe em release/ (sem publicar)
+#   npm run dist:dir      -> app desempacotado em release/win-unpacked (teste rápido)
+#   npm run dist:publish  -> builda e publica o Release no GitHub (precisa GH_TOKEN)
+appId: com.starbottons.app
+productName: Star Bottons
+copyright: Star Bottons — freeware de uso livre
+
+directories:
+  output: release
+
+# O que entra no app.asar. Parte do padrão (**/*) e SUBTRAI o que não deve ir:
+#  - dist/ vai FORA do asar (extraResources) p/ o servidor estático ler direto;
+#  - public/ já foi copiado p/ dentro do dist pelo build (não duplicar o modelo 90MB);
+#  - src/supabase/docs/scripts/testes não têm função no app empacotado.
+# (node_modules de produção são incluídos automaticamente; devDeps são filtrados.)
+files:
+  - '**/*'
+  - '!dist/**/*'
+  - '!release/**/*'
+  - '!src/**/*'
+  - '!public/**/*'
+  - '!supabase/**/*'
+  - '!docs/**/*'
+  - '!scripts/**/*'
+  - 'scripts/starbottons.ico'
+  - '!**/*.test.cjs'
+  - '!**/*.spec.ts'
+  - '!**/*.map'
+  - '!**/.web-port'
+  - '!**/.update*'
+  - '!.angular/**/*'
+  - '!.vscode/**/*'
+  # node_modules SÓ do renderer (já embutidos no ng build) — fora do asar.
+  # onnxruntime-web sozinho são ~145MB de peso morto. O main só usa imagescript,
+  # @resvg/resvg-wasm e electron-updater.
+  - '!**/node_modules/onnxruntime-web/**/*'
+  - '!**/node_modules/@supabase/**/*'
+  - '!**/node_modules/jszip/**/*'
+  - '!**/node_modules/qrcode/**/*'
+
+# O build do Angular (com o modelo e o WASM) vai como recurso FORA do asar, em
+# resources/dist/starbottons/browser — caminho que o main.cjs usa quando empacotado.
+extraResources:
+  - from: dist/starbottons/browser
+    to: dist/starbottons/browser
+
+asar: true
+# WASM lido via readFileSync precisa de arquivo REAL (não de dentro do asar).
+asarUnpack:
+  - '**/node_modules/@resvg/**'
+  - '**/node_modules/imagescript/**'
+
+win:
+  target:
+    - nsis
+  icon: scripts/starbottons.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Star Bottons
+
+# Auto-update: electron-updater lê os Releases deste repo (público).
+publish:
+  - provider: github
+    owner: gleibson-crn
+    repo: starbottons

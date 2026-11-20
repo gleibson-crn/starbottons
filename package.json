@@ -1,6 +1,9 @@
 {
   "name": "starbottons",
   "version": "1.2.7",
+  "description": "Star Bottons — gerador de artes e mockups de bottons (app desktop local).",
+  "author": "Star Bottons",
+  "main": "electron/main.cjs",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -20,7 +23,10 @@
     "models:smoke": "node scripts/smoke-model.mjs",
     "electron": "electron electron/main.cjs",
     "desktop": "node scripts/start-electron.mjs",
-    "preview": "ng build && electron electron/main.cjs"
+    "preview": "ng build && electron electron/main.cjs",
+    "dist": "ng build && electron-builder",
+    "dist:dir": "ng build && electron-builder --dir",
+    "dist:publish": "ng build && electron-builder --publish always"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
@@ -34,6 +40,7 @@
     "@fontsource/fredoka": "^5.3.0",
     "@resvg/resvg-wasm": "^2.6.2",
     "@supabase/supabase-js": "^2.119.0",
+    "electron-updater": "^6.8.11",
     "imagescript": "^3.20.5",
     "jszip": "^3.10.2",
     "onnxruntime-web": "1.31.1",
@@ -50,6 +57,7 @@
     "angular-eslint": "22.7.0",
     "concurrently": "^10.0.7",
     "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
     "eslint": "^10.15.0",
     "fake-indexeddb": "^6.2.8",
     "jsdom": "^31.0.1",
