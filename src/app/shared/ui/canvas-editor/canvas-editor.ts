@@ -150,7 +150,11 @@ export class CanvasEditor implements AfterViewInit {
     }
   }
 
-  /** Pinta a face limpa (recortada ao círculo de sangria) no contexto dado. */
+  /**
+   * Pinta a face limpa no contexto dado, recortada na LINHA DE CORTE (sem a
+   * sangria): dá zoom para o círculo de corte (`cutR`) preencher a prévia — é o
+   * que o cliente enxerga no botton acabado.
+   */
   private paintFace(ctx: CanvasRenderingContext2D, spec: PrintSpec, outSize: number): void {
     const layout = computeLayout(spec, outSize);
     const t = this.transform();
@@ -158,10 +162,15 @@ export class CanvasEditor implements AfterViewInit {
     const bgImg = this.backgroundImage();
     const bgT = this.backgroundTransform();
     const bgSize = this.drawSize(bgImg, layout.bleedR * 2, bgT?.scale ?? 1);
+    const c = outSize / 2;
+    const zoom = c / layout.cutR; // corte → preenche a prévia (sangria cortada)
     ctx.save();
     ctx.beginPath();
-    ctx.arc(layout.center, layout.center, layout.bleedR, 0, Math.PI * 2);
+    ctx.arc(c, c, c, 0, Math.PI * 2);
     ctx.clip();
+    ctx.translate(c, c);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-c, -c);
     drawBottonFace({
       ctx,
       side: outSize,
