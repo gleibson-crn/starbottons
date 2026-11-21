@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.14',
+    date: '2026-11-21',
+    notes: [
+      'Impressão já começa numa impressora de verdade: ao abrir a tela de impressão, o sistema pula as impressoras virtuais (OneNote, "Imprimir em PDF", XPS, Fax) e já seleciona uma impressora física — nada de cair no OneNote por engano.',
+    ],
+  },
+  {
     version: '1.2.13',
     date: '2026-11-21',
     notes: [

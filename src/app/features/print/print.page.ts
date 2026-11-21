@@ -232,11 +232,19 @@ export class PrintPage implements OnDestroy {
       .listPrinters()
       .then((list) => {
         this.printers.set(list);
-        // Pré-seleciona a ÚLTIMA impressora usada (se ainda existir); senão, a
-        // padrão do sistema. Evita cair numa impressora virtual (OneNote/PDF).
+        // Pré-seleção inteligente: 1) a ÚLTIMA impressora usada (se ainda
+        // existir); 2) a padrão do sistema SE for física; 3) a 1ª impressora
+        // física — pulando as virtuais (OneNote, "Print to PDF", XPS, Fax...),
+        // que não imprimem no papel; 4) só então a padrão/1ª como último recurso.
         const saved = this.loadLastPrinter();
+        const physical = list.filter((p) => !this.isVirtualPrinter(p.name));
+        // A última usada só conta se AINDA existir E for física (um OneNote salvo
+        // de antes não deve sequestrar a seleção).
+        const savedPhysical = physical.find((p) => p.name === saved);
         const pick =
-          list.find((p) => p.name === saved) ??
+          savedPhysical ??
+          physical.find((p) => p.isDefault) ??
+          physical[0] ??
           list.find((p) => p.isDefault) ??
           list[0];
         this.selectedPrinter.set(pick?.name ?? '');
@@ -303,6 +311,17 @@ export class PrintPage implements OnDestroy {
     }
   }
 
+  /**
+   * Impressora VIRTUAL (não imprime no papel): OneNote, "Microsoft Print to PDF",
+   * XPS, Fax, Adobe PDF. Usada para pular essas na pré-seleção e começar numa
+   * impressora física de verdade.
+   */
+  private isVirtualPrinter(name: string): boolean {
+    return /onenote|print to pdf|xps document writer|\bfax\b|adobe pdf|send to|microsoft print/i.test(
+      name,
+    );
+  }
+
   /** Chave do localStorage com a última impressora usada. */
   private static readonly LAST_PRINTER_KEY = 'sb.print.lastPrinter';
 
@@ -315,12 +334,17 @@ export class PrintPage implements OnDestroy {
     }
   }
 
-  /** Salva a impressora escolhida para pré-selecionar na próxima vez. */
+  /**
+   * Salva a impressora escolhida para pré-selecionar na próxima vez. NÃO lembra
+   * impressoras virtuais (OneNote/PDF/...) — assim a próxima abertura sempre volta
+   * para uma impressora física.
+   */
   private saveLastPrinter(name: string): void {
+    if (!name || this.isVirtualPrinter(name)) {
+      return;
+    }
     try {
-      if (name) {
-        localStorage.setItem(PrintPage.LAST_PRINTER_KEY, name);
-      }
+      localStorage.setItem(PrintPage.LAST_PRINTER_KEY, name);
     } catch {
       /* localStorage indisponível: segue sem lembrar */
     }

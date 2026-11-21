@@ -271,14 +271,10 @@
             @if (printers().length > 0) {
               <label class="print-dialog__field">
                 <span class="print-dialog__label">Impressora</span>
-                <select
-                  class="field__control"
-                  [value]="selectedPrinter()"
-                  (change)="setSelectedPrinter($event)"
-                >
+                <select class="field__control" (change)="setSelectedPrinter($event)">
                   @for (p of printers(); track p.name) {
-                    <option [value]="p.name">
-                      {{ p.displayName }}{{ p.isDefault ? ' (padrão)' : '' }}
+                    <option [value]="p.name" [selected]="p.name === selectedPrinter()">
+                      {{ p.displayName }}{{ p.isDefault ? ' (padrão do Windows)' : '' }}
                     </option>
                   }
                 </select>
