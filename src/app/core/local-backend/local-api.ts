@@ -179,8 +179,8 @@ export interface LocalBackendApi {
   readonly uploads: { save(input: LocalUploadInput): Promise<LocalUploadResult> };
   generate(body: unknown): Promise<LocalGenerateResult>;
   renderPath(jobId: string): Promise<string | null>;
-  /** Imprime a folha A4 como PDF e a abre no visualizador do sistema (Electron). */
-  printSheet(): Promise<{ ok: boolean; path?: string; error?: string }>;
+  /** Imprime a folha A4 direto na impressora (abre o diálogo do sistema, Electron). */
+  printSheet(): Promise<{ ok: boolean; error?: string }>;
   /**
    * Auto-update do desktop (.exe): assina o evento de "nova versão baixada"
    * (para avisar DENTRO do app, não pelo toast do SO). Só presente no empacotado.

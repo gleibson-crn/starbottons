@@ -11,9 +11,8 @@
 // A URL do app pode ser trocada por SB_APP_URL (padrão: http://localhost:4200).
 
 const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
-const { readFileSync, writeFileSync, existsSync } = require('node:fs');
+const { readFileSync, existsSync } = require('node:fs');
 const { join } = require('node:path');
-const { tmpdir } = require('node:os');
 const http = require('node:http');
 const localDb = require('./backend/db.cjs'); // backend local (ADR-033): SQLite
 const { startStaticServer } = require('./backend/static-server.cjs'); // serve o ng build
@@ -21,26 +20,34 @@ const { startStaticServer } = require('./backend/static-server.cjs'); // serve o
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * Imprime a folha A4 gerando um PDF e abrindo-o no visualizador do sistema.
- * No Electron, `window.print()` abre o diálogo nativo SEM painel de prévia
- * ("este aplicativo não dá suporte à visualização de impressão"). Gerar o PDF
- * dá uma prévia real (e permite SALVAR a folha). `preferCSSPageSize` usa o
- * `@page { size: A4 }` do app e `printBackground` preserva arte/cores — paridade
- * com o print do navegador (respeita o `@media print` da página).
+ * Imprime a folha A4 DIRETO na impressora: abre o diálogo de impressão do
+ * sistema (escolher impressora + opções) e envia para o papel — sem passar por
+ * visualizador de PDF. `printBackground` preserva arte/cores; `pageSize: A4` +
+ * o `@media print`/`@page { size: A4; margin: 0 }` da página garantem que só a
+ * folha vá ao papel. Quem quiser PDF escolhe "Microsoft Print to PDF" no próprio
+ * diálogo. Cancelar NÃO é erro (evita abrir um 2º diálogo pelo fallback do
+ * renderer); só devolve `ok:false` se o diálogo nem abrir (ex.: sem impressora),
+ * e aí o renderer tenta o `window.print()`.
  */
 async function printSheet(event) {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) {
     return { ok: false, error: 'janela não encontrada' };
   }
-  const pdf = await win.webContents.printToPDF({
-    printBackground: true,
-    preferCSSPageSize: true,
-  });
-  const file = join(tmpdir(), `star-bottons-folha-${Date.now()}.pdf`);
-  writeFileSync(file, pdf);
-  const err = await shell.openPath(file); // '' = sucesso
-  return err ? { ok: false, error: err } : { ok: true, path: file };
+  try {
+    const result = await new Promise((resolve) => {
+      win.webContents.print(
+        { printBackground: true, pageSize: 'A4', margins: { marginType: 'none' } },
+        (success, failureReason) => resolve({ success, failureReason }),
+      );
+    });
+    if (result.success || /cancel/i.test(result.failureReason || '')) {
+      return { ok: true };
+    }
+    return { ok: false, error: result.failureReason || 'falha ao imprimir' };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  }
 }
 
 /** Porta do front escolhida pelo up.mjs (scripts/.web-port), ou 4200. */

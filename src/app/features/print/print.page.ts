@@ -201,10 +201,10 @@ export class PrintPage implements OnDestroy {
   }
 
   /**
-   * Imprime a folha. No Electron (`window.sb`), gera um PDF e o abre no
-   * visualizador do sistema — prévia real + opção de salvar (o `window.print()`
-   * nativo do Electron não tem painel de prévia). No navegador, usa o diálogo de
-   * impressão normal. Qualquer falha do caminho PDF cai no `window.print()`.
+   * Imprime a folha. No Electron (`window.sb`), abre o diálogo da IMPRESSORA do
+   * sistema e envia direto ao papel (quem quiser PDF escolhe "Print to PDF" no
+   * diálogo). No navegador, usa o diálogo de impressão normal. Se o caminho do
+   * Electron falhar (ex.: sem impressora), cai no `window.print()`.
    */
   print(): void {
     const local = localBackend();

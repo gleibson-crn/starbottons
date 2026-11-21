@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.12',
+    date: '2026-11-20',
+    notes: [
+      'Impressão corrigida: o botão "Imprimir" agora abre direto o diálogo da impressora do Windows (escolher impressora e imprimir no papel), sem abrir o leitor de PDF. Quem ainda quiser gerar um PDF é só escolher "Microsoft Print to PDF" na lista de impressoras.',
+    ],
+  },
+  {
     version: '1.2.11',
     date: '2026-11-20',
     notes: [
