@@ -38,6 +38,7 @@ export {
   addFrameImage,
   canAddFrame,
   removeFrameImageAt,
+  replaceFrameImageAt,
   reorderFrame,
   updateFrameFramingAt,
   resetTransform,

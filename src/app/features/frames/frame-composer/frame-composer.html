@@ -67,6 +67,15 @@
           </button>
           <button
             type="button"
+            class="btn btn--ghost"
+            [attr.aria-label]="'Remover fundo da camada ' + (i + 1)"
+            title="Remover fundo desta camada"
+            (click)="frames.startBgEdit(i)"
+          >
+            <span aria-hidden="true">✂</span>
+          </button>
+          <button
+            type="button"
             class="btn btn--ghost layer__remove"
             [attr.aria-label]="'Remover camada ' + (i + 1)"
             (click)="remove(i)"
@@ -76,6 +85,16 @@
         </li>
       }
     </ol>
+  }
+
+  @if (frames.bgEditIndex() >= 0) {
+    <app-frame-bg-editor
+      [image]="frames.imageEls()[frames.bgEditIndex()] ?? null"
+      [fileName]="'camada-' + (frames.bgEditIndex() + 1) + '.png'"
+      [applying]="frames.uploading()"
+      (applied)="frames.applyBgEdit($event)"
+      (cancelled)="frames.cancelBgEdit()"
+    />
   }
 
   <div class="fcomp__add">

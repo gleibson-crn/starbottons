@@ -70,6 +70,7 @@ import {
   type CutoutPanelResult,
 } from '../remove-bg-panel/remove-bg-panel';
 import { FrameLayers } from './frame-layers';
+import { FrameBgEditor } from '../../frames/frame-bg-editor/frame-bg-editor';
 
 /** Ajuste salvo pelo diálogo (vale p/ todos os tamanhos da imagem). */
 export interface BatchEditResult {
@@ -128,6 +129,7 @@ const FRAME_ACCEPT: readonly string[] = ['image/png'];
     FileDropzone,
     AiStylePanel,
     RemoveBgPanel,
+    FrameBgEditor,
   ],
   host: { '(keydown)': 'onKeydown($event)' },
   templateUrl: './batch-editor-dialog.html',
@@ -201,15 +203,8 @@ export class BatchEditorDialog implements OnInit {
   readonly frameTemplates = signal<FrameTemplate[]>([]);
   /** Fase de carregamento da galeria de molduras. */
   readonly frameGalleryPhase = signal<GalleryPhase>('idle');
-  /**
-   * Pilha de molduras (ADR-023): estado (ativa, imagens, upload/erro) + operações
-   * (empilhar até 3, remover, reordenar z-order, enquadrar). A UI chama `frames.*`.
-   */
-  readonly frames = new FrameLayers(
-    this.transform,
-    this.uploads,
-    () => this.editorSide(),
-  );
+  /** Pilha de molduras (ADR-023): estado + operações (até 3). A UI chama `frames.*`. */
+  readonly frames = new FrameLayers(this.transform, this.uploads, () => this.editorSide());
 
   /**
    * Camada dos gestos na prévia: `'background'` quando a aba "Fundo" está ativa E

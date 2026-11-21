@@ -8,8 +8,10 @@ import {
   signal,
 } from '@angular/core';
 import { FileDropzone, ModalService, ToastService } from '../../shared/ui';
+import { loadImage } from '../../shared/utils';
 import { FrameTemplateService, type FrameTemplate } from '../../core/frames';
 import { FrameComposer } from './frame-composer/frame-composer';
+import { FrameBgEditor } from './frame-bg-editor/frame-bg-editor';
 
 type GridPhase = 'loading' | 'ready' | 'error';
 
@@ -34,7 +36,7 @@ const PNG_ONLY: readonly string[] = ['image/png'];
 @Component({
   selector: 'app-frames-manager-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FileDropzone, FrameComposer],
+  imports: [FileDropzone, FrameBgEditor, FrameComposer],
   templateUrl: './frames-manager.page.html',
   styleUrl: './frames-manager.page.scss',
 })
@@ -49,6 +51,10 @@ export class FramesManagerPage implements OnInit, OnDestroy {
   readonly name = signal('');
   readonly pendingFile = signal<File | null>(null);
   readonly pendingPreview = signal<string | null>(null);
+  /** Imagem carregada da moldura pendente (fonte do "Remover fundo"). */
+  readonly pendingImage = signal<HTMLImageElement | null>(null);
+  /** Painel "Remover fundo" aberto para a moldura pendente. */
+  readonly editingBg = signal(false);
   readonly saving = signal(false);
 
   readonly templates = signal<FrameTemplate[]>([]);
@@ -72,15 +78,47 @@ export class FramesManagerPage implements OnInit, OnDestroy {
     this.name.set((event.target as HTMLInputElement).value);
   }
 
-  /** Guarda o arquivo escolhido e cria uma prévia local (object URL). */
-  onFile(file: File): void {
+  /** Guarda a moldura escolhida, cria a prévia e carrega a imagem p/ o recorte. */
+  async onFile(file: File): Promise<void> {
     this.revokePreview();
+    this.editingBg.set(false);
+    this.pendingImage.set(null);
     this.pendingFile.set(file);
-    this.pendingPreview.set(URL.createObjectURL(file));
+    const url = URL.createObjectURL(file);
+    this.pendingPreview.set(url);
+    try {
+      this.pendingImage.set(await loadImage(url));
+    } catch {
+      /* imagem inválida: segue sem a opção de recorte */
+    }
   }
 
   onFileRejected(reason: string): void {
     this.toast.error(reason);
+  }
+
+  /** Abre/fecha o painel "Remover fundo" sobre a moldura pendente. */
+  openBgEdit(): void {
+    this.editingBg.set(true);
+  }
+
+  cancelBgEdit(): void {
+    this.editingBg.set(false);
+  }
+
+  /** Recorte aplicado: troca a moldura pendente pelo PNG sem fundo. */
+  async onBgApplied(file: File): Promise<void> {
+    this.revokePreview();
+    this.pendingImage.set(null);
+    this.pendingFile.set(file);
+    const url = URL.createObjectURL(file);
+    this.pendingPreview.set(url);
+    this.editingBg.set(false);
+    try {
+      this.pendingImage.set(await loadImage(url));
+    } catch {
+      /* segue sem recorte adicional */
+    }
   }
 
   async save(): Promise<void> {
@@ -150,6 +188,8 @@ export class FramesManagerPage implements OnInit, OnDestroy {
   private resetForm(): void {
     this.name.set('');
     this.pendingFile.set(null);
+    this.pendingImage.set(null);
+    this.editingBg.set(false);
     this.revokePreview();
   }
 

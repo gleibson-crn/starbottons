@@ -7,6 +7,7 @@ import {
   addFrameImage,
   canAddFrame,
   removeFrameImageAt,
+  replaceFrameImageAt,
   reorderFrame,
   resetTransform,
   toggleFlipH,
@@ -236,6 +237,19 @@ describe('editor-transform', () => {
   it('updateFrameFramingAt fora da faixa é no-op', () => {
     const t = stack('a');
     expect(updateFrameFramingAt(t, 3, { offset: { x: 1, y: 1 }, scale: 1, rotation: 0 })).toBe(t);
+  });
+
+  it('replaceFrameImageAt troca a imagem preservando enquadramento e ordem', () => {
+    const framed: FrameImageRef = { ...ref('a'), offset: { x: 5, y: -3 }, scale: 1.4, rotation: 30 };
+    const t: EditorTransform = { ...DEFAULT_TRANSFORM, frameImages: [framed, ref('b')] };
+    const out = replaceFrameImageAt(t, 0, { path: 'novo.png', url: 'blob:novo', source: 'upload' });
+    expect(out.frameImages[0]).toEqual({ ...framed, path: 'novo.png', url: 'blob:novo', source: 'upload' });
+    expect(out.frameImages[1]).toEqual(ref('b'));
+  });
+
+  it('replaceFrameImageAt fora da faixa é no-op', () => {
+    const t = stack('a');
+    expect(replaceFrameImageAt(t, 5, INPUT)).toBe(t);
   });
 
   it('resetTransform preserva a MOLDURA (é decoração, não enquadramento)', () => {

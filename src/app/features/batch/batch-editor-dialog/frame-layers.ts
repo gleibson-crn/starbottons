@@ -7,6 +7,7 @@ import {
   addFrameImage,
   canAddFrame,
   removeFrameImageAt,
+  replaceFrameImageAt,
   reorderFrame,
   updateFrameFramingAt,
 } from '../../../shared/ui';
@@ -33,6 +34,8 @@ export class FrameLayers {
   readonly imageEls = signal<readonly (HTMLImageElement | null)[]>([]);
   /** `true` enquanto um upload de moldura está em curso. */
   readonly uploading = signal(false);
+  /** Índice da moldura com o painel "Remover fundo" ABERTO (-1 = nenhum). */
+  readonly bgEditIndex = signal<number>(-1);
   /** Mensagem de erro do último upload/limite (ou `null`). */
   readonly error = signal<string | null>(null);
   private readonly cache = new Map<string, HTMLImageElement>();
@@ -146,9 +149,46 @@ export class FrameLayers {
     this.error.set(reason);
   }
 
+  /** Abre o painel "Remover fundo" para a moldura do índice (e a seleciona). */
+  startBgEdit(index: number): void {
+    this.error.set(null);
+    this.activeIndex.set(index);
+    this.bgEditIndex.set(index);
+  }
+
+  /** Fecha o painel "Remover fundo" sem alterar a moldura. */
+  cancelBgEdit(): void {
+    this.bgEditIndex.set(-1);
+  }
+
+  /**
+   * Aplica o recorte: sobe o PNG sem fundo e TROCA a imagem da moldura em edição,
+   * preservando enquadramento e z-order. Fecha o painel ao concluir.
+   */
+  async applyBgEdit(file: File): Promise<void> {
+    const index = this.bgEditIndex();
+    if (index < 0) {
+      return;
+    }
+    this.error.set(null);
+    this.uploading.set(true);
+    try {
+      const ref = await uploadLayerImage(file, this.uploads);
+      this.transform.update((t) => replaceFrameImageAt(t, index, ref));
+      this.bgEditIndex.set(-1);
+    } catch (err) {
+      this.error.set(
+        err instanceof Error ? err.message : 'Falha ao aplicar o recorte na moldura.',
+      );
+    } finally {
+      this.uploading.set(false);
+    }
+  }
+
   /** Remove a moldura do índice; reajusta a ativa. */
   removeAt(index: number): void {
     this.error.set(null);
+    this.bgEditIndex.set(-1);
     this.transform.update((t) => removeFrameImageAt(t, index));
     const len = this.transform().frameImages.length;
     this.activeIndex.update((a) => activeAfterRemove(a, index, len));
@@ -202,6 +242,7 @@ export class FrameLayers {
   }
 
   private reorder(from: number, to: number): void {
+    this.bgEditIndex.set(-1);
     this.transform.update((t) => reorderFrame(t, from, to));
     this.activeIndex.update((a) => activeAfterReorder(a, from, to));
   }

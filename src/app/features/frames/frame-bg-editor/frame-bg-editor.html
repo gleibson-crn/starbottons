@@ -1,0 +1,15 @@
+<div class="fbg">
+  <app-remove-bg-panel
+    [sourceImage]="image()"
+    [fileName]="fileName()"
+    (resultChange)="onCutout($event)"
+  />
+  <div class="fbg__actions">
+    <button type="button" class="btn btn--ghost" [disabled]="applying()" (click)="cancel()">
+      Cancelar
+    </button>
+    <button type="button" class="btn btn--primary" [disabled]="!canApply()" (click)="apply()">
+      {{ applying() ? 'Aplicando…' : 'Aplicar recorte' }}
+    </button>
+  </div>
+</div>

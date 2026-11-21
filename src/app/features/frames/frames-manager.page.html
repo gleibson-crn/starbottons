@@ -44,7 +44,24 @@
           [alt]="'Prévia da moldura ' + (name() || 'nova')"
         />
         <span class="frameform__filename">{{ pendingFile()?.name }}</span>
+        <button
+          type="button"
+          class="btn btn--ghost"
+          [disabled]="!pendingImage() || editingBg()"
+          (click)="openBgEdit()"
+        >
+          <span aria-hidden="true">✂</span> Remover fundo
+        </button>
       </div>
+    }
+
+    @if (editingBg()) {
+      <app-frame-bg-editor
+        [image]="pendingImage()"
+        [fileName]="pendingFile()?.name ?? 'moldura.png'"
+        (applied)="onBgApplied($event)"
+        (cancelled)="cancelBgEdit()"
+      />
     }
 
     <button type="submit" class="btn btn--primary" [disabled]="!canSave()">

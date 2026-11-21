@@ -140,6 +140,25 @@ export function removeFrameImageAt(
 }
 
 /**
+ * Troca a IMAGEM da moldura em `index` (path/url/source/id), PRESERVANDO o
+ * enquadramento (offset/scale/rotation) e a posição no z-order. Usado ao aplicar
+ * "Remover fundo" numa moldura já adicionada. No-op se fora da faixa.
+ */
+export function replaceFrameImageAt(
+  t: EditorTransform,
+  index: number,
+  ref: Pick<FrameImageRef, 'path' | 'url' | 'source' | 'id'>,
+): EditorTransform {
+  if (index < 0 || index >= t.frameImages.length) {
+    return t;
+  }
+  const next = t.frameImages.map((f, i) =>
+    i === index ? { ...f, path: ref.path, url: ref.url, source: ref.source, id: ref.id } : f,
+  );
+  return { ...t, frameImages: next };
+}
+
+/**
  * Move a moldura de `from` para `to` (reordena o z-order). No-op se os índices
  * forem iguais ou fora da faixa. Preserva as demais na ordem relativa.
  */

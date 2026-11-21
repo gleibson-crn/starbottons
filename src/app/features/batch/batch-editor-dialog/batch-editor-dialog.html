@@ -340,6 +340,13 @@
                   <button
                     type="button"
                     class="btn btn--ghost framelist__btn"
+                    [attr.aria-label]="'Remover fundo da moldura ' + (i + 1)"
+                    title="Remover fundo desta moldura"
+                    (click)="frames.startBgEdit(i)"
+                  >✂</button>
+                  <button
+                    type="button"
+                    class="btn btn--ghost framelist__btn"
                     [attr.aria-label]="'Remover moldura ' + (i + 1)"
                     (click)="frames.removeAt(i)"
                   >✕</button>
@@ -347,6 +354,15 @@
               </li>
             }
           </ul>
+          @if (frames.bgEditIndex() >= 0) {
+            <app-frame-bg-editor
+              [image]="frames.imageEls()[frames.bgEditIndex()] ?? null"
+              [fileName]="'moldura-' + (frames.bgEditIndex() + 1) + '.png'"
+              [applying]="frames.uploading()"
+              (applied)="frames.applyBgEdit($event)"
+              (cancelled)="frames.cancelBgEdit()"
+            />
+          }
           @if (frames.activeIndex() >= 0) {
             <button type="button" class="btn btn--ghost" (click)="frames.resetActive()">
               Centralizar moldura ativa

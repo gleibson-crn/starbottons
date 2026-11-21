@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.15',
+    date: '2026-11-21',
+    notes: [
+      'Remover fundo agora também nas molduras: depois de adicionar a moldura, use o botão ✂ (na lista de molduras do editor de bottons e do montador de camadas, ou na prévia ao cadastrar) para abrir o mesmo painel "Remover fundo" do lote — com prévia e ajuste de borda — e aplicar o recorte naquela moldura. Ótimo para molduras geradas por IA que vêm com fundo. Roda 100% no seu computador, sem custo e sem internet.',
+    ],
+  },
+  {
     version: '1.2.14',
     date: '2026-11-21',
     notes: [

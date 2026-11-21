@@ -21,6 +21,7 @@ import {
 } from '../../../core/frames';
 import { UploadService } from '../../../core/upload';
 import { CanvasEditor, FileDropzone } from '../../../shared/ui';
+import { FrameBgEditor } from '../frame-bg-editor/frame-bg-editor';
 import { computeLayout, fallbackSpec } from '../../../shared/utils';
 import {
   DEFAULT_TRANSFORM,
@@ -65,7 +66,7 @@ function errMsg(err: unknown, fallback: string): string {
 @Component({
   selector: 'app-frame-composer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CanvasEditor, FileDropzone],
+  imports: [CanvasEditor, FileDropzone, FrameBgEditor],
   templateUrl: './frame-composer.html',
   styleUrl: './frame-composer.scss',
 })
