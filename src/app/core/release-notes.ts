@@ -10,6 +10,13 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.16',
+    date: '2026-11-21',
+    notes: [
+      'Atualização sem janela de instalação: ao atualizar, o Star Bottons fecha e reabre sozinho, sem mais aquela tela "Instalando" do Windows. (Esse comportamento silencioso passa a valer a partir da PRÓXIMA atualização, pois é a versão já instalada que roda a instalação da seguinte.)',
+    ],
+  },
+  {
     version: '1.2.15',
     date: '2026-11-21',
     notes: [

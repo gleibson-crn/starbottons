@@ -100,7 +100,7 @@ export class UpdateService {
       title: `Atualização pronta (v${version})`,
       message:
         body +
-        'Reiniciar agora para atualizar? Se escolher "Depois", ela será instalada sozinha quando você fechar o aplicativo.',
+        'Reiniciar agora para atualizar? O app fecha e reabre sozinho, sem janela de instalação. Se escolher "Depois", ela será instalada quando você fechar o aplicativo.',
       dismissible: false,
       choices: [
         { value: 'now', label: 'Reiniciar e atualizar', variant: 'primary' },

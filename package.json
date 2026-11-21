@@ -1,6 +1,6 @@
 {
   "name": "starbottons",
-  "version": "1.2.15",
+  "version": "1.2.16",
   "description": "Star Bottons — gerador de artes e mockups de bottons (app desktop local).",
   "author": "Star Bottons",
   "main": "electron/main.cjs",

@@ -288,7 +288,11 @@ app.whenReady().then(() => {
           w.webContents.send('update:downloaded', { version: info?.version ?? '' });
         }
       });
-      ipcMain.handle('update:install', () => autoUpdater.quitAndInstall());
+      // Instala SILENCIOSAMENTE (isSilent=true) e reabre o app sozinho
+      // (isForceRunAfter=true): sem a janela do instalador NSIS. perMachine=false
+      // (instala só p/ o usuário) → sem UAC. (Só vale da PRÓXIMA atualização em
+      // diante: a versão já instalada é quem roda a instalação da seguinte.)
+      ipcMain.handle('update:install', () => autoUpdater.quitAndInstall(true, true));
       void autoUpdater.checkForUpdates(); // sem notificação nativa do SO
     } catch {
       /* electron-updater ausente: ignora */
