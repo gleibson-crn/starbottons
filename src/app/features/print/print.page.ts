@@ -23,7 +23,7 @@ import {
 import { SIZE_OPTIONS } from '../../shared/utils';
 import { FileDropzone } from '../../shared/ui';
 import { buildAvulsoLine } from './avulso-art';
-import { localBackend } from '../../core/local-backend/local-api';
+import { localBackend, type LocalPrinter } from '../../core/local-backend/local-api';
 
 /**
  * PrintPage — "Área de Impressão". Monta uma folha A4 otimizada (`packSheet`) a
@@ -31,7 +31,10 @@ import { localBackend } from '../../core/local-backend/local-api';
  * em branco) e recebe artes do lote só pelo botão "Levar para impressão" do
  * cartão (via `enqueue`). Também aceita imagens AVULSAS enviadas aqui (upload →
  * arte redonda no mesmo estilo, via `buildAvulsoLine`), que entram na mesma
- * fila. Imprime direto da tela com `window.print()`. Zoneless/OnPush: todo
+ * fila. Ao imprimir, abre uma PRÉ-VISUALIZAÇÃO dentro do app (folha + seletor de
+ * impressora + cópias) e envia direto à impressora via `window.sb.printSheet`
+ * (sem o diálogo do Windows); no navegador, cai no `window.print()`.
+ * Zoneless/OnPush: todo
  * estado é signal/computed. Os object URLs das linhas pertencem à store (é ela
  * que os revoga em remover/limpar, pois a fila sobrevive à página); aqui só o
  * object URL da PRÉVIA do arquivo avulso pendente é revogado no `ngOnDestroy`.
@@ -77,6 +80,17 @@ export class PrintPage implements OnDestroy {
 
   readonly pageCount = computed(() => this.packed().pages.length);
   readonly hasSheet = computed(() => this.packed().totalPieces > 0);
+
+  /** Pré-visualização de impressão DENTRO do app (não o diálogo do Windows). */
+  readonly printDialogOpen = signal(false);
+  /** Impressoras do sistema (preenchidas ao abrir a prévia). */
+  readonly printers = signal<readonly LocalPrinter[]>([]);
+  /** Impressora escolhida (deviceName); vazio = impressora padrão. */
+  readonly selectedPrinter = signal<string>('');
+  /** Nº de cópias da folha. */
+  readonly copies = signal<number>(1);
+  /** Enviando para a impressora (desabilita o botão enquanto imprime). */
+  readonly printing = signal(false);
 
   /** Folha atualmente em foco na prévia (1-based) — dirige o pager flutuante. */
   readonly currentPage = signal(1);
@@ -201,25 +215,115 @@ export class PrintPage implements OnDestroy {
   }
 
   /**
-   * Imprime a folha. No Electron (`window.sb`), abre o diálogo da IMPRESSORA do
-   * sistema e envia direto ao papel (quem quiser PDF escolhe "Print to PDF" no
-   * diálogo). No navegador, usa o diálogo de impressão normal. Se o caminho do
-   * Electron falhar (ex.: sem impressora), cai no `window.print()`.
+   * Inicia a impressão. No Electron (`window.sb`), abre a PRÉ-VISUALIZAÇÃO dentro
+   * do app (a folha como vai sair + seletor de impressora + cópias); o diálogo do
+   * Windows não aparece. No navegador, usa o diálogo de impressão normal.
    */
   print(): void {
     const local = localBackend();
-    if (local) {
-      local
-        .printSheet()
-        .then((r) => {
-          if (!r.ok) {
-            window.print();
-          }
-        })
-        .catch(() => window.print());
+    if (!local) {
+      window.print();
       return;
     }
-    window.print();
+    this.copies.set(1);
+    this.printers.set([]);
+    this.selectedPrinter.set('');
+    local
+      .listPrinters()
+      .then((list) => {
+        this.printers.set(list);
+        // Pré-seleciona a ÚLTIMA impressora usada (se ainda existir); senão, a
+        // padrão do sistema. Evita cair numa impressora virtual (OneNote/PDF).
+        const saved = this.loadLastPrinter();
+        const pick =
+          list.find((p) => p.name === saved) ??
+          list.find((p) => p.isDefault) ??
+          list[0];
+        this.selectedPrinter.set(pick?.name ?? '');
+      })
+      .catch(() => {
+        /* sem lista: imprime na impressora padrão do sistema */
+      });
+    this.printDialogOpen.set(true);
+  }
+
+  /** Troca a impressora escolhida a partir do `<select>` e lembra a escolha. */
+  setSelectedPrinter(event: Event): void {
+    const name = (event.target as HTMLSelectElement).value;
+    this.selectedPrinter.set(name);
+    this.saveLastPrinter(name);
+  }
+
+  /** Atualiza o nº de cópias (1..99). */
+  onCopiesInput(event: Event): void {
+    const n = Math.trunc((event.target as HTMLInputElement).valueAsNumber);
+    this.copies.set(Number.isFinite(n) && n > 0 ? Math.min(n, 99) : 1);
+  }
+
+  /**
+   * Abre as configurações avançadas do driver da impressora (tipo de papel,
+   * qualidade, cor...). O que for ajustado fica salvo e é usado na impressão.
+   */
+  openAdvancedSettings(): void {
+    const local = localBackend();
+    const name = this.selectedPrinter();
+    if (local && name) {
+      void local.openPrinterSettings(name);
+    }
+  }
+
+  /** Fecha a pré-visualização sem imprimir. */
+  closePrintDialog(): void {
+    if (!this.printing()) {
+      this.printDialogOpen.set(false);
+    }
+  }
+
+  /**
+   * Confirma a impressão: envia a folha direto para a impressora escolhida, sem
+   * diálogo do SO (`printSheet` silencioso; cai no diálogo do SO só se falhar).
+   */
+  async confirmPrint(): Promise<void> {
+    const local = localBackend();
+    if (!local) {
+      this.printDialogOpen.set(false);
+      window.print();
+      return;
+    }
+    this.printing.set(true);
+    this.saveLastPrinter(this.selectedPrinter());
+    try {
+      await local.printSheet({
+        deviceName: this.selectedPrinter() || undefined,
+        copies: this.copies(),
+      });
+    } finally {
+      this.printing.set(false);
+      this.printDialogOpen.set(false);
+    }
+  }
+
+  /** Chave do localStorage com a última impressora usada. */
+  private static readonly LAST_PRINTER_KEY = 'sb.print.lastPrinter';
+
+  /** Lê a última impressora usada (ou `null`). */
+  private loadLastPrinter(): string | null {
+    try {
+      return localStorage.getItem(PrintPage.LAST_PRINTER_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Salva a impressora escolhida para pré-selecionar na próxima vez. */
+  private saveLastPrinter(name: string): void {
+    try {
+      if (name) {
+        localStorage.setItem(PrintPage.LAST_PRINTER_KEY, name);
+      }
+    } catch {
+      /* localStorage indisponível: segue sem lembrar */
+    }
   }
 
   /** Revoga só a prévia pendente (as linhas pertencem à store persistente). */

@@ -10,6 +10,14 @@ export { APP_VERSION } from './app-version';
 /** Notas de release, em qualquer ordem (o serviço ordena por versão). */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.2.13',
+    date: '2026-11-21',
+    notes: [
+      'Impressão com pré-visualização dentro do app: ao clicar em "Imprimir", agora aparece uma tela mostrando a folha A4 exatamente como vai sair, onde você escolhe a impressora e o número de cópias e imprime — sem o diálogo do Windows (que não mostrava a prévia).',
+      'Configurações avançadas de impressão: na mesma tela há o botão "⚙ Configurações avançadas", que abre as opções da sua impressora (tipo de papel, qualidade, cor) — essenciais para quem faz personalizados. O que você ajustar fica salvo e é usado na impressão.',
+    ],
+  },
+  {
     version: '1.2.12',
     date: '2026-11-20',
     notes: [

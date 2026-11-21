@@ -43,8 +43,12 @@ contextBridge.exposeInMainWorld('sb', {
   generate: (body) => ipcRenderer.invoke('gen:run', body),
   /** Caminho do render de um job (freshPrintUrl após recarregar o lote). */
   renderPath: (jobId) => ipcRenderer.invoke('gen:render-path', jobId),
-  /** Imprime a folha A4: gera PDF (prévia real) e abre no visualizador do sistema. */
-  printSheet: () => ipcRenderer.invoke('print:sheet'),
+  /** Lista as impressoras disponíveis (para o seletor dentro do app). */
+  listPrinters: () => ipcRenderer.invoke('print:list-printers'),
+  /** Imprime a folha A4 direto na impressora escolhida, sem o diálogo do SO. */
+  printSheet: (opts) => ipcRenderer.invoke('print:sheet', opts),
+  /** Abre as configurações avançadas do driver da impressora (papel, qualidade). */
+  openPrinterSettings: (deviceName) => ipcRenderer.invoke('print:settings', deviceName),
   /** Auto-update (.exe): avisa quando a nova versão foi baixada. */
   onUpdateDownloaded: (cb) => ipcRenderer.on('update:downloaded', (_e, info) => cb(info)),
   /** Reinicia e instala a atualização já baixada. */

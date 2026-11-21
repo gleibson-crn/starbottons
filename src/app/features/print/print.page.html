@@ -5,8 +5,8 @@
       Monte uma folha A4 para impressão. Traga artes do lote pelo botão
       "Adicionar à impressão" (em cada arte pronta) e/ou envie imagens avulsas aqui.
       Ajuste a quantidade de cada arte; o sistema organiza os bottons (tamanhos
-      mistos) de forma otimizada. Depois é só imprimir — o diálogo do navegador
-      também salva em PDF.
+      mistos) de forma otimizada. Depois clique em Imprimir para ver a prévia,
+      escolher a impressora e imprimir.
     </p>
   </div>
 
@@ -205,4 +205,142 @@
         }
       </div>
     </div>
+
+  <!-- Pré-visualização de impressão DENTRO do app (Electron): a folha como vai
+       sair + escolha de impressora + cópias. Não é o diálogo do Windows (que o
+       Electron não pré-visualiza). `@media print` esconde este overlay — quem
+       imprime de fato é a prévia da folha na página. -->
+  @if (printDialogOpen()) {
+    <div
+      class="print-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="print-dialog-title"
+    >
+      <button
+        type="button"
+        class="print-dialog__backdrop"
+        aria-label="Fechar pré-visualização"
+        [disabled]="printing()"
+        (click)="closePrintDialog()"
+      ></button>
+      <div class="print-dialog__panel">
+        <header class="print-dialog__header">
+          <h2 id="print-dialog-title" class="print-dialog__title">Pré-visualização de impressão</h2>
+          <button
+            type="button"
+            class="print-dialog__close"
+            aria-label="Fechar pré-visualização"
+            [disabled]="printing()"
+            (click)="closePrintDialog()"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
+        </header>
+
+        <div class="print-dialog__body">
+          <div
+            class="print-dialog__sheets"
+            role="region"
+            aria-label="Prévia da folha A4 a ser impressa"
+          >
+            @for (page of packed().pages; track $index) {
+              <div class="sheet-frame">
+                <div class="sheet">
+                  @for (piece of page; track $index) {
+                    <img
+                      class="sheet__piece"
+                      [src]="piece.url"
+                      [alt]="pieceAlt(piece)"
+                      [style.left.mm]="piece.xMm"
+                      [style.top.mm]="piece.yMm"
+                      [style.width.mm]="piece.artMm"
+                      [style.height.mm]="piece.artMm"
+                    />
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="print-dialog__controls">
+            <p class="print-dialog__summary">
+              {{ packed().totalPieces }} peça(s) em {{ pageCount() }} página(s).
+            </p>
+
+            @if (printers().length > 0) {
+              <label class="print-dialog__field">
+                <span class="print-dialog__label">Impressora</span>
+                <select
+                  class="field__control"
+                  [value]="selectedPrinter()"
+                  (change)="setSelectedPrinter($event)"
+                >
+                  @for (p of printers(); track p.name) {
+                    <option [value]="p.name">
+                      {{ p.displayName }}{{ p.isDefault ? ' (padrão)' : '' }}
+                    </option>
+                  }
+                </select>
+              </label>
+            } @else {
+              <p class="print-dialog__hint">
+                Nenhuma impressora encontrada — será usada a impressora padrão do sistema.
+              </p>
+            }
+
+            <label class="print-dialog__field print-dialog__field--copies">
+              <span class="print-dialog__label">Cópias</span>
+              <input
+                class="field__control"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                max="99"
+                step="1"
+                [value]="copies()"
+                (input)="onCopiesInput($event)"
+              />
+            </label>
+
+            @if (printers().length > 0) {
+              <div class="print-dialog__advanced">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  [disabled]="printing()"
+                  (click)="openAdvancedSettings()"
+                >
+                  ⚙ Configurações avançadas (papel, qualidade)…
+                </button>
+                <p class="print-dialog__hint">
+                  Abre as opções da sua impressora (tipo de papel, qualidade de
+                  impressão, cor). O que você ajustar fica salvo e é usado na impressão.
+                </p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <footer class="print-dialog__footer">
+          <button
+            type="button"
+            class="btn btn--ghost"
+            [disabled]="printing()"
+            (click)="closePrintDialog()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="printing()"
+            (click)="confirmPrint()"
+          >
+            {{ printing() ? 'Imprimindo…' : 'Imprimir' }}
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
 </section>

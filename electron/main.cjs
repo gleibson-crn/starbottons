@@ -13,6 +13,7 @@
 const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
 const { readFileSync, existsSync } = require('node:fs');
 const { join } = require('node:path');
+const { execFile } = require('node:child_process');
 const http = require('node:http');
 const localDb = require('./backend/db.cjs'); // backend local (ADR-033): SQLite
 const { startStaticServer } = require('./backend/static-server.cjs'); // serve o ng build
@@ -20,31 +21,97 @@ const { startStaticServer } = require('./backend/static-server.cjs'); // serve o
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * Imprime a folha A4 DIRETO na impressora: abre o diálogo de impressão do
- * sistema (escolher impressora + opções) e envia para o papel — sem passar por
- * visualizador de PDF. `printBackground` preserva arte/cores; `pageSize: A4` +
- * o `@media print`/`@page { size: A4; margin: 0 }` da página garantem que só a
- * folha vá ao papel. Quem quiser PDF escolhe "Microsoft Print to PDF" no próprio
- * diálogo. Cancelar NÃO é erro (evita abrir um 2º diálogo pelo fallback do
- * renderer); só devolve `ok:false` se o diálogo nem abrir (ex.: sem impressora),
- * e aí o renderer tenta o `window.print()`.
+ * Lista as impressoras do sistema para o SELETOR dentro do app (a pré-visualização
+ * de impressão é feita na própria tela, não no diálogo do Windows — que o Electron
+ * não sabe pré-visualizar). Devolve só nome/rótulo/padrão; `[]` em erro.
  */
-async function printSheet(event) {
+async function listPrinters(event) {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) {
+    return [];
+  }
+  try {
+    const printers = await win.webContents.getPrintersAsync();
+    return printers.map((p) => ({
+      name: p.name,
+      displayName: p.displayName || p.name,
+      isDefault: Boolean(p.isDefault),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Imprime a folha A4 DIRETO na impressora escolhida, SEM diálogo do sistema
+ * (`silent: true` + `deviceName`) — a escolha de impressora e a pré-visualização
+ * acontecem na tela do app. `printBackground` preserva arte/cores; `pageSize: A4`
+ * + `@page { size: A4; margin: 0 }`/`@media print` garantem que só a folha vá ao
+ * papel. Se a impressão silenciosa falhar (driver/impressora), cai no diálogo do
+ * SO como rede de segurança. Cancelar NÃO é erro.
+ */
+async function printSheet(event, opts) {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) {
     return { ok: false, error: 'janela não encontrada' };
   }
-  try {
-    const result = await new Promise((resolve) => {
-      win.webContents.print(
-        { printBackground: true, pageSize: 'A4', margins: { marginType: 'none' } },
-        (success, failureReason) => resolve({ success, failureReason }),
+  const { deviceName, copies } = opts || {};
+  const base = {
+    printBackground: true,
+    pageSize: 'A4',
+    margins: { marginType: 'none' },
+    copies: Number.isInteger(copies) && copies > 0 ? copies : 1,
+  };
+  const doPrint = (options) =>
+    new Promise((resolve) => {
+      win.webContents.print(options, (success, failureReason) =>
+        resolve({ success, failureReason }),
       );
     });
-    if (result.success || /cancel/i.test(result.failureReason || '')) {
+  try {
+    // 1ª tentativa: silenciosa, direto na impressora escolhida (sem diálogo do SO).
+    let r = await doPrint({
+      ...base,
+      silent: true,
+      ...(deviceName ? { deviceName } : {}),
+    });
+    // Fallback: se falhou (e não foi cancelamento), abre o diálogo do SO.
+    if (!r.success && !/cancel/i.test(r.failureReason || '')) {
+      r = await doPrint({ ...base, silent: false });
+    }
+    if (r.success || /cancel/i.test(r.failureReason || '')) {
       return { ok: true };
     }
-    return { ok: false, error: result.failureReason || 'falha ao imprimir' };
+    return { ok: false, error: r.failureReason || 'falha ao imprimir' };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  }
+}
+
+/**
+ * Abre as CONFIGURAÇÕES AVANÇADAS da impressora (diálogo de Preferências do
+ * driver: tipo de papel, qualidade, cor...). São opções específicas do fabricante
+ * (ex.: EPSON) que o Electron NÃO expõe — só o driver tem. O que o usuário definir
+ * ali fica salvo como padrão da impressora e é usado na impressão silenciosa
+ * (que não sobrescreve papel/qualidade). Só no Windows (`rundll32 printui.dll`).
+ * Passa o nome da impressora por argumento (execFile, sem shell) — sem injeção.
+ */
+function openPrinterSettings(_event, deviceName) {
+  if (process.platform !== 'win32') {
+    return { ok: false, error: 'disponível apenas no Windows' };
+  }
+  if (!deviceName) {
+    return { ok: false, error: 'nenhuma impressora selecionada' };
+  }
+  try {
+    const child = execFile('rundll32', [
+      'printui.dll,PrintUIEntry',
+      '/e',
+      '/n',
+      deviceName,
+    ]);
+    child.on('error', () => {}); // nunca derruba o app se o rundll32 falhar
+    return { ok: true };
   } catch (err) {
     return { ok: false, error: String((err && err.message) || err) };
   }
@@ -201,7 +268,9 @@ app.whenReady().then(() => {
   ipcMain.handle('up:save', (_e, input) => localDb.saveUpload(input));
   ipcMain.handle('gen:run', (_e, body) => localDb.generate(body));
   ipcMain.handle('gen:render-path', (_e, jobId) => localDb.renderPath(jobId));
-  ipcMain.handle('print:sheet', (e) => printSheet(e));
+  ipcMain.handle('print:list-printers', (e) => listPrinters(e));
+  ipcMain.handle('print:sheet', (e, opts) => printSheet(e, opts));
+  ipcMain.handle('print:settings', (e, deviceName) => openPrinterSettings(e, deviceName));
 
   createWindow();
 

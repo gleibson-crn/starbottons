@@ -152,6 +152,19 @@ export interface LocalGenerateResult {
   readonly dpi: number;
 }
 
+/** Impressora do sistema (para o seletor dentro do app). */
+export interface LocalPrinter {
+  readonly name: string;
+  readonly displayName: string;
+  readonly isDefault: boolean;
+}
+
+/** Opções de impressão: impressora escolhida + nº de cópias. */
+export interface PrintSheetOptions {
+  readonly deviceName?: string;
+  readonly copies?: number;
+}
+
 /** API exposta em `window.sb` pelo preload. Cresce a cada serviço migrado. */
 export interface LocalBackendApi {
   readonly printSpecs: { list(): Promise<readonly unknown[]> };
@@ -179,8 +192,16 @@ export interface LocalBackendApi {
   readonly uploads: { save(input: LocalUploadInput): Promise<LocalUploadResult> };
   generate(body: unknown): Promise<LocalGenerateResult>;
   renderPath(jobId: string): Promise<string | null>;
-  /** Imprime a folha A4 direto na impressora (abre o diálogo do sistema, Electron). */
-  printSheet(): Promise<{ ok: boolean; error?: string }>;
+  /** Lista as impressoras do sistema (para o seletor dentro do app). */
+  listPrinters(): Promise<readonly LocalPrinter[]>;
+  /** Imprime a folha A4 direto na impressora escolhida, sem o diálogo do sistema. */
+  printSheet(opts?: PrintSheetOptions): Promise<{ ok: boolean; error?: string }>;
+  /**
+   * Abre as configurações avançadas do driver da impressora (tipo de papel,
+   * qualidade, cor...) — opções do fabricante que o Electron não controla. O que
+   * for ajustado fica salvo como padrão e é usado na impressão. Só no Windows.
+   */
+  openPrinterSettings(deviceName: string): Promise<{ ok: boolean; error?: string }>;
   /**
    * Auto-update do desktop (.exe): assina o evento de "nova versão baixada"
    * (para avisar DENTRO do app, não pelo toast do SO). Só presente no empacotado.

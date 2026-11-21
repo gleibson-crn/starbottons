@@ -295,6 +295,160 @@
   border-radius: 50%;
 }
 
+/* --- Pré-visualização de impressão (overlay dentro do app) -------------- */
+.print-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-6);
+}
+
+.print-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: var(--color-overlay, hsl(0 0% 0% / 60%));
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+
+.print-dialog__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  inline-size: min(100%, 820px);
+  max-block-size: calc(100vh - 2 * var(--sp-6));
+  background: var(--color-surface, #1b1024);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.print-dialog__header,
+.print-dialog__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-6);
+}
+
+.print-dialog__header {
+  justify-content: space-between;
+  border-block-end: 1px solid var(--color-border);
+}
+
+.print-dialog__footer {
+  justify-content: flex-end;
+  border-block-start: 1px solid var(--color-border);
+}
+
+.print-dialog__title {
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+.print-dialog__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--fs-md);
+  cursor: pointer;
+}
+
+.print-dialog__close:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.print-dialog__body {
+  display: grid;
+  gap: var(--sp-6);
+  grid-template-columns: 1fr;
+  padding: var(--sp-6);
+  overflow-y: auto;
+}
+
+@media (min-width: 720px) {
+  .print-dialog__body {
+    grid-template-columns: 1fr minmax(220px, 280px);
+    align-items: start;
+  }
+}
+
+/* Prévia da folha dentro do overlay: reaproveita .sheet-frame/.sheet, com escala
+ * menor para caber. Rola se houver várias folhas. */
+.print-dialog__sheets {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  max-block-size: 60vh;
+  overflow-y: auto;
+  padding: var(--sp-2);
+  background: var(--color-canvas, #0e0716);
+  border-radius: var(--radius-md);
+}
+
+.print-dialog__sheets .sheet-frame {
+  --preview-scale: 0.42;
+}
+
+.print-dialog__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.print-dialog__summary {
+  margin: 0;
+  font-weight: 600;
+}
+
+.print-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.print-dialog__field--copies {
+  inline-size: 7rem;
+}
+
+.print-dialog__advanced {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin-block-start: var(--sp-2);
+  padding-block-start: var(--sp-4);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.print-dialog__advanced .btn {
+  align-self: flex-start;
+}
+
+.print-dialog__label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.print-dialog__hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
 /* --- Impressão física --------------------------------------------------- */
 @page {
   size: A4;
@@ -302,10 +456,12 @@
 }
 
 @media print {
-  /* Some com tudo que não é folha. */
+  /* Some com tudo que não é folha (inclui o overlay de prévia: quem imprime é a
+   * prévia da página, não a cópia do overlay — evita impressão duplicada). */
   .print__intro,
   .print__panel,
-  .print__hint {
+  .print__hint,
+  .print-dialog {
     display: none !important;
   }
 
